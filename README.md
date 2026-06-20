@@ -25,17 +25,11 @@ AI 会自动：
 
 ## 安装
 
-把本仓库克隆到你的 AI 工具的 Skill 目录下即可：
+把本仓库克隆到你的 AI 工具的 Skill 目录下：
 
 ```bash
 git clone git@github.com:junyuaini/canvasvideo-skill.git
 ```
-
-或者直接告诉 AI：
-
-> 请帮我安装这个 Skill：https://github.com/junyuaini/canvasvideo-skill
-
-AI 会处理后续步骤。
 
 ---
 
@@ -47,24 +41,20 @@ AI 会处理后续步骤。
 帮我做一个关于 RAG 应用的科普视频，3 分钟，给开发者看的
 ```
 
-或者：
+或者口播模式：
 
 ```
 我想做一个口播视频，音频在 D:/audio.mp3，字幕在 D:/sub.srt
 ```
 
-AI 会按 Skill 内置的流程引导你：理解需求 → 生成本地设计 → 多轮微调 → 上传 → 给你视频链接。
-
-### 视频迭代
-
-视频上线后，你可以随时说：
+视频上线后随时迭代：
 
 ```
 把背景音乐换成 D:/new-music.mp3
 第二章节改成讲混合检索
 ```
 
-Skill 会直接更新已有视频，分享链接保持不变。
+链接保持不变，内容直接刷新。
 
 ---
 
@@ -72,40 +62,142 @@ Skill 会直接更新已有视频，分享链接保持不变。
 
 | 模式 | 用户提供 | AI 负责 |
 |------|---------|--------|
-| **创作模式** | 主题 / 时长 / 风格等文本信息 | 自动生成解说、字幕、占位素材 |
+| **创作模式** | 主题 / 时长 / 风格等文本信息 | 自动生成解说、字幕、占位素材、默认 BGM |
 | **口播模式** | 口播音频 + SRT 字幕 | 严格按音频/SRT 排版，自动生成其他素材 |
 
 ---
 
-## 文件结构
+## 文档结构（核心）
 
 ```
 canvasvideo-skill/
-├── SKILL.md                   # Skill 主入口（AI 读这个文件理解能力）
-├── README.md                  # 本文件
+├── SKILL.md                   # ⭐ 主入口（Skill 协议规范，AI 必读）
+├── README.md                  # 本文件（人类读的项目介绍）
 ├── LICENSE                    # MIT
-├── scripts/
-│   ├── upload-video.js        # 上传脚本
-│   ├── scaffold.js            # 工作目录与素材脚手架
-│   ├── state.js               # 项目本地状态
-│   ├── validate.js            # 校验 project.json
-│   └── package.js             # 打包 zip
+├── .gitignore
+│
+├── references/                # 📚 知识库（AI 设计时查阅）
+│   ├── components-catalog.md  # 10 个组件的选型决策树（字段走 API，不在文档里）
+│   ├── themes-catalog.md      # 仅支持的两种主题：white / black
+│   └── visual-richness-rules.md # 7 条丰富度强制门槛（防止生成 low 视频）
+│
+├── templates/                 # 🎨 模板（AI 生成时复制/参考）
+│   ├── designs/
+│   │   └── video_design_guide.md  # 设计指南（步骤 0 + 五阶段十一步，权威）
+│   ├── projects/              # project.json 样板库
+│   │   ├── README.md          # 样板选型指南
+│   │   ├── 通用视频.json       # 最简兜底（仅作字段参考，禁止直接复制）
+│   │   ├── 示例-产品演示型-2分钟口播.json # 产品/工具演示样板
+│   │   └── 示例-案例分享型-1分钟口播.json # 案例/故事样板
+│   ├── placeholders/          # 占位图资源
+│   │   ├── url-factory.md     # Picsum 占位图 + AggregateComponent 加水印速查
+│   │   ├── light/             # 浅色主题 SVG 兜底图（cta/hook/pain/result 等）
+│   │   └── dark/              # 深色主题 SVG 兜底图
+│   └── bgm/                   # 内置 BGM
+│       ├── bgm-catalog.md     # 6 首 BGM 风格匹配决策树
+│       └── *.wav              # tech-pulse / warm-cafe / uplifting / corporate / light-pop / cinematic
+│
 ├── schema/
-│   └── project.schema.json    # 视频项目 Schema
-└── templates/
-    ├── designs/               # 设计文档规范（video_design_guide.md，权威）
-    └── projects/              # 视频项目模板
+│   └── project.schema.json    # project.json JSON Schema（结构强校验）
+│
+└── scripts/                   # 🛠️ Node.js 工具脚本（AI 在工作流中调用）
+    ├── scaffold.js            # 创建工作目录 + 拉取占位素材
+    ├── state.js               # 项目本地状态管理（生成 skillProjectId 等）
+    ├── validate.js            # 校验 project.json（schema + 业务规则）
+    ├── package.js             # 打包 zip 准备上传
+    ├── upload-video.js        # 上传到云端拿到 previewToken
+    ├── generate-bgm.js        # 生成合成 BGM（兜底）
+    ├── download-incompetech.js / .ps1 # 拉取 Incompetech 真实 BGM
+    └── test-*.js              # 自测脚本
 ```
+
+---
+
+## AI 工作流速查
+
+AI 第一次给你做视频时大致会这样走：
+
+```
+用户需求
+   │
+   ▼
+[读 SKILL.md] ── 知道整体规则、强制门槛、API 端点
+   │
+   ▼
+[阶段 0-2] 步骤 0~5：理解主题、规划区域、选主题
+   │  ├─ 查 references/themes-catalog.md（选 white/black）
+   │  └─ 查 templates/projects/README.md（选样板）
+   │
+   ▼
+[阶段 3] 步骤 6~8：布局、选组件、节奏
+   │  └─ 查 references/components-catalog.md（选型决策树）
+   │
+   ▼
+[阶段 4] 步骤 9~10：写 customStyle + 时间轴
+   │  └─ 调后端 API：POST /cv/api/component/spec/batch（拿字段规范）
+   │
+   ▼
+[阶段 5] 步骤 11：自检
+   │  └─ 查 references/visual-richness-rules.md（L4 丰富度门槛）
+   │
+   ▼
+生成 design.md（用户确认）
+   │
+   ▼
+生成 project.json
+   │  ├─ 用 templates/placeholders/ 填占位图
+   │  ├─ 创作模式：用 templates/bgm/ 默认配 BGM
+   │  └─ 用 schema/project.schema.json 自校验
+   │
+   ▼
+scripts/scaffold.js → scripts/validate.js → scripts/package.js → scripts/upload-video.js
+   │
+   ▼
+返回视频分享链接
+```
+
+---
+
+## 哪些是给 AI 看的，哪些是给人看的？
+
+| 类型 | 文件 | 谁在看 |
+|------|------|--------|
+| **协议入口** | `SKILL.md` | AI（必读，Skill 装上后会 import） |
+| **项目介绍** | `README.md` | 人 |
+| **AI 设计知识库** | `references/*.md` | AI（设计阶段查阅） |
+| **AI 生成模板** | `templates/projects/*.json` | AI（作样板复制改写） |
+| **AI 设计规范** | `templates/designs/video_design_guide.md` | AI（生成 design.md 时严格遵守） |
+| **AI 资源库** | `templates/placeholders/`、`templates/bgm/` | AI（写 project.json 时直接引用） |
+| **结构校验** | `schema/project.schema.json` | AI 调 `validate.js` 时使用 |
+| **执行脚本** | `scripts/*.js` | AI（工作流中调用） |
+| **README** | `templates/projects/README.md`、`templates/placeholders/url-factory.md`、`templates/bgm/bgm-catalog.md` | AI（局部速查） |
+
+---
+
+## 字段规范来源（重要）
+
+`SKILL.md` 不再罗列每个组件的 customStyle 字段（那部分迁移到了云端 API）。
+
+**AI 在生成 customStyle 前必须调云端 API**：
+
+```http
+POST /cv/api/component/spec/batch
+Content-Type: application/json
+
+{ "components": [{ "type": "GraphicComponent", "variant": "comparison" }] }
+```
+
+返回 `content / color / typography / layout / effect / hardcoded` 六类字段+默认值，单次最多 20 个。
+
+数据源：`video-maker-system/public/configs/component-spec.json`（不在 Skill 仓库里，在主仓库里）。
 
 ---
 
 ## 参与贡献
 
-欢迎 PR / issue。本仓库主要内容：
-
-- `SKILL.md` — Skill 协议入口（不要改文件名）
+- `SKILL.md` — Skill 协议入口（**不要改文件名**）
 - `scripts/` — Node.js 脚本，维持 CommonJS 写法以便老 AI 工具兼容
-- `templates/` — 设计 / 视频模板，按场景命名
+- `references/` / `templates/` — 改了别忘了同步 SKILL.md 里的引用
 
 ---
 

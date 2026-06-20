@@ -357,11 +357,100 @@ canvas.height = 最下方区域 y + viewport.height + 65  // 底边距 65
 
 **自检公式**：生成完一个区域的所有组件后，按 `y` 排序，检查是否满足 `sorted[i].y ≥ sorted[i-1].y + sorted[i-1].h + 10`。不满足必须修正。
 
-**严禁**：
+**严禁**：**严禁**:
 - 同一区域内出现两个组件 `y` 相同或后一个 `y` 小于前一个的 `bottom`
 - 为了"对齐美观"故意把后面组件的 `y` 设成 0（这是严重错误）
 
-#### 2.6.4 区域布局：必须多样化，禁止复制粘贴
+#### 2.6.3b 组件尺寸计算: `w`/`h` 必须与内容匹配，禁止溢出
+
+**规则**：每个组件的 `position.w` 和 `position.h` 必须**显式填写**，且尺寸要与实际内容匹配，确保文字不被截断、图片不被过度压缩。
+
+**文字类组件高度估算公式**：
+```
+h = 上边距 + 行数 × 行高 + 下边距
+```
+
+| 组件类型 | 字体大小 | 行高 | 左右边距 | 上下边距 |
+|---------|---------|------|---------|---------|
+| TitleComponent | 36-48px | 1.3×字号 | 20px | 10px |
+| TextComponent | 18-24px | 1.5×字号 | 20px | 10px |
+| QuoteComponent | 20-28px | 1.6×字号 | 24px | 12px |
+| BadgeComponent | 14-18px | 1.4×字号 | 12px | 6px |
+| CardComponent | 16-20px | 1.5×字号 | 16px | 10px |
+
+**宽度约束**：
+- 区域内组件的 `w` 不应超过 `viewport.width - 40`（留左右边距各 20px）
+- 默认 780px 视口下，文字组件 `w ≤ 740`
+
+**高度约束（防止溢出）**：
+- 一个区域内所有组件的 `h` 之和 + 间距之和 必须 `≤ viewport.height - 20`
+- 默认 585px 视口下，组件总高度不应超过 565px
+- **严禁**：组件底部 `y + h > viewport.height`
+
+**错误示例**（文字溢出，内容被截断）：
+```json
+// ❌ 错误：h=40 只能容纳 1 行，但实际有 3 行文字
+{
+  "id": "P1-002",
+  "type": "TextComponent",
+  "content": "这是第一行\n这是第二行\n这是第三行",
+  "position": { "x": 20, "y": 100, "w": 700, "h": 40 }
+  // h=40，行高 27px，3 行需要至少 81px + 边距 20px = 101px
+}
+
+// ❌ 错误：组件总高度超过视口高度，最后一个组件被截断
+{
+  "id": "P1-001", "position": { "y": 0,   "h": 120 }  // bottom=120
+},
+{
+  "id": "P1-002", "position": { "y": 130, "h": 200 }  // bottom=330
+},
+{
+  "id": "P1-003", "position": { "y": 340, "h": 150 }  // bottom=490
+},
+{
+  "id": "P1-004", "position": { "y": 500, "h": 120 }  // bottom=620 > viewport.height=585 ❌
+}
+```
+
+**正确示例**：
+```json
+// ✅ 正确：3 行文字，h 计算准确
+{
+  "id": "P1-002",
+  "type": "TextComponent",
+  "content": "这是第一行\n这是第二行\n这是第三行",
+  "position": { "x": 20, "y": 100, "w": 700, "h": 110 }
+  // h=110 = 上边距10 + 3行×27 + 下边距10 + 缓冲10
+}
+
+// ✅ 正确：4 个组件总高度 520px + 间距 45px = 565px ≤ 585px
+{
+  "id": "P1-001", "position": { "y": 0,   "h": 100 }  // bottom=100
+},
+{
+  "id": "P1-002", "position": { "y": 110, "h": 150 }  // bottom=260
+},
+{
+  "id": "P1-003", "position": { "y": 270, "h": 120 }  // bottom=390
+},
+{
+  "id": "P1-004", "position": { "y": 400, "h": 165 }  // bottom=565 ≤ 585 ✅
+}
+```
+
+**自检公式**：生成完一个区域的所有组件后：
+1. 检查每个文字组件的 `h` 是否足够容纳其内容行数
+2. 检查最后一个组件的 `y + h ≤ viewport.height - 10`
+3. 不满足必须调整 `h` 或减少组件数量/文字内容
+
+**严禁**：
+- `position.w` 或 `position.h` 不填写（必须显式写）
+- 文字组件 `h` 小于实际内容所需高度（导致文字被截断）
+- 组件堆叠总高度超过 `viewport.height`（导致底部组件被截断）
+- 为"省空间"把 `h` 写死成一个固定小值（如所有组件 h=50）
+
+#### 2.6.4 区域布局: 必须多样化，禁止复制粘贴
 
 **规则**：相邻区域（如 P1→P2→P3）的组件结构、类型顺序、排列方式**不能完全相同**。必须至少有 3 种不同的布局模板交替使用。
 
@@ -470,7 +559,8 @@ canvasvideo-workdir/{skillProjectId}/
 
 | 文件 | 用途 | 必查时机 |
 |------|------|---------|
-| [`references/components-catalog.md`](./references/components-catalog.md) | 10 个组件的 content / customStyle / 适用场景 / 反例 / 选型决策树 | 步骤 7 选组件、步骤 9 写 customStyle |
+| [`references/components-catalog.md`](./references/components-catalog.md) | 10 个组件的**选型决策树** + 适用/反例场景（不再含字段，字段统一走 API） | 步骤 7 选组件 |
+| **后端 API：`/api/component/spec/batch`** | 组件**字段规范**（content/color/typography/layout/effect/hardcoded 五大类） | 步骤 9 写 customStyle 前**强制批量查** |
 | [`references/themes-catalog.md`](./references/themes-catalog.md) | 仅支持的两种主题（white/black）色板 + 选型决策 + 自定义主题应对话术 | 步骤 5 选主题、用户提自定义主题需求时 |
 | [`references/visual-richness-rules.md`](./references/visual-richness-rules.md) | 6 条丰富度强制门槛 + 丰富度评分表 + 提升组合拳示例 | 步骤 11 自检（必含 L4 丰富度检查）、生成 project.json 前最后自查 |
 | [`templates/placeholders/url-factory.md`](./templates/placeholders/url-factory.md) | 占位图速查表：placehold.co 在线水印 URL × 14 + 本地 SVG × 14 + 引用策略 | 写素材清单 / project.json 中 ImageComponent 时（特别是 `[AI 自动生成 - 占位]` 状态） |
@@ -478,10 +568,44 @@ canvasvideo-workdir/{skillProjectId}/
 | [`templates/projects/示例-产品演示型-2分钟口播.json`](./templates/projects/示例-产品演示型-2分钟口播.json) | 产品/工具演示型完整样板（120s） | 用户做产品演示时参考节奏与组件搭配 |
 | [`templates/projects/示例-案例分享型-1分钟口播.json`](./templates/projects/示例-案例分享型-1分钟口播.json) | 案例/故事分享型完整样板（53s） | 用户做案例分享时参考五段式叙事 |
 
+#### 🔌 组件字段查询 API（重要）
+
+**API 端点**（生产环境）：
+- `GET  /cv/api/component/spec` —— 拉取所有组件简介（设计阶段可选）
+- `POST /cv/api/component/spec/batch` —— **批量查字段（开发阶段必查）**
+- `GET  /cv/api/component/spec/:type/:variant` —— 单查（微调阶段可选）
+
+**强制工作流**：
+1. **步骤 7 选完组件后，立即批量查 API**，拿到所有用到的组件的字段清单
+2. 单次最多 20 个组件，超过分批
+3. **写 customStyle 时只能用 API 返回里出现过的 key**，不要凭直觉编字段名
+4. **遇到 hardcoded 数组里的元素**：明确告诉用户"这个调不了"，不要去试
+
+**批量查请求示例**：
+```http
+POST /cv/api/component/spec/batch
+Content-Type: application/json
+
+{
+  "components": [
+    { "type": "GraphicComponent", "variant": "comparison" },
+    { "type": "CardComponent", "variant": "image-text" }
+  ]
+}
+```
+
+**返回结构**（每个组件包含 6 类信息）：
+- `content[]` —— 内容字段（数据/文本）
+- `color[]` —— 颜色字段
+- `typography[]` —— 字号字重
+- `layout[]` —— 尺寸边距圆角
+- `effect[]` —— 阴影边框动画
+- `hardcoded[]` —— **写死无法配置**的视觉元素（用户问到时直接告诉他调不了）
+
 **必查规则**：
 - 如果用户没明确说做什么类型，**默认参考"案例分享型"示例**（叙事结构更通用）
 - 选组件时**先翻 components-catalog.md 的"选型决策树"**，不要凭直觉
-- 写 customStyle 时**先翻 components-catalog.md 的"字段速查"**，不要凭记忆
+- 写 customStyle 时**先调 API 批量查字段**，不要凭记忆
 
 **📋 必须包含的产出**：
 
@@ -500,7 +624,7 @@ canvasvideo-workdir/{skillProjectId}/
 - 自检报告全部填"通过"
 - 使用 theme（必须用 customStyle）
 - 组件 ID 用英文单词（必须用 `{区域}-###` 格式）
-- **不查 components-catalog.md 就开始写 customStyle**（很大概率会漏字段或写错嵌套）
+- **不查组件字段 API 就开始写 customStyle**（很大概率会编出不存在的字段名或漏掉关键 key）
 - **跳过 L4 丰富度检查直接打包上传**（违反 visual-richness-rules.md 6 条门槛会生成 low 视频）
 - **L4 检查任何一条不通过仍上传**（必须回到步骤 7-9 重新设计；重写后再次自检）
 - **创作模式下出现连续 ≥ 2 秒画面静止段**（违反门槛 7.1 末组件停留 ≤ 2s；详见 §2.5）
