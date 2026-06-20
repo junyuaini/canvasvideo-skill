@@ -103,6 +103,7 @@ canvasvideo-workdir/{skillProjectId}/
 |------|------|---------|
 | [`references/components-catalog.md`](./references/components-catalog.md) | 10 个组件的 content / customStyle / 适用场景 / 反例 / 选型决策树 | 步骤 7 选组件、步骤 9 写 customStyle |
 | [`references/themes-catalog.md`](./references/themes-catalog.md) | 仅支持的两种主题（white/black）色板 + 选型决策 + 自定义主题应对话术 | 步骤 5 选主题、用户提自定义主题需求时 |
+| [`references/visual-richness-rules.md`](./references/visual-richness-rules.md) | 6 条丰富度强制门槛 + 丰富度评分表 + 提升组合拳示例 | 步骤 11 自检（必含 L4 丰富度检查）、生成 project.json 前最后自查 |
 | [`templates/projects/README.md`](./templates/projects/README.md) | 示例项目索引（按场景选 base） | 步骤 0 确定模式后 |
 | [`templates/projects/示例-产品演示型-2分钟口播.json`](./templates/projects/示例-产品演示型-2分钟口播.json) | 产品/工具演示型完整样板（120s） | 用户做产品演示时参考节奏与组件搭配 |
 | [`templates/projects/示例-案例分享型-1分钟口播.json`](./templates/projects/示例-案例分享型-1分钟口播.json) | 案例/故事分享型完整样板（53s） | 用户做案例分享时参考五段式叙事 |
@@ -130,6 +131,8 @@ canvasvideo-workdir/{skillProjectId}/
 - 使用 theme（必须用 customStyle）
 - 组件 ID 用英文单词（必须用 `{区域}-###` 格式）
 - **不查 components-catalog.md 就开始写 customStyle**（很大概率会漏字段或写错嵌套）
+- **跳过 L4 丰富度检查直接打包上传**（违反 visual-richness-rules.md 6 条门槛会生成 low 视频）
+- **L4 检查任何一条不通过仍上传**（必须回到步骤 7-9 重新设计；重写后再次自检）
 
 ### 3.2 素材清单状态
 
@@ -330,7 +333,8 @@ canvasvideo-skill/
 ├── SKILL.md                    # 本文件：Skill 主入口
 ├── references/                 # ⭐ 知识库（LLM 必查）
 │   ├── components-catalog.md   # 10 个组件 content/customStyle/选型决策树
-│   └── themes-catalog.md       # 仅支持 white/black 两种主题 + 决策表 + 话术
+│   ├── themes-catalog.md       # 仅支持 white/black 两种主题 + 决策表 + 话术
+│   └── visual-richness-rules.md # 6 条丰富度强制门槛 + 评分表（防止 low 视频）
 ├── docs/                       # （可选扩展）编排细则
 │   ├── design-orchestrator.md
 │   ├── video-orchestrator.md
