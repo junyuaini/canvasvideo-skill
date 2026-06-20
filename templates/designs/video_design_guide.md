@@ -56,7 +56,7 @@
 > - **BGM 用法**（AI 自动配 BGM 或用户提供纯背景音乐）→ audio 设为对象 `{ path, loop:true, fadeIn:1, fadeOut:2 }`；subtitles **严禁**填
 > - **静音**（用户主动拒绝）→ 不写 audio 字段；subtitles **严禁**填
 > - **创作模式默认 = BGM 用法**（除非用户主动说"不要 BGM"）
-> - 详见 [`../../SKILL.md`](../../SKILL.md) 第 2.4 节
+> - 详见 [`../../references/mode-rules.md`](../../references/mode-rules.md) §3（字幕共生强制规则）
 
 ---
 
@@ -147,7 +147,7 @@
 
 **说明**：根据内容类型，确定每个区域的设计意图、建议组件数、焦点组件，以及是否需要图片素材。
 
-> ⚠️ **创作模式区域时长强约束（详见 visual-richness-rules.md 门槛 7.3/7.4）**：
+> ⚠️ **创作模式区域时长强约束（详见 [`../../references/timing-rules.md`](../../references/timing-rules.md) 门槛 3、门槛 4）**：
 > - 单一区域 duration ≤ 15 秒（**严禁 25s/30s 这种"省事的整数"**）
 > - 区域数推荐：30s ≥ 3 个；60s ≥ 6 个；120s ≥ 10 个；180s ≥ 14 个
 > - 各区域时长可不等长（按内容多少调整，6-15s 之间灵活分配）
@@ -173,7 +173,7 @@
 
 > **总组件数 ≈ 25**，时长 60s → 密度 0.42（**注意**：本示例略低于门槛 7.4 的 0.6，是为了易读；实际生成请把组件数提到 36+）
 
-#### 区域布局坐标（必填，详见 SKILL.md §2.6）
+#### 区域布局坐标（必填，详见 [`../../references/layout-rules.md`](../../references/layout-rules.md) §1）
 
 **规则：每行 4 个区域，超过 4 个换行**
 
@@ -200,7 +200,7 @@
 | 5-8 | `width: 3300, height: 1300` |
 | 9-12 | `width: 3300, height: 1900` |
 
-#### settings 三个过渡参数（必填，详见 SKILL.md §2.6.2）
+#### settings 三个过渡参数（必填，详见 [`../../references/timing-rules.md`](../../references/timing-rules.md) §settings）
 
 ```json
 "settings": {
@@ -403,7 +403,7 @@
 
 **说明**：描述每个区域的组件出现节奏，包括间隔和停留策略。
 
-> ⚠️ **节奏硬性约束（强制，详见 visual-richness-rules.md 门槛 7）**：
+> ⚠️ **节奏硬性约束（强制，详见 [`../../references/timing-rules.md`](../../references/timing-rules.md) 4 条门槛）**：
 > 1. **末组件→区域 end ≤ 2 秒**：每个区域必须有一个"收尾组件"在 `end - 2s` 之内出现
 > 2. **相邻组件 start 间隔 ≤ 3 秒**：同区域不允许大段空白
 > 3. **创作模式单区域 duration ≤ 15 秒**：长区域必须拆分
@@ -430,7 +430,13 @@
 
 ### 步骤 9：视觉样式设计
 
-> ⚠️ **本步骤强制前置**：开始写 customStyle 前，**必须先查阅 [`../../references/components-catalog.md`](../../references/components-catalog.md)** 的"字段速查"表（文末），确认每个组件的必填字段没有遗漏，嵌套结构（Title 用 level1、Text 用 paragraph）写对。
+> ⚠️ **本步骤强制前置**：开始写 customStyle 前，**必须先批量调云端 API** 拿组件字段：
+> ```http
+> POST /cv/api/component/spec/batch
+> { "components": [{ "type": "GraphicComponent", "variant": "comparison" }, ...] }
+> ```
+> 单次最多 20 个，超过分批。详见 [`../../references/components-catalog.md`](../../references/components-catalog.md) §"通过 API 查询字段详情"。
+> **严禁凭直觉编字段名**——只能用 API 返回的 key。**API 返回的 `hardcoded` 数组里的元素调不了**，用户问到时直接告诉他。
 
 **说明**：为每个区域的组件设计 customStyle，包括字号、颜色、阴影、圆角等。
 
@@ -713,7 +719,7 @@
 
 **说明**：确定每个组件的 start、end 和出现顺序。
 
-> ⚠️ **创作模式节奏强约束（详见 visual-richness-rules.md 门槛 7）**：
+> ⚠️ **创作模式节奏强约束（详见 [`../../references/timing-rules.md`](../../references/timing-rules.md)）**：
 > - 单一区域 duration ≤ 15 秒
 > - 末组件 start 到区域 end 间隔 ≤ 2 秒
 > - 同区域相邻组件 start 间隔 ≤ 3 秒
@@ -930,7 +936,7 @@
 10. **禁止 TitleComponent 的 customStyle 直接平铺**：必须有 `level{content.level}` 嵌套层（例：`{ "level1": { "fontSize": "60px", ... } }`），否则会触发 `customStyle 缺少 "level1"` 运行时报错
 11. **禁止 TextComponent 的 customStyle 直接平铺**：必须有 `paragraph` 或 `content.style` 嵌套层
 12. **禁止平铺类组件遗漏必填字段**：Image / Card / Quote / Badge / Corner / Shock / Graphic 各自有固定的必填字段表（见步骤 9.0），**任何字段空值或缺失都会运行时报错**
-13. **禁止在创作模式（无配音音频）的 project.json 写 `subtitles` 数组或 `audio` 字段**：纯图文视频挂字幕条非常违和，前端字幕渲染依赖 audio 时间轴，二者必须同生共死（详见 SKILL.md §2.4）
+13. **禁止在创作模式（无配音音频）的 project.json 写 `subtitles` 数组或 `audio` 字段**：纯图文视频挂字幕条非常违和，前端字幕渲染依赖 audio 时间轴，二者必须同生共死（详见 [`../../references/mode-rules.md`](../../references/mode-rules.md) §3）
 
 ---
 

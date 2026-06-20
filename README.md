@@ -71,45 +71,90 @@ git clone git@github.com:junyuaini/canvasvideo-skill.git
 
 ```
 canvasvideo-skill/
-├── SKILL.md                   # ⭐ 主入口（Skill 协议规范，AI 必读）
+├── SKILL.md                   # ⭐ 主流程文档（7 次交互编排，AI 必读）
 ├── README.md                  # 本文件（人类读的项目介绍）
 ├── LICENSE                    # MIT
 ├── .gitignore
 │
-├── references/                # 📚 知识库（AI 设计时查阅）
-│   ├── components-catalog.md  # 10 个组件的选型决策树（字段走 API，不在文档里）
-│   ├── themes-catalog.md      # 仅支持的两种主题：white / black
-│   └── visual-richness-rules.md # 7 条丰富度强制门槛（防止生成 low 视频）
+├── references/                # 📚 规则原典（hard rule 单一来源）
+│   ├── mode-rules.md          # 创作/口播模式 + 音频用法 + 字幕共生 + 默认 BGM
+│   ├── themes-catalog.md      # 主题二选一：white / black + 选型 + 沟通话术
+│   ├── timing-rules.md        # 节奏 4 条门槛 + settings 三参数
+│   ├── layout-rules.md        # viewport/canvas/regions 公式 + 组件 Y/尺寸 + 对比度 + 多样化
+│   ├── components-catalog.md  # 10 个组件选型决策树（字段走云端 API）
+│   ├── visual-richness-rules.md # 丰富度 6 条门槛 + 评分 + 提升示例
+│   ├── selfcheck-rules.md     # L0~L4 自检表 + 设计原则 + 丰富度评分
+│   ├── principles.md          # 不打扰用户 + 不强行追问 + 凭证安全等基本原则
+│   └── api-rules.md           # 服务端 API + 用户体系 + 工作目录路径推算
 │
 ├── templates/                 # 🎨 模板（AI 生成时复制/参考）
 │   ├── designs/
-│   │   └── video_design_guide.md  # 设计指南（步骤 0 + 五阶段十一步，权威）
+│   │   └── video_design_guide.md  # design.md 步骤 0~11 子流程（被 SKILL §3 调用）
 │   ├── projects/              # project.json 样板库
 │   │   ├── README.md          # 样板选型指南
-│   │   ├── 通用视频.json       # 最简兜底（仅作字段参考，禁止直接复制）
-│   │   ├── 示例-产品演示型-2分钟口播.json # 产品/工具演示样板
-│   │   └── 示例-案例分享型-1分钟口播.json # 案例/故事样板
+│   │   ├── 通用视频.json
+│   │   ├── 示例-产品演示型-2分钟口播.json
+│   │   └── 示例-案例分享型-1分钟口播.json
 │   ├── placeholders/          # 占位图资源
-│   │   ├── url-factory.md     # Picsum 占位图 + AggregateComponent 加水印速查
-│   │   ├── light/             # 浅色主题 SVG 兜底图（cta/hook/pain/result 等）
-│   │   └── dark/              # 深色主题 SVG 兜底图
+│   │   ├── url-factory.md     # Picsum + Aggregate 水印速查
+│   │   ├── light/             # 极简白主题 SVG 兜底图
+│   │   └── dark/              # 沉浸黑主题 SVG 兜底图
 │   └── bgm/                   # 内置 BGM
 │       ├── bgm-catalog.md     # 6 首 BGM 风格匹配决策树
 │       └── *.wav              # tech-pulse / warm-cafe / uplifting / corporate / light-pop / cinematic
 │
 ├── schema/
-│   └── project.schema.json    # project.json JSON Schema（结构强校验）
+│   └── project.schema.json    # project.json JSON Schema（与 server 同源）
 │
-└── scripts/                   # 🛠️ Node.js 工具脚本（AI 在工作流中调用）
-    ├── scaffold.js            # 创建工作目录 + 拉取占位素材
-    ├── state.js               # 项目本地状态管理（生成 skillProjectId 等）
+└── scripts/                   # 🛠️ Node.js 工具脚本
+    ├── scaffold.js            # 创建工作目录 + 拉取占位素材 + 写 design.md
+    ├── state.js               # skillProjectId 管理 + 确认状态
+    ├── schemaValidator.js     # 零依赖 JSON Schema 校验（与 server 同源）
     ├── validate.js            # 校验 project.json（schema + 业务规则）
     ├── package.js             # 打包 zip 准备上传
-    ├── upload-video.js        # 上传到云端拿到 previewToken
+    ├── upload-video.js        # 用户体系 + 上传，拿到 previewToken
     ├── generate-bgm.js        # 生成合成 BGM（兜底）
     ├── download-incompetech.js / .ps1 # 拉取 Incompetech 真实 BGM
     └── test-*.js              # 自测脚本
 ```
+
+---
+
+## 文档分层（理解架构）
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ 流程文档（Workflow）                                          │
+│                                                            │
+│ ┌─ 主流程 ─────────────────────────────────────┐           │
+│ │ SKILL.md  — 7 次交互的整体编排                 │           │
+│ └────────────────────────────────────────────┘           │
+│            ↓ 第二次交互展开                                   │
+│ ┌─ 子流程 ─────────────────────────────────────┐           │
+│ │ templates/designs/video_design_guide.md      │           │
+│ │ design.md 步骤 0~11 子流程                     │           │
+│ └────────────────────────────────────────────┘           │
+└────────────────────────────────────────────────────────────┘
+              ↓ 引用（横切）
+┌────────────────────────────────────────────────────────────┐
+│ 规则原典（Rules）                                              │
+│ references/*.md — 每条 hard rule 只在这里写一次                │
+│ 被主流程和子流程引用                                            │
+└────────────────────────────────────────────────────────────┘
+              ↓ 调用
+┌────────────────────────────────────────────────────────────┐
+│ 数据层（API + spec.json）                                      │
+│ 云端 API: /cv/api/component/spec/batch                      │
+│ 组件字段、默认值、写死项                                          │
+└────────────────────────────────────────────────────────────┘
+```
+
+**核心思想**：
+- **流程文档**回答"什么时候做什么"
+- **规则原典**回答"做的时候要遵守什么"
+- **数据层** API 回答"组件字段长什么样"
+
+每一类信息只在它该在的地方维护，互相通过引用链接而不重复内容。
 
 ---
 
