@@ -68,12 +68,12 @@ P5（PAIN）:
 
 ### 门槛 4：素材清单实现率 = 100%
 
-**含义**：design.md "用户素材清单"里**任何标记为非空状态（`[已具备]` / `[AI 自动生成]` / `[待用户提供]`）的素材**，**必须在 project.json 里有对应的 ImageComponent 引用**。
+**含义**：design.md "用户素材清单"里**任何标记为非空状态（`[已具备]` / `[AI 自动生成 - 占位]` / `[待用户提供]`）的素材**，**必须在 project.json 里有对应的 ImageComponent 引用**。
 
 **违例示例**：
 ```
 design.md 素材清单：
-  1. AI 大脑光效图 [AI 自动生成] - 用于 P1
+  1. AI 大脑光效图 [AI 自动生成 - 占位] - 用于 P1
   2. 办公场景图 [待用户提供] - 用于 P4
 
 project.json：
@@ -81,12 +81,45 @@ project.json：
 ```
 
 **修复方案**：
-- 删除清单中不需要的素材行（要诚实），或
-- 在 project.json 对应区域加 ImageComponent，path 指向 `./assets/images/{素材文件名}`
+
+#### A. `[AI 自动生成 - 占位]` 的素材 → 引用占位图
+
+详见 [`../templates/placeholders/url-factory.md`](../templates/placeholders/url-factory.md)，**两种引用方式都可以**：
+
+**方式 1（推荐）：在线水印图（placehold.co）**
+```json
+{
+  "type": "ImageComponent",
+  "content": {
+    "image": "https://placehold.co/1280x720/F3F4F6/6B7280/png?text=主视觉演示图%5Cn请自行替换&font=lato"
+  }
+}
+```
+
+**方式 2（备选）：本地 SVG 兜底**
+```json
+{
+  "type": "ImageComponent",
+  "content": {
+    "image": "./assets/placeholders/light/hook.svg",
+    "borderRadius": 0
+  }
+}
+```
+
+> Skill 的 `scripts/scaffold.js` 在调用 `scaffoldWorkdir({theme})` 时会自动复制 7 张 SVG 到工作目录的 `assets/placeholders/{light|dark}/`，所以 LLM **直接写本地路径就行，不用担心文件不存在**。
+
+#### B. `[待用户提供]` 的素材 → 也用占位图，提示用户后续替换
+
+LLM 不能凭空假设用户已提供，**仍然先用占位图**，但在 design.md 备注列写"用户提供后替换为真实素材"。
+
+#### C. `[已具备]` 的素材 → 用 `copyUserAsset()` 拷贝后的真实路径
+
+例：`./assets/images/logo.png`
 
 **特殊豁免**：
 - 用户明确说"不要图片，纯文字风格"时可以跳过门槛 4，但 design.md 素材清单也要清空
-- "占位素材未及时生成"不是豁免理由——也要写 ImageComponent，路径指向占位
+- "占位素材已自动生成"是合法做法——**所有占位图都自带"📷 演示图片 · 请自行替换"水印**，用户看到后会主动替换
 
 ### 门槛 5：GraphicComponent 至少使用 3 种 diagram 类型（适用于 ≥ 60 秒视频）
 

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#BFDBFE"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+
+  <!-- 柱状图 -->
+  <g transform="translate(640,360)">
+    <rect x="-260" y="-50" width="80" height="180" fill="#3B82F6"/>
+    <rect x="-130" y="-110" width="80" height="240" fill="#2563EB"/>
+    <rect x="0" y="-160" width="80" height="290" fill="#1D4ED8"/>
+    <rect x="130" y="-200" width="80" height="330" fill="#1E40AF"/>
+    <line x1="-300" y1="130" x2="240" y2="130" stroke="#1E3A8A" stroke-width="3"/>
+    <text x="-220" y="-65" text-anchor="middle" font-size="24" font-weight="900" fill="#1E3A8A">42%</text>
+    <text x="-90" y="-125" text-anchor="middle" font-size="24" font-weight="900" fill="#1E3A8A">68%</text>
+    <text x="40" y="-175" text-anchor="middle" font-size="24" font-weight="900" fill="#1E3A8A">85%</text>
+    <text x="170" y="-215" text-anchor="middle" font-size="24" font-weight="900" fill="#1E3A8A">96%</text>
+  </g>
+
+  <text x="640" y="555" text-anchor="middle"
+        font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+        font-size="32" font-weight="700" fill="#1E3A8A" letter-spacing="2">
+    RESULT · 数据成果
+  </text>
+
+  <g transform="translate(640,635)">
+    <rect x="-260" y="-26" width="520" height="52" rx="26"
+          fill="#FFFFFF" opacity="0.9" stroke="#93C5FD" stroke-width="1"/>
+    <text x="0" y="6" text-anchor="middle"
+          font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+          font-size="20" font-weight="600" fill="#1E3A8A">
+      📷 演示图片 · 请自行替换
+    </text>
+  </g>
+</svg>

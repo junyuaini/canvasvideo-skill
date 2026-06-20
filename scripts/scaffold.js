@@ -4,12 +4,33 @@
  * 功能：
  *  - ensureWorkdirRoot       ：确保工作根目录 canvasvideo-workdir/ 存在
  *  - ensureProjectWorkdir    ：确保某个项目的工作目录存在（含 assets/ 与 assets/images/）
+ *  - ensurePlaceholders      ：把占位 SVG 复制到工作目录的 assets/placeholders/{theme}/
  *  - scaffoldWorkdir         ：根据素材清单批量创建占位文件
  *  - writeDesignMd / readDesignMd ：读写设计文档
  *  - copyUserAsset           ：把用户提供的素材安全拷贝到 assets/，校验路径不越界
  */
 const fs = require('fs');
 const path = require('path');
+
+/**
+ * 7 个标准 hint 关键词（与 templates/placeholders/{theme}/{hint}.svg 一一对应）
+ */
+const PLACEHOLDER_HINTS = ['hook', 'scene', 'pain', 'solve', 'result', 'cta', 'generic'];
+
+/**
+ * 主题枚举
+ */
+const VALID_THEMES = ['white', 'black'];
+
+/**
+ * 把 theme 映射到 placeholders 子目录
+ *  white -> light
+ *  black -> dark
+ */
+function themeToPlaceholderDir(theme) {
+  if (theme === 'black') return 'dark';
+  return 'light'; // default & white
+}
 
 /**
  * 确保工作根目录存在（canvasvideo-workdir/ 自身）
@@ -39,14 +60,55 @@ function ensureProjectWorkdir(workdirRoot, skillProjectId) {
 }
 
 /**
+ * 把 templates/placeholders/{theme}/*.svg 复制到工作目录的
+ * assets/placeholders/{theme}/，方便 LLM 直接在 project.json 引用本地 SVG。
+ *
+ * @param {string} workdirRoot
+ * @param {string} skillProjectId
+ * @param {string} theme - 'white' | 'black'，默认 'white'
+ * @returns {Object} { copied: string[], targetDir: string }
+ */
+function ensurePlaceholders(workdirRoot, skillProjectId, theme = 'white') {
+  const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
+  const themeDir = themeToPlaceholderDir(theme);
+
+  // Skill 端的占位图源目录（templates/placeholders/{light|dark}/）
+  const sourceDir = path.resolve(__dirname, '..', 'templates', 'placeholders', themeDir);
+  if (!fs.existsSync(sourceDir)) {
+    throw new Error(`占位图模板目录不存在：${sourceDir}`);
+  }
+
+  // 工作目录的占位图目录
+  const targetDir = path.join(workdir, 'assets', 'placeholders', themeDir);
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  const copied = [];
+  for (const hint of PLACEHOLDER_HINTS) {
+    const src = path.join(sourceDir, `${hint}.svg`);
+    const dst = path.join(targetDir, `${hint}.svg`);
+    if (fs.existsSync(src) && !fs.existsSync(dst)) {
+      fs.copyFileSync(src, dst);
+      copied.push(`assets/placeholders/${themeDir}/${hint}.svg`);
+    }
+  }
+  return { copied, targetDir };
+}
+
+/**
  * 创建 workdir 目录结构 + 按素材清单批量占位
  * @param {string} workdirRoot
  * @param {string} skillProjectId
- * @param {Object} assetChecklist - 素材清单（类别 -> [{ path, status, type }]）
+ * @param {Object} assetChecklist - 素材清单（类别 -> [{ path, status, type, hint? }]）
+ * @param {Object} [options]
+ * @param {string} [options.theme] - 'white' | 'black'，决定图片占位的色调，默认 'white'
  * @returns {string} 项目工作目录路径
  */
-function scaffoldWorkdir(workdirRoot, skillProjectId, assetChecklist = {}) {
+function scaffoldWorkdir(workdirRoot, skillProjectId, assetChecklist = {}, options = {}) {
+  const theme = options.theme || 'white';
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
+
+  // 不论素材清单怎么样，先把整套占位 SVG 复制到 workdir，作为兜底
+  ensurePlaceholders(workdirRoot, skillProjectId, theme);
 
   for (const [, items] of Object.entries(assetChecklist)) {
     if (!Array.isArray(items)) continue;
@@ -59,7 +121,7 @@ function scaffoldWorkdir(workdirRoot, skillProjectId, assetChecklist = {}) {
         }
         fs.mkdirSync(path.dirname(fullPath), { recursive: true });
         if (!fs.existsSync(fullPath)) {
-          fs.writeFileSync(fullPath, createPlaceholder(item.type));
+          fs.writeFileSync(fullPath, createPlaceholder(item.type, item.hint, theme));
         }
       }
     }
@@ -69,15 +131,31 @@ function scaffoldWorkdir(workdirRoot, skillProjectId, assetChecklist = {}) {
 
 /**
  * 创建占位文件内容
+ *  - audio    : 空 mp3 占位（0 字节，用户必须替换）
+ *  - srt      : 一条占位字幕
+ *  - image    : 按 hint + theme 从 templates/placeholders 选择 SVG 内容返回
  */
-function createPlaceholder(type) {
+function createPlaceholder(type, hint, theme) {
   switch (type) {
     case 'audio':
       return '';
     case 'srt':
       return '1\n00:00:00,000 --> 00:00:05,000\n占位字幕\n\n';
-    case 'image':
-      return '';
+    case 'image': {
+      const themeDir = themeToPlaceholderDir(theme || 'white');
+      const safeHint = PLACEHOLDER_HINTS.includes((hint || '').toLowerCase())
+        ? hint.toLowerCase()
+        : 'generic';
+      const svgPath = path.resolve(__dirname, '..', 'templates', 'placeholders', themeDir, `${safeHint}.svg`);
+      if (fs.existsSync(svgPath)) {
+        return fs.readFileSync(svgPath, 'utf-8');
+      }
+      // 兜底：返回最小可用 SVG
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">'
+        + '<rect width="1280" height="720" fill="#F3F4F6"/>'
+        + '<text x="640" y="360" text-anchor="middle" font-size="32" fill="#6B7280">📷 演示图片 · 请自行替换</text>'
+        + '</svg>';
+    }
     default:
       return '';
   }
@@ -137,8 +215,10 @@ function isPathInside(child, parent) {
 module.exports = {
   ensureWorkdirRoot,
   ensureProjectWorkdir,
+  ensurePlaceholders,
   scaffoldWorkdir,
   writeDesignMd,
   readDesignMd,
   copyUserAsset,
+  PLACEHOLDER_HINTS,
 };

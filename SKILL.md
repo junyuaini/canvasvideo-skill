@@ -175,6 +175,7 @@ canvasvideo-workdir/{skillProjectId}/
 | [`references/components-catalog.md`](./references/components-catalog.md) | 10 个组件的 content / customStyle / 适用场景 / 反例 / 选型决策树 | 步骤 7 选组件、步骤 9 写 customStyle |
 | [`references/themes-catalog.md`](./references/themes-catalog.md) | 仅支持的两种主题（white/black）色板 + 选型决策 + 自定义主题应对话术 | 步骤 5 选主题、用户提自定义主题需求时 |
 | [`references/visual-richness-rules.md`](./references/visual-richness-rules.md) | 6 条丰富度强制门槛 + 丰富度评分表 + 提升组合拳示例 | 步骤 11 自检（必含 L4 丰富度检查）、生成 project.json 前最后自查 |
+| [`templates/placeholders/url-factory.md`](./templates/placeholders/url-factory.md) | 占位图速查表：placehold.co 在线水印 URL × 14 + 本地 SVG × 14 + 引用策略 | 写素材清单 / project.json 中 ImageComponent 时（特别是 `[AI 自动生成 - 占位]` 状态） |
 | [`templates/projects/README.md`](./templates/projects/README.md) | 示例项目索引（按场景选 base） | 步骤 0 确定模式后 |
 | [`templates/projects/示例-产品演示型-2分钟口播.json`](./templates/projects/示例-产品演示型-2分钟口播.json) | 产品/工具演示型完整样板（120s） | 用户做产品演示时参考节奏与组件搭配 |
 | [`templates/projects/示例-案例分享型-1分钟口播.json`](./templates/projects/示例-案例分享型-1分钟口播.json) | 案例/故事分享型完整样板（53s） | 用户做案例分享时参考五段式叙事 |
@@ -280,6 +281,9 @@ LLM **必须**按以下格式输出，不可省略任何元素：
 📤 这条链接可以直接分享给同事、朋友、客户或社群——
    点开即看，无需登录、无需安装任何 App，桌面/手机都能播放。
 
+💡 视频里的图片是 Skill 自动生成的占位图（带"📷 演示图片 · 请自行替换"水印）。
+   如果想让视频更真实，把真实素材放到 ./assets/images/ 下，重新打包上传即可替换。
+
 ⚠️ 重要：本次为你创建了 CanvasVideo 账号
 
   userId:    {user.userId}
@@ -300,6 +304,8 @@ LLM **必须**按以下格式输出，不可省略任何元素：
 
 📤 链接可以直接分享给同事、朋友、客户或社群——
    点开即看，无需登录、无需安装任何 App，桌面/手机都能播放。
+
+💡 如果有用占位图（带水印的演示图），把真实素材放到 ./assets/images/ 重新打包上传即可替换。
 ```
 
 **严禁**在非首次输出中泄露 userId / userToken。
@@ -427,7 +433,10 @@ canvasvideo-skill/
 │   │   ├── 通用视频.json        # 最简兜底模板
 │   │   ├── 示例-产品演示型-2分钟口播.json  # 产品演示样板
 │   │   └── 示例-案例分享型-1分钟口播.json  # 案例叙事样板
-│   └── placeholders/           # 占位素材
+│   └── placeholders/           # ⭐ 占位图模板（带水印的 SVG，按主题/场景）
+│       ├── url-factory.md      # 占位图速查表（在线 URL + 本地 SVG）
+│       ├── light/              # 极简白主题占位（hook/scene/pain/solve/result/cta/generic）
+│       └── dark/               # 沉浸黑主题占位
 └── scripts/
     ├── scaffold.js             # ensureWorkdir / 写 design.md / 拷贝用户素材
     ├── state.js                # 读写 .canvasvideo/project-state.json

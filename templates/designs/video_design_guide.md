@@ -795,18 +795,22 @@
 
 | 状态 | 含义 | Skill 行为 |
 |------|------|-----------|
-| `[已具备]` | 用户已通过 `copyUserAsset()` 提供素材 | 直接使用 |
-| `[待用户提供]` | AI 强烈建议用户准备真实素材以提升真实度 | 等待用户上传后切换为 `[已具备]` |
-| `[AI 自动生成]` | 用户未提供时由 Skill 自动用占位素材或 AI 生成图 | scaffold 时自动创建占位 |
+| `[已具备]` | 用户已通过 `copyUserAsset()` 提供素材 | 直接使用真实路径（如 `./assets/images/logo.png`） |
+| `[待用户提供]` | 建议用户提供以提升真实度，但当前先用占位图 | scaffold 自动复制 SVG 占位 + project.json 引用占位 URL/SVG |
+| `[AI 自动生成 - 占位]` | 由 Skill 自动生成水印占位图（在线 URL 或本地 SVG） | scaffold 自动复制对应主题的 SVG，project.json 写占位路径 |
+
+> **占位图由 Skill 主动管理**：调用 `scaffoldWorkdir({theme})` 时会把 `templates/placeholders/{light|dark}/` 下的 7 张 SVG（hook/scene/pain/solve/result/cta/generic）复制到 `assets/placeholders/{light|dark}/`。
+> 所有占位图**自带水印 "📷 演示图片 · 请自行替换"**，引导用户替换为真实素材。
+> 详见 [`../../templates/placeholders/url-factory.md`](../../templates/placeholders/url-factory.md)。
 
 **模式差异化**：
-- **创作模式**：所有缺失素材标 `[AI 自动生成]`（默认）；用户主动提供后切换为 `[已具备]`
+- **创作模式**：所有缺失素材标 `[AI 自动生成 - 占位]`（默认）；用户主动提供后切换为 `[已具备]`
 - **口播模式**：音频/SRT **必须**标 `[已具备]`（不允许 AI 生成）；其它素材按创作模式规则
 
 **素材替换说明**：
-- 标注为 `[AI 自动生成]` 的素材，后期可替换为真实文件
-- 标注为 `[待用户提供]` 的素材，准备好后放入对应路径即可
-- 替换素材后无需修改配置，文件名保持一致即可生效
+- 占位图都带醒目水印，用户一眼就能识别"这是占位图"
+- 用户在 `assets/images/` 下放真实素材（与素材清单中的"存放路径"对齐）后，重新打包上传即可替换
+- 替换素材后无需修改配置，**前提是文件名 + 路径与 project.json 写的一致**
 
 ---
 
