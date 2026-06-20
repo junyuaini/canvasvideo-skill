@@ -38,7 +38,7 @@ Skill 的 `scripts/scaffold.js` 在调用 `scaffoldWorkdir({theme})` 时**自动
 
 > SVG 是矢量图，建议 `borderRadius: 0`（视频规则 L2 检查项：主体图片不带圆角）。
 >
-> **每张 SVG 都自带水印 "※ 演示图片 请自行替换"**，文字使用 `-apple-system, Segoe UI, Roboto, PingFang SC, Microsoft YaHei` 字体栈，确保中文渲染正常。
+> **每张 SVG 都自带水印 "※ 演示图片 请替换"**，文字位于画布**正中央**（半透明 0.45），即使图片被裁剪也能看到。文字使用 `-apple-system, Segoe UI, Roboto, PingFang SC, Microsoft YaHei` 字体栈，确保中文渲染正常。
 
 ---
 
@@ -94,7 +94,7 @@ Skill 的 `scripts/scaffold.js` 在调用 `scaffoldWorkdir({theme})` 时**自动
 ## ⚠️ 严禁
 
 - ❌ **不要在 project.json 写不存在的本地路径**（如 `./assets/images/random.png` 但实际未生成文件）
-- ❌ **不要假装某张图是用户提供的真实素材**——所有占位图必须保留水印 "※ 演示图片 请自行替换"
+- ❌ **不要假装某张图是用户提供的真实素材**——所有占位图必须保留水印 "※ 演示图片 请替换"
 - ❌ **不要修改 SVG 内的水印文字**（修改了等于欺骗用户）
 - ❌ **不要混用主题**（black 主题项目用 light SVG 会显得违和）
 - ❌ **placehold.co URL 严禁写中文水印**（lato/roboto 字体不含中文，会渲染成方块）

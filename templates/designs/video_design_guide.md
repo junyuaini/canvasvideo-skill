@@ -836,7 +836,7 @@
 | `[AI 自动生成 - 占位]` | 由 Skill 自动生成水印占位图（在线 URL 或本地 SVG） | scaffold 自动复制对应主题的 SVG，project.json 写占位路径 |
 
 > **占位图由 Skill 主动管理**：调用 `scaffoldWorkdir({theme})` 时会把 `templates/placeholders/{light|dark}/` 下的 7 张 SVG（hook/scene/pain/solve/result/cta/generic）复制到 `assets/placeholders/{light|dark}/`。
-> 所有占位图**自带水印 "※ 演示图片 请自行替换"**，引导用户替换为真实素材。
+> 所有占位图**自带水印 "※ 演示图片 请替换"**，引导用户替换为真实素材。
 > 详见 [`../../templates/placeholders/url-factory.md`](../../templates/placeholders/url-factory.md)。
 
 **模式差异化**：

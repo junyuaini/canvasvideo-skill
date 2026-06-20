@@ -360,6 +360,10 @@ if (require.main === module) {
       console.log('✅ 视频已上线：' + res.previewUrl);
       console.log('📤 这条链接可以直接分享给同事、朋友、客户或社群——');
       console.log('   点开即看，无需登录、无需安装任何 App，桌面/手机都能播放。');
+      console.log('');
+      console.log('🎮 快捷键：空格=播放/暂停 · ←→=快进快退 · 双击空格=全景 · ↑↓=显示/隐藏组件 ID');
+      console.log('🖼️ 替换占位图：把图片放到 ./assets/images/，然后让 AI "把 P3-004 替换成 my-photo.png"');
+      console.log('🛠️ 调整组件：先按 ↑ 显示 ID，再让 AI "P4-001 再大一点 / P3-003 改成红色"');
       process.exit(0);
     })
     .catch(err => {

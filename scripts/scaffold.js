@@ -150,10 +150,10 @@ function createPlaceholder(type, hint, theme) {
       if (fs.existsSync(svgPath)) {
         return fs.readFileSync(svgPath, 'utf-8');
       }
-      // 兜底：返回最小可用 SVG
+      // 兜底：返回最小可用 SVG（水印居中 + 半透明，裁剪也可见）
       return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">'
         + '<rect width="1280" height="720" fill="#F3F4F6"/>'
-        + '<text x="640" y="360" text-anchor="middle" font-size="32" fill="#6B7280" font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif">※ 演示图片 请自行替换</text>'
+        + '<g opacity="0.45"><text x="640" y="380" text-anchor="middle" font-size="42" font-weight="700" fill="#475569" letter-spacing="3" font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif">※ 演示图片 请替换</text></g>'
         + '</svg>';
     }
     default:

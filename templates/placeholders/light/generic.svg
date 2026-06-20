@@ -33,4 +33,13 @@
       ※ 演示图片  请自行替换
     </text>
   </g>
+
+  <!-- 中央水印（居中 + 半透明，裁剪也可见） -->
+  <g opacity="0.45">
+    <text x="640" y="360" text-anchor="middle"
+          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
+          font-size="42" font-weight="700" fill="#475569" letter-spacing="3">
+      ※ 演示图片 请替换
+    </text>
+  </g>
 </svg>
