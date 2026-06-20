@@ -86,6 +86,20 @@ function validate(projectOrPath) {
       errors.push(`theme 仅支持 "white" / "black"，当前值 "${project.theme}" 不允许（v1.4 不支持自定义主题）`);
     }
   }
+
+  // settings 三个动画参数（详见 SKILL.md §2.6.2）
+  if (project.settings && typeof project.settings === 'object') {
+    const s = project.settings;
+    if (typeof s.preFullViewDuration === 'number' && s.preFullViewDuration > 0.6) {
+      errors.push(`settings.preFullViewDuration 必须 ≤ 0.6（当前 ${s.preFullViewDuration}），推荐 0.4`);
+    }
+    if (typeof s.postFullViewDuration === 'number' && s.postFullViewDuration > 0.6) {
+      errors.push(`settings.postFullViewDuration 必须 ≤ 0.6（当前 ${s.postFullViewDuration}），推荐 0.4`);
+    }
+    if (typeof s.contentZoomRatio === 'number' && (s.contentZoomRatio < 0.85 || s.contentZoomRatio > 0.95)) {
+      errors.push(`settings.contentZoomRatio 必须在 0.85-0.95 区间（当前 ${s.contentZoomRatio}），推荐 0.9`);
+    }
+  }
   
   // viewport
   if (project.viewport) {

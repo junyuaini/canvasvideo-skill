@@ -19,8 +19,8 @@
     "ease": 0.08,
     "contentZoomRatio": 0.9,
     "maxScale": 5,
-    "preFullViewDuration": 0.6,
-    "postFullViewDuration": 0.6
+    "preFullViewDuration": 0.4,
+    "postFullViewDuration": 0.4
   },
   "regions": [
     {

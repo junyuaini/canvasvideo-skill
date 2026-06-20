@@ -128,9 +128,27 @@
         "minScale": { "type": "number" },
         "maxScale": { "type": "number" },
         "ease": { "type": "number" },
-        "contentZoomRatio": { "type": "number" },
-        "preFullViewDuration": { "type": "number" },
-        "postFullViewDuration": { "type": "number" }
+        "contentZoomRatio": {
+          "type": "number",
+          "minimum": 0.85,
+          "maximum": 0.95,
+          "default": 0.9,
+          "description": "视频播放区域内容缩放比例，推荐 0.9（区间 0.85-0.95）"
+        },
+        "preFullViewDuration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.6,
+          "default": 0.4,
+          "description": "视频开始前的全景预览时长（秒），推荐 0.4，最大 0.6"
+        },
+        "postFullViewDuration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.6,
+          "default": 0.4,
+          "description": "视频结束后的全景回收时长（秒），推荐 0.4，最大 0.6"
+        }
       }
     }
   },
