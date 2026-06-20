@@ -85,11 +85,13 @@ project.json：
 
 #### A. `[AI 自动生成 - 占位]` 的素材 → 引用占位图
 
-详见 [`../templates/placeholders/url-factory.md`](../templates/placeholders/url-factory.md)。**默认使用 Unsplash 图床 + Aggregate 叠中文水印**：
+详见 [`../templates/placeholders/url-factory.md`](../templates/placeholders/url-factory.md)。**默认使用 Pollinations AI 生成图 + Aggregate 叠中文水印**：
 
-**方式 1（推荐 / 默认）：Unsplash 图床 + AggregateComponent 叠水印**
+**方式 1（推荐 / 默认）：Pollinations AI 生成图 + AggregateComponent 叠水印**
 
-视觉效果最好：真实摄影图 + 自加中文胶囊水印"※ 演示图片 请替换"，主题相关性远超几何 SVG。
+视觉效果最好、主题最匹配：根据英文 prompt 实时生成 AI 图片 + 自加中文胶囊水印"※ 演示图片 请替换"。
+
+Prompt 公式：`{主体} + {场景/动作} + {光线/氛围} + {风格修饰}`（英文，控制在 100 词以内）
 
 ```json
 {
@@ -104,7 +106,7 @@ project.json：
       "type": "ImageComponent",
       "position": { "x": 0, "y": 0, "w": 760, "h": 480 },
       "content": {
-        "image": "https://source.unsplash.com/1280x720/?ai,technology",
+        "image": "https://image.pollinations.ai/prompt/futuristic%20AI%20brain%20network%20blue%20neon?width=1280&height=720&nologo=true",
         "fit": "cover",
         "borderRadius": 12
       },
@@ -133,7 +135,7 @@ project.json：
 
 **方式 2（备选 / 离线兜底）：本地 SVG**
 
-用户内网部署或 Unsplash 不可达时使用。SVG 自带水印，**不要再叠 Aggregate**。
+Pollinations AI 不可达 / 超时 / 用户拒绝远程图时使用。SVG 自带水印，**不要再叠 Aggregate**。
 
 ```json
 {
