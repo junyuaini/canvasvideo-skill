@@ -93,7 +93,7 @@ canvasvideo-skill/
 ├── schema/
 │   └── project.schema.json    # 视频项目 Schema
 └── templates/
-    ├── designs/               # 设计文档模板
+    ├── designs/               # 设计文档规范（video_design_guide.md，权威）
     └── projects/              # 视频项目模板
 ```
 

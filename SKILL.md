@@ -93,7 +93,27 @@ canvasvideo-workdir/{skillProjectId}/
     └── project-state.json
 ```
 
-### 3.1 素材清单状态
+### 3.1 ⚠️ 强制规范：必须遵循 video_design_guide.md
+
+**`design.md` 的内容必须严格按照 [`templates/designs/video_design_guide.md`](./templates/designs/video_design_guide.md) 的"步骤 0 + 五阶段十一步 + 用户素材清单"产出**：
+
+- 步骤 0：视频目标（项目元信息表）
+- 阶段一（步骤 1-3）：文案分段、内容类型标注、风格识别 + 情绪曲线
+- 阶段二（步骤 4-5）：区域规划、主题配色方案
+- 阶段三（步骤 6-8）：ASCII 布局图、组件清单、节奏设计
+- 阶段四（步骤 9-10）：customStyle、时间轴
+- 阶段五（步骤 11）：自检报告（L0-L3 + 设计原则）
+- 附加：用户素材清单（含状态标注）
+
+**严禁**：
+- 跳过任何阶段或步骤
+- 一次性输出所有产出（必须按顺序逐步生成）
+- 留空表格单元格
+- 自检报告全部填"通过"
+- 使用 theme（必须用 customStyle）
+- 组件 ID 用英文单词（必须用 `{区域}-###` 格式）
+
+### 3.2 素材清单状态
 
 | 状态 | 含义 |
 |------|------|
@@ -101,12 +121,14 @@ canvasvideo-workdir/{skillProjectId}/
 | `[待用户提供]` | 建议用户提供以提升真实度 |
 | `[AI 自动生成]` | 未提供时由 Skill 自动生成或选用占位 |
 
-### 3.2 模式差异化
+详细规则见 [`video_design_guide.md`](./templates/designs/video_design_guide.md) 的"附加产出：用户素材清单 → 状态标注规则"章节。
 
-- 创作模式：所有缺失素材标 `[AI 自动生成]`
-- 口播模式：音频/SRT 标 `[已具备]`（必须已提供），其它可标 `[AI 自动生成]`
+### 3.3 模式差异化
 
-### 3.3 用户已提供素材的处理
+- **创作模式**：所有缺失素材标 `[AI 自动生成]`
+- **口播模式**：音频/SRT 标 `[已具备]`（必须已提供），其它可标 `[AI 自动生成]`
+
+### 3.4 用户已提供素材的处理
 
 通过 `copyUserAsset()` 安全拷贝到 `assets/`，**复制不是引用**；自动检查路径穿越。
 
@@ -296,7 +318,8 @@ canvasvideo-skill/
 ├── schema/
 │   └── project.schema.json     # 视频项目 JSON Schema
 ├── templates/
-│   ├── designs/                # 设计文档模板（按场景）
+│   ├── designs/                # 设计文档规范（权威）
+│   │   └── video_design_guide.md  # ★ 步骤 0 + 五阶段十一步 + 状态标注
 │   ├── projects/               # 视频项目模板
 │   └── placeholders/           # 占位素材
 └── scripts/
