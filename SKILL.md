@@ -296,6 +296,73 @@ P3 区：start=24, end=36, duration=12s
 - 写每行 3 个（与已有真实示例不一致，破坏视觉节奏）
 - 行 1 用 y=50 但行 2 没有用 y=650（跨行间距必须固定 600）
 
+#### 2.6.3 组件 Y 坐标：必须连续递增，禁止重叠
+
+**规则**：同一区域内，所有组件的 `position.y` 必须**严格递增**，后一个组件的 `y` 必须 ≥ 前一个组件的 `y + h + 间距`（建议间距 10-20px）。
+
+**错误示例**（P1-006/P1-007/P1-008 的 y 都回退到 0，与 Title 重叠）：
+```json
+// ❌ 错误：y 坐标回退，组件堆叠
+{ "id": "P1-001", "position": { "y": 0,   "h": 90 } },  // bottom=90
+{ "id": "P1-002", "position": { "y": 95,  "h": 50 } },  // bottom=145
+{ "id": "P1-003", "position": { "y": 150, "h": 44 } },  // bottom=194
+{ "id": "P1-004", "position": { "y": 200, "h": 300 } }, // bottom=500
+{ "id": "P1-005", "position": { "y": 510, "h": 60 } },  // bottom=570
+{ "id": "P1-006", "position": { "y": 0,   "h": 80 } },  // ❌ y=0 < 570，重叠！
+{ "id": "P1-007", "position": { "y": 0,   "h": 100 } }, // ❌ y=0 < 570，重叠！
+{ "id": "P1-008", "position": { "y": 0,   "h": 120 } }  // ❌ y=0 < 570，重叠！
+```
+
+**正确示例**：
+```json
+// ✅ 正确：y 坐标连续递增
+{ "id": "P1-001", "position": { "y": 0,   "h": 90 } },  // bottom=90
+{ "id": "P1-002", "position": { "y": 100, "h": 50 } },  // bottom=150
+{ "id": "P1-003", "position": { "y": 165, "h": 44 } },  // bottom=209
+{ "id": "P1-004", "position": { "y": 220, "h": 300 } }, // bottom=520
+{ "id": "P1-005", "position": { "y": 535, "h": 60 } },  // bottom=595
+{ "id": "P1-006", "position": { "y": 605, "h": 80 } },  // ✅ y=605 ≥ 595+10
+{ "id": "P1-007", "position": { "y": 695, "h": 100 } }, // ✅ y=695 ≥ 605+10
+{ "id": "P1-008", "position": { "y": 805, "h": 120 } }  // ✅ y=805 ≥ 695+10
+```
+
+**自检公式**：生成完一个区域的所有组件后，按 `y` 排序，检查是否满足 `sorted[i].y ≥ sorted[i-1].y + sorted[i-1].h + 10`。不满足必须修正。
+
+**严禁**：
+- 同一区域内出现两个组件 `y` 相同或后一个 `y` 小于前一个的 `bottom`
+- 为了"对齐美观"故意把后面组件的 `y` 设成 0（这是严重错误）
+
+#### 2.6.4 区域布局：必须多样化，禁止复制粘贴
+
+**规则**：相邻区域（如 P1→P2→P3）的组件结构、类型顺序、排列方式**不能完全相同**。必须至少有 3 种不同的布局模板交替使用。
+
+**错误示例**（所有 10 个区域都是完全相同的 8 组件结构）：
+```
+P1: Title → Text → Badge → Aggregate(Image+Shock) → Text → Shock → Quote → Card
+P2: Title → Text → Badge → Aggregate(Image+Shock) → Text → Shock → Quote → Card  ❌ 与 P1 完全相同
+P3: Title → Text → Badge → Aggregate(Image+Shock) → Text → Shock → Quote → Card  ❌ 与 P1 完全相同
+...
+P10: 同上 ❌
+```
+
+**正确示例**（3 种布局模板交替）：
+```
+P1（模板 A）: Title → Text → Aggregate(Image+Shock) → Text → Shock → Quote
+P2（模板 B）: Title → Badge → Image → Text → Card → Quote
+P3（模板 C）: Title → Text → Image → Shock → Quote → Card
+P4（模板 A）: Title → Text → Aggregate(Image+Shock) → Text → Shock → Quote  ✅ 与 P1 相同但间隔 3 个区域
+...
+```
+
+**布局变化维度**（至少变化 2 个以上）：
+1. **组件数量**：有的区域 5 个组件，有的 7 个，有的 9 个
+2. **组件类型组合**：有的区域用 Card，有的不用；有的用 GraphicComponent，有的用 ImageComponent
+3. **排列顺序**：图片放上面还是放中间；Quote 放开头还是结尾
+4. **有无 Aggregate**：有的区域图片直接放顶层，有的包在 Aggregate 里
+5. **文字密度**：有的区域以图为主（1 图+2 文），有的以文为主（4 文+1 图）
+
+**自检方法**：生成完所有区域后，把每个区域的"组件类型序列"列出来对比。如果任意两个相邻区域的类型序列完全相同，必须修改其中一个。
+
 #### 2.6.2 settings 三个动画参数（必须设置，有上限）
 
 **视频开始/结束/区域切换的三个过渡时长，影响整体节奏**：
