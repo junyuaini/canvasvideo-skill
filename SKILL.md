@@ -619,8 +619,8 @@ canvasvideo-skill/
 工作目录（自动创建，不要求用户准备）：
 
 ```
-canvasvideo-workdir/                  ← 与 canvasvideo-skill/ 同级
-├── .user.json                        ← 极简两字段：{ userId, userToken }
+{Agent 当前工作目录}/canvasvideo-workdir/    ← ⭐ 默认放在 Agent CWD 下
+├── .user.json                                ← 极简两字段：{ userId, userToken }
 └── {skillProjectId}/
     ├── design.md
     ├── project.json
@@ -634,13 +634,48 @@ canvasvideo-workdir/                  ← 与 canvasvideo-skill/ 同级
 
 ## 九、工作目录路径推算（LLM 视角）
 
-LLM 读 `SKILL.md` 时持有此文件的绝对路径，由此推算：
+> ⚠️ **重要变更（v1.5）**：工作目录从"Skill 目录的父目录"改为 **Agent 当前工作目录（CWD）**。
+> **原因**：Skill 安装目录（如 `C:\Users\xxx\.trae-cn\skills\canvasvideo\`）通常需要管理员权限，且全局共享会冲突；放到 Agent CWD（用户当前打开的项目目录）下更符合直觉，权限稳定，每个项目互不干扰。
+
+### 9.1 路径推算优先级
+
+LLM 必须按以下顺序确定工作根目录：
+
+| 优先级 | 路径来源 | 计算公式 |
+|---|---|---|
+| **第 1 优先** | **Agent 当前工作目录（CWD）** | `process.cwd() + "/canvasvideo-workdir/"` |
+| 第 2 优先（兜底） | Skill 目录的父目录 | `path.dirname(SKILL.md 父目录) + "/canvasvideo-workdir/"`（只在 Agent 无法获取 CWD 时用） |
+
+### 9.2 LLM 实现指引（必读）
+
+**在 Trae / Cursor / Claude Code 等主流 Agent 中**：
+- LLM 默认有"当前工作目录"概念（用户当前打开的项目根目录）
+- LLM 在调用 Node 脚本时，工作目录就是当前 Agent CWD
+- **LLM 必须把 `workdirRoot` 设为 Agent CWD 下的 `canvasvideo-workdir/`**
+
+```javascript
+// ✅ 推荐写法（v1.5 起）
+const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
+
+// ❌ 旧写法（v1.4 及以前），权限可能受限
+const skillDir = path.dirname(__filename); // SKILL.md 父目录
+const workdirRoot = path.resolve(skillDir, '../canvasvideo-workdir');
+```
+
+**给用户的提示**（首次启动时）：
+> 我会在你当前的项目目录下创建一个 `canvasvideo-workdir/` 文件夹，存放所有视频项目和登录凭证。如果不希望放在这里，请明确告诉我目标路径。
+
+### 9.3 路径推算汇总表
 
 | 项 | 计算 |
 |---|---|
-| Skill 目录 | SKILL.md 的父目录 |
-| 工作根目录 | Skill 目录的父目录 + `canvasvideo-workdir/` |
+| Agent 当前工作目录（CWD） | `process.cwd()` |
+| 工作根目录 | **CWD + `canvasvideo-workdir/`** |
 | 项目工作目录 | 工作根目录 + `{skillProjectId}/` |
+| 用户凭证文件 | 工作根目录 + `.user.json` |
+| 设计文档 | 项目工作目录 + `design.md` |
+| 项目 JSON | 项目工作目录 + `project.json` |
+| 用户素材目录 | 项目工作目录 + `assets/images/` |
 
 **任何首次写文件前都应调用 `ensureProjectWorkdir(workdirRoot, skillProjectId)`**，不要假设目录存在。
 
@@ -749,9 +784,8 @@ data/users/{userId}.json
 ### 13.1 首次创建视频
 
 ```js
-// 路径推算
-const skillDir = path.dirname(__filename); // canvasvideo-skill/
-const workdirRoot = path.resolve(skillDir, '../canvasvideo-workdir');
+// 路径推算（v1.5：使用 Agent CWD，不再依赖 Skill 目录）
+const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
 
 // 1. 状态
 const state = require('./scripts/state').loadOrCreateProject(workdir);
