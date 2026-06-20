@@ -10,8 +10,8 @@
     },
     "theme": {
       "type": "string",
-      "description": "主题名称",
-      "enum": ["white", "black", "default"]
+      "description": "主题名称：仅支持 white（白色清爽商务风）和 black（深色科技沉浸风），不支持自定义",
+      "enum": ["white", "black"]
     },
     "duration": {
       "type": "number",
