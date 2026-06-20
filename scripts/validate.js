@@ -60,10 +60,31 @@ function validate(projectOrPath) {
       if (!sub.text) errors.push(`subtitles[${i}] text 不能为空`);
     });
   }
-  
-  // theme 必须是字符串
-  if (project.theme !== undefined && typeof project.theme !== 'string') {
-    errors.push('theme 必须是字符串');
+
+  // 字幕与音频共生规则（详见 SKILL.md §2.4）
+  const hasAudio = typeof project.audio === 'string' && project.audio.trim().length > 0;
+  const hasSubtitles = Array.isArray(project.subtitles) && project.subtitles.length > 0;
+  if (hasSubtitles && !hasAudio) {
+    errors.push(
+      'subtitles 数组非空，但缺少 audio 字段：字幕必须与配音音频共生，' +
+      '创作模式（无音频）严禁写 subtitles，请删除 subtitles 数组或补充 audio 路径。'
+    );
+  }
+  // 提示：有 audio 但没 subtitles 时，前端无法呈现字幕——这种通常是用户提供了音频但缺 SRT
+  if (hasAudio && !hasSubtitles) {
+    errors.push(
+      'audio 字段已设置，但 subtitles 数组为空：口播模式必须提供 SRT 字幕，' +
+      '请补充 subtitles 数组（每条含 start/end/text）或删除 audio 字段切换到创作模式。'
+    );
+  }
+
+  // theme 仅允许 white / black（v1.4 限制）
+  if (project.theme !== undefined) {
+    if (typeof project.theme !== 'string') {
+      errors.push('theme 必须是字符串');
+    } else if (!['white', 'black'].includes(project.theme)) {
+      errors.push(`theme 仅支持 "white" / "black"，当前值 "${project.theme}" 不允许（v1.4 不支持自定义主题）`);
+    }
   }
   
   // viewport

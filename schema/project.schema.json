@@ -133,5 +133,11 @@
         "postFullViewDuration": { "type": "number" }
       }
     }
+  },
+  "dependencies": {
+    "subtitles": {
+      "description": "subtitles 字段必须与 audio 字段共存：有 subtitles 必须有 audio",
+      "required": ["audio"]
+    }
   }
 }

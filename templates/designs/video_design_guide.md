@@ -45,8 +45,15 @@
 | 风格 | （用户提供，例：轻松幽默 / 专业严谨 / 科技感） |
 | 文案来源 | 创作模式：AI 自动生成 / 口播模式：用户 SRT |
 | 输出语言 | 中文 / 英文 / 双语（默认中文） |
+| **是否有配音音频** | ✅ 有（口播模式必须有）/ ❌ 无（创作模式默认无） |
+| **是否生成字幕** | ✅ 是（仅当有配音音频时）/ ❌ 否（无配音音频时严禁生成） |
 
 > **关键约束**：本表确定后，后续阶段所有产出（情绪曲线、区域规划、配色等）必须围绕本表的"风格 + 受众 + 时长"展开。
+>
+> **🚨 字幕与音频共生强制规则**：
+> - 创作模式 → "是否有配音音频" = ❌ → "是否生成字幕" 必须 = ❌（**严禁** 在 project.json 写 subtitles）
+> - 口播模式 → "是否有配音音频" = ✅ → "是否生成字幕" 必须 = ✅（subtitles 严格来自用户 SRT）
+> - 详见 [`../../SKILL.md#24-️字幕与音频共生规则强制`](../../SKILL.md) 第 2.4 节
 
 ---
 
@@ -677,6 +684,7 @@
 | **TitleComponent.customStyle 含 `level{N}` 嵌套** | ✅ 通过 | 所有 Title 默认 level1，customStyle.level1 已配置 |
 | **TextComponent.customStyle 含 `paragraph` 或 style 嵌套** | ✅ 通过 | TextComponent 已用 paragraph 嵌套 |
 | **平铺类组件必填字段无空值** | ✅ 通过 | Badge/Card/Shock 等所有必填字段已写齐 |
+| **字幕与音频共生（强制）** | ✅ 通过 | 创作模式→无 audio 字段且 subtitles 数组为空/不存在；口播模式→audio 与 subtitles 同时存在 |
 
 #### L1 检查（严重违规）
 
@@ -814,6 +822,7 @@
 10. **禁止 TitleComponent 的 customStyle 直接平铺**：必须有 `level{content.level}` 嵌套层（例：`{ "level1": { "fontSize": "60px", ... } }`），否则会触发 `customStyle 缺少 "level1"` 运行时报错
 11. **禁止 TextComponent 的 customStyle 直接平铺**：必须有 `paragraph` 或 `content.style` 嵌套层
 12. **禁止平铺类组件遗漏必填字段**：Image / Card / Quote / Badge / Corner / Shock / Graphic 各自有固定的必填字段表（见步骤 9.0），**任何字段空值或缺失都会运行时报错**
+13. **禁止在创作模式（无配音音频）的 project.json 写 `subtitles` 数组或 `audio` 字段**：纯图文视频挂字幕条非常违和，前端字幕渲染依赖 audio 时间轴，二者必须同生共死（详见 SKILL.md §2.4）
 
 ---
 
