@@ -16,14 +16,14 @@
     <rect x="-200" y="-50" width="320" height="100" rx="50" fill="url(#btn)"/>
     <polygon points="120,-50 220,0 120,50" fill="url(#btn)"/>
     <text x="-40" y="14" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
           font-size="40" font-weight="900" fill="#FFFFFF" letter-spacing="3">
       START NOW
     </text>
   </g>
 
   <text x="640" y="505" text-anchor="middle"
-        font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+        font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
         font-size="32" font-weight="700" fill="#92400E" letter-spacing="2">
     CTA · 行动召唤
   </text>
@@ -32,9 +32,9 @@
     <rect x="-260" y="-26" width="520" height="52" rx="26"
           fill="#FFFFFF" opacity="0.9" stroke="#FCD34D" stroke-width="1"/>
     <text x="0" y="6" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
           font-size="20" font-weight="600" fill="#92400E">
-      📷 演示图片 · 请自行替换
+      ※ 演示图片  请自行替换
     </text>
   </g>
 </svg>

@@ -19,7 +19,7 @@
   </g>
 
   <text x="640" y="475" text-anchor="middle"
-        font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+        font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
         font-size="32" font-weight="700" fill="#475569" letter-spacing="2">
     IMAGE · 通用占位
   </text>
@@ -28,9 +28,9 @@
     <rect x="-260" y="-30" width="520" height="60" rx="30"
           fill="#FFFFFF" opacity="0.9" stroke="#CBD5E1" stroke-width="1"/>
     <text x="0" y="8" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
           font-size="22" font-weight="600" fill="#475569">
-      📷 演示图片 · 请自行替换
+      ※ 演示图片  请自行替换
     </text>
   </g>
 </svg>

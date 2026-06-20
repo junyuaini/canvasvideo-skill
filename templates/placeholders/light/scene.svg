@@ -16,7 +16,7 @@
   </g>
 
   <text x="640" y="600" text-anchor="middle"
-        font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+        font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
         font-size="32" font-weight="700" fill="#475569" letter-spacing="2">
     SCENE · 场景画面
   </text>
@@ -25,9 +25,9 @@
     <rect x="-260" y="-26" width="520" height="52" rx="26"
           fill="#FFFFFF" opacity="0.85" stroke="#CBD5E1" stroke-width="1"/>
     <text x="0" y="6" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
           font-size="20" font-weight="600" fill="#475569">
-      📷 演示图片 · 请自行替换
+      ※ 演示图片  请自行替换
     </text>
   </g>
 </svg>

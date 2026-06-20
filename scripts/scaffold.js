@@ -153,7 +153,7 @@ function createPlaceholder(type, hint, theme) {
       // 兜底：返回最小可用 SVG
       return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">'
         + '<rect width="1280" height="720" fill="#F3F4F6"/>'
-        + '<text x="640" y="360" text-anchor="middle" font-size="32" fill="#6B7280">📷 演示图片 · 请自行替换</text>'
+        + '<text x="640" y="360" text-anchor="middle" font-size="32" fill="#6B7280" font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif">※ 演示图片 请自行替换</text>'
         + '</svg>';
     }
     default:

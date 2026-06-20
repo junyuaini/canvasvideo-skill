@@ -19,7 +19,7 @@
   </g>
 
   <text x="640" y="490" text-anchor="middle"
-        font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+        font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
         font-size="32" font-weight="700" fill="#064E3B" letter-spacing="2">
     SOLVE · 解决方案
   </text>
@@ -28,9 +28,9 @@
     <rect x="-260" y="-26" width="520" height="52" rx="26"
           fill="#FFFFFF" opacity="0.9" stroke="#6EE7B7" stroke-width="1"/>
     <text x="0" y="6" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,sans-serif"
+          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
           font-size="20" font-weight="600" fill="#064E3B">
-      📷 演示图片 · 请自行替换
+      ※ 演示图片  请自行替换
     </text>
   </g>
 </svg>
