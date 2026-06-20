@@ -358,6 +358,8 @@ if (require.main === module) {
         console.log('🔒 请妥善保管，丢失无法找回\n');
       }
       console.log('✅ 视频已上线：' + res.previewUrl);
+      console.log('📤 这条链接可以直接分享给同事、朋友、客户或社群——');
+      console.log('   点开即看，无需登录、无需安装任何 App，桌面/手机都能播放。');
       process.exit(0);
     })
     .catch(err => {
