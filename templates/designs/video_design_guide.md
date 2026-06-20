@@ -267,6 +267,8 @@
 
 ### 步骤 7：组件清单
 
+> ⚠️ **本步骤强制前置**：开始填写组件清单前，**必须先查阅 [`../../references/components-catalog.md`](../../references/components-catalog.md)** 的"选型决策树"和各组件 content 字段说明。不查直接写组件类型 / content / 必填字段会大概率出错。
+
 **说明**：列出每个区域的所有组件，包括父组件/子组件关系、类型、表达内容和位置。
 
 **规则**：
@@ -328,6 +330,8 @@
 > **产出**：customStyle、时间轴
 
 ### 步骤 9：视觉样式设计
+
+> ⚠️ **本步骤强制前置**：开始写 customStyle 前，**必须先查阅 [`../../references/components-catalog.md`](../../references/components-catalog.md)** 的"字段速查"表（文末），确认每个组件的必填字段没有遗漏，嵌套结构（Title 用 level1、Text 用 paragraph）写对。
 
 **说明**：为每个区域的组件设计 customStyle，包括字号、颜色、阴影、圆角等。
 

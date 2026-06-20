@@ -93,9 +93,25 @@ canvasvideo-workdir/{skillProjectId}/
     └── project-state.json
 ```
 
-### 3.1 ⚠️ 强制规范：必须遵循 video_design_guide.md
+### 3.1 ⚠️ 强制规范：必须遵循 video_design_guide.md + 查阅知识库
 
-**`design.md` 的内容必须严格按照 [`templates/designs/video_design_guide.md`](./templates/designs/video_design_guide.md) 的"步骤 0 + 五阶段十一步 + 用户素材清单"产出**：
+**`design.md` 的内容必须严格按照 [`templates/designs/video_design_guide.md`](./templates/designs/video_design_guide.md) 的"步骤 0 + 五阶段十一步 + 用户素材清单"产出**。
+
+**生成 design.md 步骤 7（组件清单）和步骤 9（customStyle）前，LLM 必须先查阅以下知识库**：
+
+| 文件 | 用途 | 必查时机 |
+|------|------|---------|
+| [`references/components-catalog.md`](./references/components-catalog.md) | 10 个组件的 content / customStyle / 适用场景 / 反例 / 选型决策树 | 步骤 7 选组件、步骤 9 写 customStyle |
+| [`templates/projects/README.md`](./templates/projects/README.md) | 示例项目索引（按场景选 base） | 步骤 0 确定模式后 |
+| [`templates/projects/示例-产品演示型-2分钟口播.json`](./templates/projects/示例-产品演示型-2分钟口播.json) | 产品/工具演示型完整样板（120s） | 用户做产品演示时参考节奏与组件搭配 |
+| [`templates/projects/示例-案例分享型-1分钟口播.json`](./templates/projects/示例-案例分享型-1分钟口播.json) | 案例/故事分享型完整样板（53s） | 用户做案例分享时参考五段式叙事 |
+
+**必查规则**：
+- 如果用户没明确说做什么类型，**默认参考"案例分享型"示例**（叙事结构更通用）
+- 选组件时**先翻 components-catalog.md 的"选型决策树"**，不要凭直觉
+- 写 customStyle 时**先翻 components-catalog.md 的"字段速查"**，不要凭记忆
+
+**📋 必须包含的产出**：
 
 - 步骤 0：视频目标（项目元信息表）
 - 阶段一（步骤 1-3）：文案分段、内容类型标注、风格识别 + 情绪曲线
@@ -112,6 +128,7 @@ canvasvideo-workdir/{skillProjectId}/
 - 自检报告全部填"通过"
 - 使用 theme（必须用 customStyle）
 - 组件 ID 用英文单词（必须用 `{区域}-###` 格式）
+- **不查 components-catalog.md 就开始写 customStyle**（很大概率会漏字段或写错嵌套）
 
 ### 3.2 素材清单状态
 
@@ -310,6 +327,8 @@ LLM 必须识别以下泛化表达，统一走查询账号分支：
 ```
 canvasvideo-skill/
 ├── SKILL.md                    # 本文件：Skill 主入口
+├── references/                 # ⭐ 知识库（LLM 必查）
+│   └── components-catalog.md   # 10 个组件 content/customStyle/选型决策树
 ├── docs/                       # （可选扩展）编排细则
 │   ├── design-orchestrator.md
 │   ├── video-orchestrator.md
@@ -320,7 +339,11 @@ canvasvideo-skill/
 ├── templates/
 │   ├── designs/                # 设计文档规范（权威）
 │   │   └── video_design_guide.md  # ★ 步骤 0 + 五阶段十一步 + 状态标注
-│   ├── projects/               # 视频项目模板
+│   ├── projects/               # 视频项目模板与高质量示例
+│   │   ├── README.md           # 示例索引（LLM 必查）
+│   │   ├── 通用视频.json        # 最简兜底模板
+│   │   ├── 示例-产品演示型-2分钟口播.json  # 产品演示样板
+│   │   └── 示例-案例分享型-1分钟口播.json  # 案例叙事样板
 │   └── placeholders/           # 占位素材
 └── scripts/
     ├── scaffold.js             # ensureWorkdir / 写 design.md / 拷贝用户素材

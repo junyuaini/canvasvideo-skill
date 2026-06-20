@@ -1,0 +1,1984 @@
+{
+  "name": "20260610 HTML2PPT工具演示",
+  "description": "20260610 口播介绍视频：已根据新版 audio.mp3 与 subtitle.srt 重排节奏，覆盖 120.466 秒新版口播。",
+  "theme": "white",
+  "audio": "./assets/20260610/audio.mp3",
+  "duration": 120.466,
+  "viewport": {
+    "width": 780,
+    "height": 585
+  },
+  "canvas": {
+    "width": 6500,
+    "height": 2400
+  },
+  "settings": {
+    "autoPlay": false,
+    "loop": false,
+    "minScale": 0.01,
+    "ease": 0.08,
+    "contentZoomRatio": 0.9,
+    "maxScale": 5,
+    "preFullViewDuration": 0.6,
+    "postFullViewDuration": 0.6
+  },
+  "regions": [
+    {
+      "name": "P1",
+      "x": 120,
+      "y": 50
+    },
+    {
+      "name": "P2",
+      "x": 1120,
+      "y": 50
+    },
+    {
+      "name": "P3",
+      "x": 2120,
+      "y": 50
+    },
+    {
+      "name": "P4",
+      "x": 3120,
+      "y": 50
+    },
+    {
+      "name": "P5",
+      "x": 4120,
+      "y": 50
+    },
+    {
+      "name": "P6",
+      "x": 5120,
+      "y": 50
+    }
+  ],
+  "subtitles": [
+    {
+      "start": 0,
+      "end": 1.633,
+      "text": "用我的工具做PPT"
+    },
+    {
+      "start": 1.633,
+      "end": 2.566,
+      "text": "样式翻车了"
+    },
+    {
+      "start": 2.566,
+      "end": 5.2,
+      "text": "后台有朋友说 H5转出来的效果不太稳定"
+    },
+    {
+      "start": 5.2,
+      "end": 7.9,
+      "text": "别急 问题不在工具 在使用姿势"
+    },
+    {
+      "start": 7.9,
+      "end": 9.866,
+      "text": "这个工具不是什么H5都能转"
+    },
+    {
+      "start": 9.866,
+      "end": 11.533,
+      "text": "它只认一种按规则生成的H5"
+    },
+    {
+      "start": 11.533,
+      "end": 13.7,
+      "text": "也就是说 别让AI自由发挥"
+    },
+    {
+      "start": 13.7,
+      "end": 15.866,
+      "text": "先把规则喂给它 让它按规则出牌"
+    },
+    {
+      "start": 15.866,
+      "end": 17.7,
+      "text": "再一键转PPT 就稳了"
+    },
+    {
+      "start": 17.7,
+      "end": 19.3,
+      "text": "今天我完整演示一遍"
+    },
+    {
+      "start": 19.3,
+      "end": 21.166,
+      "text": "从一个想法做到一份可编辑PPT"
+    },
+    {
+      "start": 21.166,
+      "end": 22.066,
+      "text": "一共4步"
+    },
+    {
+      "start": 22.066,
+      "end": 23.966,
+      "text": "第1步 准备2份材料"
+    },
+    {
+      "start": 23.966,
+      "end": 25.3,
+      "text": "一份是PPT内容"
+    },
+    {
+      "start": 25.3,
+      "end": 27,
+      "text": "也就是你的大概想法或相关内容"
+    },
+    {
+      "start": 27,
+      "end": 28.433,
+      "text": "另一份是H5提示词"
+    },
+    {
+      "start": 28.433,
+      "end": 30.2,
+      "text": "这个我已经整理好了 放在工具包里"
+    },
+    {
+      "start": 30.2,
+      "end": 32.633,
+      "text": "页面尺寸布局规则"
+    },
+    {
+      "start": 32.633,
+      "end": 35.366,
+      "text": "字体配色 哪些样式适合转PPT"
+    },
+    {
+      "start": 35.366,
+      "end": 36.333,
+      "text": "全写清楚了"
+    },
+    {
+      "start": 36.333,
+      "end": 37.166,
+      "text": "不用你自己写"
+    },
+    {
+      "start": 37.166,
+      "end": 38.7,
+      "text": "2份材料一起发给AI"
+    },
+    {
+      "start": 38.7,
+      "end": 41.433,
+      "text": "先别急着写代码 让它先出一份H5设计文档"
+    },
+    {
+      "start": 41.433,
+      "end": 42.466,
+      "text": "页面怎么分"
+    },
+    {
+      "start": 42.466,
+      "end": 43.366,
+      "text": "每页放什么"
+    },
+    {
+      "start": 43.366,
+      "end": 44.6,
+      "text": "视觉风格是什么"
+    },
+    {
+      "start": 44.6,
+      "end": 46.566,
+      "text": "先确认方向 后面才不翻车"
+    },
+    {
+      "start": 46.566,
+      "end": 49.433,
+      "text": "第2步 设计文档没问题 就让AI直接生成H5"
+    },
+    {
+      "start": 49.433,
+      "end": 51.233,
+      "text": "这时候出来的不是随便写的网页"
+    },
+    {
+      "start": 51.233,
+      "end": 52.9,
+      "text": "而是按规则生成的PPT型H5"
+    },
+    {
+      "start": 52.9,
+      "end": 55.166,
+      "text": "浏览器里先看一遍 标题会不会太小"
+    },
+    {
+      "start": 55.166,
+      "end": 56.333,
+      "text": "布局会不会太挤"
+    },
+    {
+      "start": 56.333,
+      "end": 57.4,
+      "text": "颜色顺不顺眼"
+    },
+    {
+      "start": 57.4,
+      "end": 58.566,
+      "text": "有问题不用改代码"
+    },
+    {
+      "start": 58.566,
+      "end": 60.566,
+      "text": "第3步 自然语言微调"
+    },
+    {
+      "start": 60.566,
+      "end": 61.533,
+      "text": "标题再大一点"
+    },
+    {
+      "start": 61.533,
+      "end": 63.866,
+      "text": "卡片间距拉开一点 这页换成科技蓝"
+    },
+    {
+      "start": 63.866,
+      "end": 66.966,
+      "text": "就像跟设计师说话 一句话发过去 AI就能调"
+    },
+    {
+      "start": 66.966,
+      "end": 68.933,
+      "text": "调完再看一眼 一般2到3次"
+    },
+    {
+      "start": 68.933,
+      "end": 69.833,
+      "text": "效果就很接近了"
+    },
+    {
+      "start": 69.833,
+      "end": 71.5,
+      "text": "第4步 转换PPT"
+    },
+    {
+      "start": 71.5,
+      "end": 75,
+      "text": "打开终端 输入一行命令 H5直接变PPTX"
+    },
+    {
+      "start": 75,
+      "end": 77.1,
+      "text": "打开PowerPoint 重点查3件事"
+    },
+    {
+      "start": 77.1,
+      "end": 78.266,
+      "text": "版式有没有还原"
+    },
+    {
+      "start": 78.266,
+      "end": 79.333,
+      "text": "文字能不能选中"
+    },
+    {
+      "start": 79.333,
+      "end": 80.5,
+      "text": "元素能不能继续改"
+    },
+    {
+      "start": 80.5,
+      "end": 82.233,
+      "text": "都没问题 就能直接交付"
+    },
+    {
+      "start": 82.233,
+      "end": 83.866,
+      "text": "还不满意 不用从头来"
+    },
+    {
+      "start": 83.866,
+      "end": 85.6,
+      "text": "回到第3步继续微调H5"
+    },
+    {
+      "start": 85.6,
+      "end": 87.166,
+      "text": "再跑一次命令 重新转一版"
+    },
+    {
+      "start": 87.166,
+      "end": 88.433,
+      "text": "整个流程就这么循环"
+    },
+    {
+      "start": 88.433,
+      "end": 89.866,
+      "text": "AI负责设计和调整"
+    },
+    {
+      "start": 89.866,
+      "end": 91.266,
+      "text": "工具负责稳定转换"
+    },
+    {
+      "start": 91.266,
+      "end": 92.4,
+      "text": "PowerPoint负责收尾"
+    },
+    {
+      "start": 92.4,
+      "end": 95.833,
+      "text": "说白了 这套方法最爽的不是快 是可控"
+    },
+    {
+      "start": 95.833,
+      "end": 98.033,
+      "text": "AI直接做PPT 经常一改全乱"
+    },
+    {
+      "start": 98.033,
+      "end": 100.3,
+      "text": "但这个流程先控H5 再控PPT"
+    },
+    {
+      "start": 100.3,
+      "end": 102.1,
+      "text": "每一步都有回头路"
+    },
+    {
+      "start": 102.1,
+      "end": 104.166,
+      "text": "最后拿到的也不是一张截图"
+    },
+    {
+      "start": 104.166,
+      "end": 105.633,
+      "text": "而是一份真正能编辑的PPT"
+    },
+    {
+      "start": 105.633,
+      "end": 109.6,
+      "text": "文字能改 图片能换 色块能动 版式能调"
+    },
+    {
+      "start": 109.6,
+      "end": 111,
+      "text": "这才是可控版PPT"
+    },
+    {
+      "start": 111,
+      "end": 112.766,
+      "text": "想试试的 评论区说一声"
+    },
+    {
+      "start": 112.766,
+      "end": 114.533,
+      "text": "我把工具和教程都给你整理好了"
+    },
+    {
+      "start": 114.533,
+      "end": 116.766,
+      "text": "复制粘贴就能跑 零门槛上手"
+    },
+    {
+      "start": 116.766,
+      "end": 118.1,
+      "text": "直接去评论区领就行"
+    },
+    {
+      "start": 118.1,
+      "end": 120.466,
+      "text": "能用工具解决的问题 就别用加班解决"
+    }
+  ],
+  "chapters": [
+    {
+      "time": 0,
+      "title": "开场：问题不在工具"
+    },
+    {
+      "time": 22.066,
+      "title": "Step1：准备两份材料"
+    },
+    {
+      "time": 46.566,
+      "title": "Step2：生成规则化 H5"
+    },
+    {
+      "time": 58.566,
+      "title": "Step3：自然语言微调"
+    },
+    {
+      "time": 69.833,
+      "title": "Step4：转换 PPTX"
+    },
+    {
+      "time": 82.233,
+      "title": "可控流程与交付"
+    }
+  ],
+  "components": [
+    {
+      "id": "P1-001",
+      "type": "TitleComponent",
+      "start": 0,
+      "end": 17.7,
+      "position": {
+        "w": 760,
+        "h": 132
+      },
+      "fullRow": true,
+      "content": {
+        "text": "我的工具，PPT 样式翻车？",
+        "level": 1,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "60px",
+          "fontWeight": "900",
+          "color": "#111827",
+          "lineHeight": "1.12"
+        },
+        "level2": {
+          "fontSize": "44px",
+          "fontWeight": "850",
+          "color": "#111827",
+          "lineHeight": "1.18"
+        },
+        "level3": {
+          "fontSize": "33px",
+          "fontWeight": "760",
+          "color": "#111827",
+          "lineHeight": "1.25"
+        }
+      }
+    },
+    {
+      "id": "P1-002",
+      "type": "TextComponent",
+      "start": 5.2,
+      "end": 17.7,
+      "position": {
+        "w": 720,
+        "h": 66
+      },
+      "fullRow": true,
+      "content": {
+        "text": "问题不在工具，而是你要先让 AI 按规则出牌。",
+        "style": "lead",
+        "align": "center"
+      },
+      "customStyle": {
+        "paragraph": {
+          "fontSize": "25px",
+          "color": "#2F3542",
+          "lineHeight": "1.55"
+        },
+        "lead": {
+          "fontSize": "28px",
+          "color": "#1a1a2e",
+          "lineHeight": "1.48"
+        },
+        "code": {
+          "fontSize": "23px",
+          "color": "#ff6b6b",
+          "lineHeight": "1.45",
+          "background": "#FFF5F5",
+          "padding": "10px",
+          "borderRadius": "10px"
+        }
+      }
+    },
+    {
+      "id": "P1-003",
+      "type": "GraphicComponent",
+      "start": 7.9,
+      "end": 17.7,
+      "position": {
+        "w": 760,
+        "h": 250
+      },
+      "fullRow": true,
+      "content": {
+        "diagram": "flow",
+        "title": "稳定转换的核心链路",
+        "nodeBackground": "transparent",
+        "items": [
+          {
+            "label": "喂规则",
+            "description": "尺寸 / 布局 / 字体"
+          },
+          {
+            "label": "生成 H5",
+            "description": "按 PPT 结构输出"
+          },
+          {
+            "label": "转 PPTX",
+            "description": "稳定可编辑"
+          }
+        ],
+        "arrowColors": [
+          "#ffe66d"
+        ]
+      },
+      "customStyle": {
+        "background": "transparent",
+        "textColor": "#1a1a2e",
+        "mutedColor": "#475569",
+        "titleColor": "#ff6b6b",
+        "primary": "#ff6b6b",
+        "accent": "#ffe66d",
+        "secondary": "#4ecdc4",
+        "extra": "#9b59b6",
+        "primaryText": "#ffffff",
+        "blockTextColor": "#1a1a2e",
+        "nodeBackground": "rgba(255,255,255,0.78)",
+        "itemBackground": "rgba(255,255,255,0.58)",
+        "lineColor": "#4ecdc4",
+        "border": "none",
+        "borderRadius": 22,
+        "nodeRadius": 16,
+        "padding": "18px",
+        "gap": "12px",
+        "titleFontSize": "32px",
+        "titleFontWeight": "900",
+        "subtitleFontSize": "28px",
+        "itemFontSize": "22px",
+        "descriptionFontSize": "20px",
+        "centerFontSize": "28px",
+        "shadow": "none",
+        "nodeShadow": "0 10px 24px rgba(78,205,196,0.16)"
+      }
+    },
+    {
+      "id": "P1-004",
+      "type": "TitleComponent",
+      "start": 17.7,
+      "end": 22.066,
+      "position": {
+        "w": 690,
+        "h": 58
+      },
+      "fullRow": true,
+      "content": {
+        "text": "今天完整演示 4 步",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "54px",
+          "fontWeight": "880",
+          "color": "#1a1a2e",
+          "lineHeight": "1.16"
+        },
+        "level2": {
+          "fontSize": "40px",
+          "fontWeight": "820",
+          "color": "#1a1a2e",
+          "lineHeight": "1.2"
+        },
+        "level3": {
+          "fontSize": "31px",
+          "fontWeight": "720",
+          "color": "#ff6b6b",
+          "lineHeight": "1.26"
+        }
+      }
+    },
+    {
+      "id": "P1-005",
+      "type": "GraphicComponent",
+      "start": 21.166,
+      "end": 22.066,
+      "position": {
+        "w": 760,
+        "h": 220
+      },
+      "fullRow": true,
+      "content": {
+        "diagram": "timeline",
+        "title": "",
+        "items": [
+          "准备材料",
+          "生成 H5",
+          "微调",
+          "导出 PPT"
+        ]
+      },
+      "customStyle": {
+        "background": "transparent",
+        "textColor": "#1a1a2e",
+        "mutedColor": "#475569",
+        "titleColor": "#ff6b6b",
+        "primary": "#ff6b6b",
+        "accent": "#ffe66d",
+        "secondary": "#4ecdc4",
+        "extra": "#9b59b6",
+        "primaryText": "#ffffff",
+        "blockTextColor": "#1a1a2e",
+        "nodeBackground": "rgba(255,255,255,0.78)",
+        "itemBackground": "rgba(255,255,255,0.58)",
+        "lineColor": "#4ecdc4",
+        "border": "none",
+        "borderRadius": 22,
+        "nodeRadius": 16,
+        "padding": "18px",
+        "gap": "12px",
+        "titleFontSize": "32px",
+        "titleFontWeight": "900",
+        "subtitleFontSize": "28px",
+        "itemFontSize": "22px",
+        "descriptionFontSize": "22px",
+        "centerFontSize": "28px",
+        "shadow": "none",
+        "nodeShadow": "0 10px 24px rgba(78,205,196,0.16)"
+      }
+    },
+    {
+      "id": "P1-006",
+      "type": "ImageComponent",
+      "start": 19.3,
+      "end": 22.066,
+      "position": {
+        "w": 600,
+        "h": 319
+      },
+      "theme": "default",
+      "fullRow": true,
+      "content": {
+        "image": "./assets/20260610/poster_final.png",
+        "fit": "contain",
+        "borderRadius": 0
+      }
+    },
+    {
+      "id": "P2-001",
+      "type": "TitleComponent",
+      "start": 22.066,
+      "end": 46.566,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "fullRow": true,
+      "content": {
+        "text": "Step 1：先准备两份材料",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "54px",
+          "fontWeight": "880",
+          "color": "#1a1a2e",
+          "lineHeight": "1.16"
+        },
+        "level2": {
+          "fontSize": "40px",
+          "fontWeight": "820",
+          "color": "#1a1a2e",
+          "lineHeight": "1.2"
+        },
+        "level3": {
+          "fontSize": "31px",
+          "fontWeight": "720",
+          "color": "#ff6b6b",
+          "lineHeight": "1.26"
+        }
+      }
+    },
+    {
+      "id": "P2-002",
+      "type": "CardComponent",
+      "start": 23.966,
+      "end": 37.166,
+      "position": {
+        "w": 261,
+        "h": 230
+      },
+      "content": {
+        "variant": "title-image",
+        "image": "./assets/20260610/step1-1-ppt-content.png",
+        "imageFit": "contain",
+        "imageRadius": 10,
+        "gap": 4,
+        "title": "材料 1：PPT 内容",
+        "description": "",
+        "titleAlign": "center",
+        "descriptionAlign": "center",
+        "imageHeight": 190,
+        "titleMarginBottom": 0
+      },
+      "customStyle": {
+        "background": "#FFFFFF",
+        "borderRadius": 14,
+        "padding": 6,
+        "titleColor": "#0F172A",
+        "titleFontSize": "24px",
+        "titleFontWeight": "850",
+        "descriptionColor": "#475569",
+        "descriptionFontSize": "23px",
+        "shadow": "0 12px 28px rgba(15,23,42,0.08)"
+      }
+    },
+    {
+      "id": "P2-003",
+      "type": "CardComponent",
+      "start": 27,
+      "end": 37.166,
+      "position": {
+        "w": 319,
+        "h": 230
+      },
+      "content": {
+        "variant": "title-image",
+        "image": "./assets/20260610/step1-2-h5-prompt.png",
+        "imageFit": "contain",
+        "imageRadius": 10,
+        "gap": 4,
+        "title": "材料 2：H5 提示词",
+        "description": "",
+        "titleAlign": "center",
+        "descriptionAlign": "center",
+        "imageHeight": 190,
+        "titleMarginBottom": 0
+      },
+      "customStyle": {
+        "background": "#FFFFFF",
+        "borderRadius": 14,
+        "padding": 6,
+        "titleColor": "#0F172A",
+        "titleFontSize": "24px",
+        "titleFontWeight": "850",
+        "descriptionColor": "#475569",
+        "descriptionFontSize": "23px",
+        "shadow": "0 12px 28px rgba(15,23,42,0.08)"
+      }
+    },
+    {
+      "id": "P2-004",
+      "type": "CardComponent",
+      "start": 37.166,
+      "end": 38.7,
+      "position": {
+        "w": 410,
+        "h": 225
+      },
+      "fullRow": true,
+      "content": {
+        "variant": "image-title",
+        "image": "./assets/20260610/step1-3-send-materials.png",
+        "imageFit": "contain",
+        "imageRadius": 10,
+        "gap": 4,
+        "title": "2 份材料一起发给 AI",
+        "description": "",
+        "titleAlign": "center",
+        "descriptionAlign": "center",
+        "imageHeight": 180,
+        "titleMarginBottom": 0
+      },
+      "customStyle": {
+        "background": "#FFFFFF",
+        "borderRadius": 14,
+        "padding": 6,
+        "titleColor": "#0F172A",
+        "titleFontSize": "24px",
+        "titleFontWeight": "850",
+        "descriptionColor": "#475569",
+        "descriptionFontSize": "23px",
+        "shadow": "0 12px 28px rgba(15,23,42,0.08)"
+      }
+    },
+    {
+      "id": "P2-005",
+      "type": "AggregateComponent",
+      "start": 38.7,
+      "end": 46.566,
+      "position": {
+        "w": 744,
+        "h": 340
+      },
+      "fullRow": true,
+      "children": [
+        {
+          "id": "P2-006",
+          "type": "ImageComponent",
+          "start": 38.7,
+          "end": 46.566,
+          "position": {
+            "x": 42,
+            "y": 28,
+            "w": 405,
+            "h": 294
+          },
+          "theme": "clean-rounded",
+          "content": {
+            "image": "./assets/20260610/step1-4-design-doc-result.png",
+            "fit": "contain",
+            "borderRadius": 18
+          }
+        },
+        {
+          "id": "P2-007",
+          "type": "CardComponent",
+          "start": 41.433,
+          "end": 46.566,
+          "position": {
+            "x": 505,
+            "y": 56,
+            "w": 190,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "页面划分",
+            "description": "",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(37,99,235,0.12)"
+          }
+        },
+        {
+          "id": "P2-008",
+          "type": "CardComponent",
+          "start": 42.466,
+          "end": 46.566,
+          "position": {
+            "x": 505,
+            "y": 145,
+            "w": 190,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "内容安排",
+            "description": "",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(124,58,237,0.12)"
+          }
+        },
+        {
+          "id": "P2-009",
+          "type": "CardComponent",
+          "start": 43.366,
+          "end": 46.566,
+          "position": {
+            "x": 505,
+            "y": 234,
+            "w": 190,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "视觉风格",
+            "description": "",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #F97316 0%, #F43F5E 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(249,115,22,0.12)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "P3-001",
+      "type": "TitleComponent",
+      "start": 46.566,
+      "end": 58.566,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "content": {
+        "text": "Step 2：生成规则化 H5",
+        "level": 2,
+        "align": "center"
+      },
+      "fullRow": true,
+      "customStyle": {
+        "level1": {
+          "fontSize": "54px",
+          "fontWeight": "880",
+          "color": "#1a1a2e",
+          "lineHeight": "1.16"
+        },
+        "level2": {
+          "fontSize": "40px",
+          "fontWeight": "820",
+          "color": "#1a1a2e",
+          "lineHeight": "1.2"
+        },
+        "level3": {
+          "fontSize": "31px",
+          "fontWeight": "720",
+          "color": "#ff6b6b",
+          "lineHeight": "1.26"
+        }
+      }
+    },
+    {
+      "id": "P3-002",
+      "type": "CardComponent",
+      "start": 46.566,
+      "end": 52.9,
+      "position": {
+        "w": 300,
+        "h": 255
+      },
+      "content": {
+        "variant": "title-image",
+        "image": "./assets/20260610/step2-1-confirm-design.png",
+        "imageFit": "contain",
+        "imageRadius": 10,
+        "gap": 4,
+        "title": "确认设计文档",
+        "description": "",
+        "titleAlign": "center",
+        "descriptionAlign": "center",
+        "imageHeight": 205,
+        "titleMarginBottom": 0
+      },
+      "customStyle": {
+        "background": "#FFFFFF",
+        "borderRadius": 14,
+        "padding": 6,
+        "titleColor": "#0F172A",
+        "titleFontSize": "24px",
+        "titleFontWeight": "850",
+        "descriptionColor": "#475569",
+        "descriptionFontSize": "23px",
+        "shadow": "0 12px 28px rgba(15,23,42,0.08)"
+      }
+    },
+    {
+      "id": "P3-003",
+      "type": "CardComponent",
+      "start": 49.433,
+      "end": 52.9,
+      "position": {
+        "w": 275,
+        "h": 188
+      },
+      "content": {
+        "variant": "image-text",
+        "image": "./assets/20260610/step2-2-h5-code-result.png",
+        "imageFit": "contain",
+        "imageWidth": "38%",
+        "imageRadius": 14,
+        "gap": 14,
+        "title": "PPT 型 H5",
+        "description": "按规则输出，不是普通网页。",
+        "titleAlign": "left",
+        "descriptionAlign": "left",
+        "textValign": "center",
+        "textOffsetY": 24
+      },
+      "customStyle": {
+        "background": "#FFFFFF",
+        "borderRadius": 22,
+        "padding": 16,
+        "titleColor": "#0F172A",
+        "titleFontSize": "26px",
+        "titleFontWeight": "880",
+        "descriptionColor": "#475569",
+        "descriptionFontSize": "18px",
+        "shadow": "0 18px 45px rgba(15,23,42,0.10)"
+      }
+    },
+    {
+      "id": "P3-004",
+      "type": "AggregateComponent",
+      "start": 52.9,
+      "end": 58.566,
+      "position": {
+        "w": 640,
+        "h": 380
+      },
+      "children": [
+        {
+          "id": "P3-005",
+          "type": "ImageComponent",
+          "start": 52.9,
+          "end": 58.566,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "w": 640,
+            "h": 380
+          },
+          "theme": "clean-rounded",
+          "content": {
+            "image": "./assets/20260610/step3-1-h5-preview.png",
+            "fit": "cover",
+            "borderRadius": 22
+          }
+        },
+        {
+          "id": "P3-006",
+          "type": "CardComponent",
+          "start": 52.9,
+          "end": 58.566,
+          "position": {
+            "x": 390,
+            "y": 72,
+            "w": 167,
+            "h": 44
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "标题大小",
+            "description": "",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "30px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 14px 34px rgba(37,99,235,0.24)"
+          }
+        },
+        {
+          "id": "P3-007",
+          "type": "CardComponent",
+          "start": 55.166,
+          "end": 58.566,
+          "position": {
+            "x": 406,
+            "y": 145,
+            "w": 167,
+            "h": 44
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "布局间距",
+            "description": "",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "30px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 14px 34px rgba(124,58,237,0.22)"
+          }
+        },
+        {
+          "id": "P3-008",
+          "type": "CardComponent",
+          "start": 56.333,
+          "end": 58.566,
+          "position": {
+            "x": 390,
+            "y": 217,
+            "w": 167,
+            "h": 44
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "颜色观感",
+            "description": "",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #F97316 0%, #F43F5E 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "30px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 14px 34px rgba(249,115,22,0.22)"
+          }
+        }
+      ],
+      "fullRow": true
+    },
+    {
+      "id": "P4-001",
+      "type": "TitleComponent",
+      "start": 58.566,
+      "end": 66.966,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "fullRow": true,
+      "content": {
+        "text": "Step 3：用自然语言微调",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "54px",
+          "fontWeight": "880",
+          "color": "#1a1a2e",
+          "lineHeight": "1.16"
+        },
+        "level2": {
+          "fontSize": "40px",
+          "fontWeight": "820",
+          "color": "#1a1a2e",
+          "lineHeight": "1.2"
+        },
+        "level3": {
+          "fontSize": "31px",
+          "fontWeight": "720",
+          "color": "#ff6b6b",
+          "lineHeight": "1.26"
+        }
+      }
+    },
+    {
+      "id": "P4-002",
+      "type": "AggregateComponent",
+      "start": 60.566,
+      "end": 66.966,
+      "position": {
+        "w": 720,
+        "h": 310
+      },
+      "fullRow": true,
+      "children": [
+        {
+          "id": "P4-003",
+          "type": "CardComponent",
+          "start": 60.566,
+          "end": 66.966,
+          "position": {
+            "x": 20,
+            "y": 103,
+            "w": 245,
+            "h": 56
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "不用改代码",
+            "description": "",
+            "titleAlign": "left",
+            "descriptionAlign": "left",
+            "contentAlign": "center",
+            "titleMarginBottom": 0
+          },
+          "customStyle": {
+            "background": "transparent",
+            "borderRadius": 0,
+            "padding": 0,
+            "titleColor": "#0F172A",
+            "titleFontSize": "40px",
+            "titleFontWeight": "950",
+            "descriptionColor": "#334155",
+            "descriptionFontSize": "26px",
+            "shadow": "none"
+          }
+        },
+        {
+          "id": "P4-004",
+          "type": "CardComponent",
+          "start": 60.566,
+          "end": 66.966,
+          "position": {
+            "x": 20,
+            "y": 164,
+            "w": 265,
+            "h": 76
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "一句话告诉 AI，版式、间距和色彩都能改。",
+            "description": "",
+            "titleAlign": "left",
+            "descriptionAlign": "left",
+            "contentAlign": "center",
+            "titleMarginBottom": 0
+          },
+          "customStyle": {
+            "background": "transparent",
+            "borderRadius": 0,
+            "padding": 0,
+            "titleColor": "#475569",
+            "titleFontSize": "22px",
+            "titleFontWeight": "700",
+            "descriptionColor": "#475569",
+            "descriptionFontSize": "24px",
+            "shadow": "none"
+          }
+        },
+        {
+          "id": "P4-005",
+          "type": "ImageComponent",
+          "start": 61.533,
+          "end": 66.966,
+          "position": {
+            "x": 315,
+            "y": 0,
+            "w": 408,
+            "h": 310
+          },
+          "theme": "clean-rounded",
+          "content": {
+            "image": "./assets/20260610/step3-2-adjust-prompt.png",
+            "fit": "cover",
+            "borderRadius": 18
+          }
+        }
+      ]
+    },
+    {
+      "id": "P4-006",
+      "type": "AggregateComponent",
+      "start": 66.966,
+      "end": 69.833,
+      "position": {
+        "w": 560,
+        "h": 420
+      },
+      "fullRow": true,
+      "children": [
+        {
+          "id": "P4-007",
+          "type": "ImageComponent",
+          "start": 66.966,
+          "end": 69.833,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "w": 560,
+            "h": 420
+          },
+          "theme": "clean-rounded",
+          "content": {
+            "image": "./assets/20260610/step3-3-adjust-result.png",
+            "fit": "cover",
+            "borderRadius": 18
+          }
+        }
+      ]
+    },
+    {
+      "id": "P5-001",
+      "type": "TitleComponent",
+      "start": 69.833,
+      "end": 77.1,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "fullRow": true,
+      "content": {
+        "text": "Step 4：转换成可编辑 PPTX",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "54px",
+          "fontWeight": "880",
+          "color": "#1a1a2e",
+          "lineHeight": "1.16"
+        },
+        "level2": {
+          "fontSize": "40px",
+          "fontWeight": "820",
+          "color": "#1a1a2e",
+          "lineHeight": "1.2"
+        },
+        "level3": {
+          "fontSize": "31px",
+          "fontWeight": "720",
+          "color": "#ff6b6b",
+          "lineHeight": "1.26"
+        }
+      }
+    },
+    {
+      "id": "P5-002",
+      "type": "CardComponent",
+      "start": 71.5,
+      "end": 77.1,
+      "position": {
+        "w": 720,
+        "h": 295
+      },
+      "fullRow": true,
+      "content": {
+        "variant": "double-image-title",
+        "images": [
+          "./assets/20260610/step4-1-terminal-command.png",
+          "./assets/20260610/step4-2-terminal-success.png"
+        ],
+        "imageFit": "contain",
+        "imageRadius": 10,
+        "imageGap": 6,
+        "imageRowHeight": "84%",
+        "title": "一行命令生成 PPT",
+        "titleAlign": "center",
+        "titleMarginBottom": 0
+      },
+      "customStyle": {
+        "background": "#FFFFFF",
+        "borderRadius": 16,
+        "padding": 6,
+        "titleColor": "#0F172A",
+        "titleFontSize": "30px",
+        "titleFontWeight": "900",
+        "descriptionColor": "#475569",
+        "descriptionFontSize": "23px",
+        "shadow": "0 12px 28px rgba(15,23,42,0.08)"
+      }
+    },
+    {
+      "id": "P5-003",
+      "type": "TitleComponent",
+      "start": 77.1,
+      "end": 78.266,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "fullRow": true,
+      "content": {
+        "text": "检查 PPT 版式",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "58px",
+          "fontWeight": "950",
+          "color": "#1D4ED8",
+          "lineHeight": "1.1"
+        },
+        "level2": {
+          "fontSize": "46px",
+          "fontWeight": "900",
+          "color": "#1D4ED8",
+          "lineHeight": "1.12"
+        },
+        "level3": {
+          "fontSize": "34px",
+          "fontWeight": "850",
+          "color": "#475569",
+          "lineHeight": "1.2"
+        }
+      }
+    },
+    {
+      "id": "P5-004",
+      "type": "ImageComponent",
+      "start": 77.1,
+      "end": 78.266,
+      "position": {
+        "w": 690,
+        "h": 410
+      },
+      "theme": "clean-rounded",
+      "fullRow": true,
+      "content": {
+        "image": "./assets/20260610/step5-1-ppt-final-preview.png",
+        "fit": "contain",
+        "borderRadius": 18
+      }
+    },
+    {
+      "id": "P5-005",
+      "type": "TitleComponent",
+      "start": 78.266,
+      "end": 82.233,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "fullRow": true,
+      "content": {
+        "text": "检查 PPT 可编辑",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "58px",
+          "fontWeight": "950",
+          "color": "#1D4ED8",
+          "lineHeight": "1.1"
+        },
+        "level2": {
+          "fontSize": "46px",
+          "fontWeight": "900",
+          "color": "#1D4ED8",
+          "lineHeight": "1.12"
+        },
+        "level3": {
+          "fontSize": "34px",
+          "fontWeight": "850",
+          "color": "#475569",
+          "lineHeight": "1.2"
+        }
+      }
+    },
+    {
+      "id": "P5-006",
+      "type": "ImageComponent",
+      "start": 78.266,
+      "end": 82.233,
+      "position": {
+        "w": 690,
+        "h": 410
+      },
+      "theme": "clean-rounded",
+      "fullRow": true,
+      "content": {
+        "image": "./assets/20260610/step5-2-ppt-text-editable.png",
+        "fit": "contain",
+        "borderRadius": 18
+      }
+    },
+    {
+      "id": "P5-007",
+      "type": "TitleComponent",
+      "start": 82.233,
+      "end": 87.166,
+      "position": {
+        "w": 690,
+        "h": 56
+      },
+      "fullRow": true,
+      "content": {
+        "text": "先控 H5，再控 PPT",
+        "level": 2,
+        "align": "center"
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "58px",
+          "fontWeight": "950",
+          "color": "#1D4ED8",
+          "lineHeight": "1.1"
+        },
+        "level2": {
+          "fontSize": "46px",
+          "fontWeight": "900",
+          "color": "#1D4ED8",
+          "lineHeight": "1.12"
+        },
+        "level3": {
+          "fontSize": "34px",
+          "fontWeight": "850",
+          "color": "#475569",
+          "lineHeight": "1.2"
+        }
+      }
+    },
+    {
+      "id": "P5-008",
+      "type": "ImageComponent",
+      "start": 82.233,
+      "end": 87.166,
+      "position": {
+        "w": 690,
+        "h": 410
+      },
+      "theme": "clean-rounded",
+      "fullRow": true,
+      "content": {
+        "image": "./assets/20260610/step5-3-h5-ppt-comparison.png",
+        "fit": "contain",
+        "borderRadius": 18
+      }
+    },
+    {
+      "id": "P5-009",
+      "type": "GraphicComponent",
+      "start": 87.166,
+      "end": 91.266,
+      "position": {
+        "w": 440,
+        "h": 440
+      },
+      "content": {
+        "diagram": "cycle-arrows",
+        "title": "可回退链路",
+        "center": "可控",
+        "items": [
+          "H5",
+          "预览",
+          "微调",
+          "PPTX"
+        ],
+        "centerSize": 72,
+        "nodeBackground": "transparent",
+        "nodeShadow": "none",
+        "itemFontSize": "16px"
+      },
+      "fullRow": true,
+      "customStyle": {
+        "background": "transparent",
+        "textColor": "#1a1a2e",
+        "mutedColor": "#475569",
+        "titleColor": "#ff6b6b",
+        "primary": "#ff6b6b",
+        "accent": "#ffe66d",
+        "secondary": "#4ecdc4",
+        "extra": "#9b59b6",
+        "primaryText": "#ffffff",
+        "blockTextColor": "#1a1a2e",
+        "nodeBackground": "rgba(255,255,255,0.18)",
+        "itemBackground": "rgba(255,255,255,0.10)",
+        "lineColor": "#4ecdc4",
+        "border": "none",
+        "borderRadius": 22,
+        "nodeRadius": 16,
+        "padding": "0px",
+        "gap": "12px",
+        "titleFontSize": "34px",
+        "titleFontWeight": "900",
+        "subtitleFontSize": "28px",
+        "itemFontSize": "24px",
+        "descriptionFontSize": "22px",
+        "centerFontSize": "30px",
+        "shadow": "none",
+        "nodeShadow": "0 3px 10px rgba(78,205,196,0.10)"
+      }
+    },
+    {
+      "id": "P6-001",
+      "type": "CardComponent",
+      "start": 91.266,
+      "end": 102.1,
+      "position": {
+        "w": 690,
+        "h": 165
+      },
+      "content": {
+        "variant": "text-only",
+        "title": "爽的不是快，是可控",
+        "description": "先控 H5，再控 PPT，每一步都有回头路。",
+        "titleAlign": "center",
+        "descriptionAlign": "center",
+        "contentAlign": "center",
+        "descriptionFlex": 0,
+        "titleColor": "#2563EB"
+      },
+      "fullRow": true,
+      "customStyle": {
+        "background": "transparent",
+        "borderRadius": 0,
+        "padding": 0,
+        "titleColor": "#C2410C",
+        "titleFontSize": "68px",
+        "titleFontWeight": "980",
+        "descriptionColor": "#57534E",
+        "descriptionFontSize": "33px",
+        "shadow": "none"
+      }
+    },
+    {
+      "id": "P6-002",
+      "type": "GraphicComponent",
+      "start": 95.833,
+      "end": 102.1,
+      "position": {
+        "w": 570,
+        "h": 150
+      },
+      "content": {
+        "diagram": "flow",
+        "items": [
+          "H5",
+          "预览",
+          "微调",
+          "PPTX"
+        ],
+        "title": "",
+        "nodeBackground": "transparent",
+        "nodeShadow": "none",
+        "arrowGradient": true
+      },
+      "fullRow": true,
+      "customStyle": {
+        "background": "transparent",
+        "textColor": "#1a1a2e",
+        "mutedColor": "#475569",
+        "titleColor": "#ff6b6b",
+        "primary": "#ff6b6b",
+        "accent": "#ffe66d",
+        "secondary": "#4ecdc4",
+        "extra": "#9b59b6",
+        "primaryText": "#ffffff",
+        "blockTextColor": "#1a1a2e",
+        "nodeBackground": "transparent",
+        "itemBackground": "transparent",
+        "lineColor": "#4ecdc4",
+        "border": "none",
+        "borderRadius": 22,
+        "nodeRadius": 16,
+        "padding": "18px",
+        "gap": "12px",
+        "titleFontSize": "32px",
+        "titleFontWeight": "900",
+        "subtitleFontSize": "28px",
+        "itemFontSize": "24px",
+        "descriptionFontSize": "22px",
+        "centerFontSize": "28px",
+        "shadow": "none",
+        "nodeShadow": "none",
+        "arrowGradient": true
+      }
+    },
+    {
+      "id": "P6-003",
+      "type": "CardComponent",
+      "start": 102.1,
+      "end": 111,
+      "position": {
+        "w": 690,
+        "h": 190
+      },
+      "content": {
+        "variant": "text-only",
+        "title": "不是截图，是可编辑 PPT",
+        "description": "文字能改 · 图片能换 · 色块能动 · 版式能调",
+        "titleAlign": "center",
+        "descriptionAlign": "center",
+        "contentAlign": "center",
+        "descriptionFlex": 0,
+        "titleColor": "#2563EB"
+      },
+      "fullRow": true,
+      "customStyle": {
+        "background": "transparent",
+        "borderRadius": 0,
+        "padding": 0,
+        "titleColor": "#B45309",
+        "titleFontSize": "58px",
+        "titleFontWeight": "950",
+        "descriptionColor": "#57534E",
+        "descriptionFontSize": "32px",
+        "shadow": "none"
+      }
+    },
+    {
+      "id": "P6-004",
+      "type": "AggregateComponent",
+      "start": 105.633,
+      "end": 111,
+      "position": {
+        "w": 560,
+        "h": 60
+      },
+      "fullRow": true,
+      "children": [
+        {
+          "id": "P6-005",
+          "type": "CardComponent",
+          "start": 105.633,
+          "end": 111,
+          "position": {
+            "x": 10,
+            "y": 0,
+            "w": 120,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "文字",
+            "description": "",
+            "titleAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(37,99,235,0.12)"
+          }
+        },
+        {
+          "id": "P6-006",
+          "type": "CardComponent",
+          "start": 106.6,
+          "end": 111,
+          "position": {
+            "x": 145,
+            "y": 0,
+            "w": 120,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "图片",
+            "description": "",
+            "titleAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(124,58,237,0.12)"
+          }
+        },
+        {
+          "id": "P6-007",
+          "type": "CardComponent",
+          "start": 107.6,
+          "end": 111,
+          "position": {
+            "x": 280,
+            "y": 0,
+            "w": 120,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "色块",
+            "description": "",
+            "titleAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #F97316 0%, #F43F5E 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(249,115,22,0.12)"
+          }
+        },
+        {
+          "id": "P6-008",
+          "type": "CardComponent",
+          "start": 108.6,
+          "end": 111,
+          "position": {
+            "x": 415,
+            "y": 0,
+            "w": 120,
+            "h": 50
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "版式",
+            "description": "",
+            "titleAlign": "center",
+            "gap": 0,
+            "titleMarginBottom": 0,
+            "contentAlign": "center"
+          },
+          "customStyle": {
+            "background": "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+            "borderRadius": 999,
+            "padding": 5,
+            "titleColor": "#FFFFFF",
+            "titleFontSize": "32px",
+            "titleFontWeight": "900",
+            "descriptionColor": "#FFFFFF",
+            "descriptionFontSize": "22px",
+            "shadow": "0 2px 8px rgba(16,185,129,0.12)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "P6-009",
+      "type": "AggregateComponent",
+      "start": 111,
+      "end": 118.1,
+      "position": {
+        "w": 650,
+        "h": 320
+      },
+      "fullRow": true,
+      "children": [
+        {
+          "id": "P6-010",
+          "type": "ImageComponent",
+          "start": 111,
+          "end": 118.1,
+          "position": {
+            "x": 0,
+            "y": 90,
+            "w": 310,
+            "h": 230
+          },
+          "theme": "clean-rounded",
+          "content": {
+            "image": "./assets/20260610/step6-materials-showcase1.png",
+            "fit": "contain",
+            "borderRadius": 18
+          }
+        },
+        {
+          "id": "P6-011",
+          "type": "ImageComponent",
+          "start": 111,
+          "end": 118.1,
+          "position": {
+            "x": 340,
+            "y": 90,
+            "w": 310,
+            "h": 230
+          },
+          "theme": "clean-rounded",
+          "content": {
+            "image": "./assets/20260610/step6-materials-showcase3.png",
+            "fit": "contain",
+            "borderRadius": 18
+          }
+        },
+        {
+          "id": "P6-012",
+          "type": "CardComponent",
+          "start": 111,
+          "end": 118.1,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "w": 650,
+            "h": 78
+          },
+          "content": {
+            "variant": "text-only",
+            "title": "评论区领取工具包",
+            "description": "工具和教程都整理好了，复制粘贴就能跑，零门槛上手。",
+            "titleAlign": "center",
+            "descriptionAlign": "center",
+            "contentAlign": "center",
+            "titleColor": "#2563EB"
+          },
+          "customStyle": {
+            "background": "transparent",
+            "borderRadius": 0,
+            "padding": 0,
+            "titleColor": "#0F172A",
+            "titleFontSize": "46px",
+            "titleFontWeight": "950",
+            "descriptionColor": "#334155",
+            "descriptionFontSize": "26px",
+            "shadow": "none"
+          }
+        }
+      ]
+    },
+    {
+      "id": "P6-013",
+      "type": "TitleComponent",
+      "start": 118.1,
+      "end": 120.466,
+      "position": {
+        "w": 690,
+        "h": 110
+      },
+      "content": {
+        "text": "用工具帮你解决加班",
+        "level": 1,
+        "align": "center",
+        "color": "#111827"
+      },
+      "fullRow": true,
+      "customStyle": {
+        "level1": {
+          "fontSize": "60px",
+          "fontWeight": "900",
+          "color": "#111827",
+          "lineHeight": "1.12"
+        },
+        "level2": {
+          "fontSize": "44px",
+          "fontWeight": "850",
+          "color": "#111827",
+          "lineHeight": "1.18"
+        },
+        "level3": {
+          "fontSize": "33px",
+          "fontWeight": "760",
+          "color": "#111827",
+          "lineHeight": "1.25"
+        }
+      }
+    }
+  ]
+}
