@@ -1,0 +1,52 @@
+# ============================================
+# CanvasVideo Skill — .gitignore
+# ============================================
+
+# Node 依赖
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 用户工作目录（首次使用时由 Skill 自动创建，不应进入仓库）
+canvasvideo-workdir/
+workdir/
+
+# 用户凭证（绝对不能提交，含明文 userToken）
+.user.json
+**/.user.json
+
+# Skill 本地状态
+.canvasvideo/
+**/.canvasvideo/
+project-state.json
+
+# 临时打包产物
+*.zip
+*.tar.gz
+dist/
+build/
+tmp/
+.cache/
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# 日志
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 环境变量
+.env
+.env.local
+.env.*.local
