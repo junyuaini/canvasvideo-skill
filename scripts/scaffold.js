@@ -123,14 +123,15 @@ function ensureBgm(workdirRoot, skillProjectId, styleHint) {
   const copied = [];
   let hasBgm = false;
   for (const style of stylesToCopy) {
-    const src = path.join(sourceDir, `${style}.mp3`);
-    const dst = path.join(targetDir, `${style}.mp3`);
-    if (fs.existsSync(src)) {
-      hasBgm = true;
-      if (!fs.existsSync(dst)) {
-        fs.copyFileSync(src, dst);
-        copied.push(`assets/placeholders/bgm/${style}.mp3`);
-      }
+    // 支持 .mp3 和 .wav 两种格式（优先 .mp3）
+    const ext = ['.mp3', '.wav'].find(e => fs.existsSync(path.join(sourceDir, `${style}${e}`)));
+    if (!ext) continue;
+    const src = path.join(sourceDir, `${style}${ext}`);
+    const dst = path.join(targetDir, `${style}${ext}`);
+    hasBgm = true;
+    if (!fs.existsSync(dst)) {
+      fs.copyFileSync(src, dst);
+      copied.push(`assets/placeholders/bgm/${style}${ext}`);
     }
   }
   return { copied, targetDir, hasBgm };

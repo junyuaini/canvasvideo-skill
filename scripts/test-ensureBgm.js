@@ -11,11 +11,11 @@ if (fs.existsSync(projectDir)) {
   fs.rmSync(projectDir, { recursive: true });
 }
 
-console.log('=== Test 1: 无 mp3 时 hasBgm=false ===');
+console.log('=== Test 1: 有 wav 时正确复制 ===');
 const r1 = ensureBgm(workdirRoot, skillProjectId);
 console.log('hasBgm:', r1.hasBgm, '| copied:', r1.copied.length);
-console.assert(r1.hasBgm === false, '无 mp3 时应返回 hasBgm=false');
-console.assert(r1.copied.length === 0, '无 mp3 时应返回 copied=[]');
+console.assert(r1.hasBgm === true, '有 wav 时应返回 hasBgm=true');
+console.assert(r1.copied.length === 6, '应复制 6 个 wav 文件');
 
 console.log('\n=== Test 2: 模拟放入 2 个 mp3 ===');
 const sourceDir = path.resolve(__dirname, '..', 'templates', 'bgm');
