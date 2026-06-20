@@ -876,11 +876,20 @@ require('./scripts/scaffold').writeDesignMd(workdirRoot, state.skillProjectId, d
 // 3. 用户确认后
 require('./scripts/state').markDesignConfirmed(workdir);
 
-// 4. 打包 + 自动注册 + 上传
+// 4. 准备占位素材（SVG + BGM）
+const { ensurePlaceholders, ensureBgm } = require('./scripts/scaffold');
+ensurePlaceholders(workdirRoot, state.skillProjectId, project.theme);
+// 创作模式默认配 BGM；口播模式跳过
+const bgm = ensureBgm(workdirRoot, state.skillProjectId, project.bgmStyle);
+if (bgm.hasBgm) {
+  project.audio = { path: bgm.copied[0], loop: true, fadeIn: 1, fadeOut: 2 };
+}
+
+// 5. 打包 + 自动注册 + 上传
 const { uploadWithUser } = require('./scripts/upload-video');
 const result = await uploadWithUser(SERVER_URL, workdirRoot, state.skillProjectId, zipPath);
 
-// 5. 输出文案
+// 6. 输出文案
 if (result.warnings.length) {
   // 拼到首次告知前面
 }
