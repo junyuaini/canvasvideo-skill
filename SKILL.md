@@ -826,6 +826,32 @@ const workdirRoot = path.resolve(skillDir, '../canvasvideo-workdir');
 
 **任何首次写文件前都应调用 `ensureProjectWorkdir(workdirRoot, skillProjectId)`**，不要假设目录存在。
 
+### 9.4 skillProjectId 生成规则（强制）
+
+**规则**：`skillProjectId` **必须通过 `scripts/state.js` 的 `loadOrCreateProject()` 生成**，禁止 LLM 自己编造 ID。
+
+**正确流程**：
+```js
+const state = require('./scripts/state').loadOrCreateProject(workdir);
+// state.skillProjectId 由程序自动生成，格式：cv_{timestamp36}_{random8}
+// 示例：cv_m3v9z_a1b2c3d4
+```
+
+**错误示例**（LLM 自己编造的 ID，严禁）：
+```
+❌ cv_20260621_couple_love     ← 模型自己写的日期+主题名
+❌ cv_project_1                ← 太简单，没有随机性
+❌ couple_love                 ← 缺少 cv_ 前缀
+❌ cv_123456                   ← 没有 random 部分
+```
+
+**原因**：
+1. `state.js` 生成的 ID 包含时间戳（36 进制）+ 8 位随机十六进制，保证全局唯一
+2. 同一项目多次上传必须复用相同的 `skillProjectId`，服务器才能复用 `previewToken`
+3. 如果 LLM 每次自己编一个新 ID，同一项目会被当成不同项目，导致重复创建、previewToken 不固定
+
+**自检**：生成 ID 后检查格式是否为 `cv_{7-10 位字母数字}_{8 位十六进制}`，如果不是，说明没有正确调用 `state.js`。
+
 ---
 
 ## 十、上传接口
