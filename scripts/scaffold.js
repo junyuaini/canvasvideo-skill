@@ -95,6 +95,48 @@ function ensurePlaceholders(workdirRoot, skillProjectId, theme = 'white') {
 }
 
 /**
+ * BGM 标准风格列表（与 templates/bgm/bgm-catalog.md 一致）
+ */
+const BGM_STYLES = ['tech-pulse', 'warm-cafe', 'uplifting', 'corporate', 'light-pop', 'cinematic'];
+
+/**
+ * 把 templates/bgm/*.mp3（如果存在）复制到工作目录的 assets/placeholders/bgm/。
+ * 如果 templates/bgm/ 下没有 mp3 文件（用户尚未入库），静默跳过。
+ *
+ * @param {string} workdirRoot
+ * @param {string} skillProjectId
+ * @param {string} [styleHint] - 想要的 BGM 风格（如 'uplifting'），不传则复制全部
+ * @returns {Object} { copied: string[], targetDir: string, hasBgm: boolean }
+ */
+function ensureBgm(workdirRoot, skillProjectId, styleHint) {
+  const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
+  const sourceDir = path.resolve(__dirname, '..', 'templates', 'bgm');
+  const targetDir = path.join(workdir, 'assets', 'placeholders', 'bgm');
+
+  if (!fs.existsSync(sourceDir)) {
+    return { copied: [], targetDir, hasBgm: false };
+  }
+
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  const stylesToCopy = styleHint && BGM_STYLES.includes(styleHint) ? [styleHint] : BGM_STYLES;
+  const copied = [];
+  let hasBgm = false;
+  for (const style of stylesToCopy) {
+    const src = path.join(sourceDir, `${style}.mp3`);
+    const dst = path.join(targetDir, `${style}.mp3`);
+    if (fs.existsSync(src)) {
+      hasBgm = true;
+      if (!fs.existsSync(dst)) {
+        fs.copyFileSync(src, dst);
+        copied.push(`assets/placeholders/bgm/${style}.mp3`);
+      }
+    }
+  }
+  return { copied, targetDir, hasBgm };
+}
+
+/**
  * 创建 workdir 目录结构 + 按素材清单批量占位
  * @param {string} workdirRoot
  * @param {string} skillProjectId
@@ -216,9 +258,11 @@ module.exports = {
   ensureWorkdirRoot,
   ensureProjectWorkdir,
   ensurePlaceholders,
+  ensureBgm,
   scaffoldWorkdir,
   writeDesignMd,
   readDesignMd,
   copyUserAsset,
   PLACEHOLDER_HINTS,
+  BGM_STYLES,
 };

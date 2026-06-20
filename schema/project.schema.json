@@ -19,8 +19,42 @@
       "description": "视频总时长（秒）"
     },
     "audio": {
-      "type": "string",
-      "description": "音频文件路径"
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "音频文件路径（旧写法，向后兼容）"
+        },
+        {
+          "type": "object",
+          "description": "音频配置对象（推荐写法）",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "音频文件路径"
+            },
+            "loop": {
+              "type": "boolean",
+              "default": false,
+              "description": "是否循环播放。BGM 用法建议 true，配音用法保持 false"
+            },
+            "fadeIn": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "default": 0,
+              "description": "淡入秒数。BGM 用法建议 1，配音用法保持 0"
+            },
+            "fadeOut": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "default": 0,
+              "description": "淡出秒数。BGM 用法建议 2，配音用法保持 0"
+            }
+          },
+          "required": ["path"]
+        }
+      ]
     },
     "cover": {
       "type": "string",

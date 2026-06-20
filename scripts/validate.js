@@ -45,9 +45,34 @@ function validate(projectOrPath) {
     });
   }
   
-  // audio 必须是字符串
-  if (project.audio !== undefined && typeof project.audio !== 'string') {
-    errors.push('audio 必须是字符串路径');
+  // audio 可以是字符串路径或对象 { path, loop, fadeIn, fadeOut }
+  let audioPath = '';
+  if (project.audio !== undefined) {
+    if (typeof project.audio === 'string') {
+      audioPath = project.audio;
+    } else if (typeof project.audio === 'object' && project.audio !== null) {
+      const a = project.audio;
+      if (typeof a.path !== 'string' || a.path.trim().length === 0) {
+        errors.push('audio.path 必须是非空字符串');
+      } else {
+        audioPath = a.path;
+      }
+      if (a.loop !== undefined && typeof a.loop !== 'boolean') {
+        errors.push('audio.loop 必须是布尔值');
+      }
+      if (a.fadeIn !== undefined) {
+        if (typeof a.fadeIn !== 'number' || a.fadeIn < 0 || a.fadeIn > 5) {
+          errors.push(`audio.fadeIn 必须是 0-5 之间的数字（当前 ${a.fadeIn}）`);
+        }
+      }
+      if (a.fadeOut !== undefined) {
+        if (typeof a.fadeOut !== 'number' || a.fadeOut < 0 || a.fadeOut > 5) {
+          errors.push(`audio.fadeOut 必须是 0-5 之间的数字（当前 ${a.fadeOut}）`);
+        }
+      }
+    } else {
+      errors.push('audio 必须是字符串路径或对象（含 path/loop/fadeIn/fadeOut）');
+    }
   }
   
   // subtitles 必须是数组
@@ -62,19 +87,28 @@ function validate(projectOrPath) {
   }
 
   // 字幕与音频共生规则（详见 SKILL.md §2.4）
-  const hasAudio = typeof project.audio === 'string' && project.audio.trim().length > 0;
+  // 判定 audio 是 BGM 用法还是 配音 用法：
+  //   - BGM 用法：audio 是对象且包含 loop/fadeIn/fadeOut 任一字段（LLM 主动设置过）
+  //   - 配音用法：audio 是字符串、或对象但只有 path（无音效配置）
+  const hasAudio = audioPath.trim().length > 0;
+  const isBgmUsage = (typeof project.audio === 'object' && project.audio !== null
+    && (project.audio.loop !== undefined
+        || project.audio.fadeIn !== undefined
+        || project.audio.fadeOut !== undefined));
   const hasSubtitles = Array.isArray(project.subtitles) && project.subtitles.length > 0;
+
   if (hasSubtitles && !hasAudio) {
     errors.push(
       'subtitles 数组非空，但缺少 audio 字段：字幕必须与配音音频共生，' +
       '创作模式（无音频）严禁写 subtitles，请删除 subtitles 数组或补充 audio 路径。'
     );
   }
-  // 提示：有 audio 但没 subtitles 时，前端无法呈现字幕——这种通常是用户提供了音频但缺 SRT
-  if (hasAudio && !hasSubtitles) {
+  // 提示：有 audio 但没 subtitles 时——只有"配音用法"才拦截；BGM 用法（loop/fadeIn/fadeOut 任一存在）跳过
+  if (hasAudio && !hasSubtitles && !isBgmUsage) {
     errors.push(
-      'audio 字段已设置，但 subtitles 数组为空：口播模式必须提供 SRT 字幕，' +
-      '请补充 subtitles 数组（每条含 start/end/text）或删除 audio 字段切换到创作模式。'
+      'audio 字段已设置但视为配音用法（未配置 loop/fadeIn/fadeOut），但 subtitles 数组为空：' +
+      '配音模式必须提供 SRT 字幕。要让这段音频作为 BGM，请把 audio 改为对象形式并设置 ' +
+      '{ "path": "...", "loop": true, "fadeIn": 1, "fadeOut": 2 }；详见 SKILL.md §2.4。'
     );
   }
 
