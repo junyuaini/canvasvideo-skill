@@ -20,22 +20,6 @@
     <text x="170" y="-215" text-anchor="middle" font-size="24" font-weight="900" fill="#1E3A8A">96%</text>
   </g>
 
-  <text x="640" y="555" text-anchor="middle"
-        font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-        font-size="32" font-weight="700" fill="#1E3A8A" letter-spacing="2">
-    RESULT · 数据成果
-  </text>
-
-  <g transform="translate(640,635)">
-    <rect x="-260" y="-26" width="520" height="52" rx="26"
-          fill="#FFFFFF" opacity="0.9" stroke="#93C5FD" stroke-width="1"/>
-    <text x="0" y="6" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-          font-size="20" font-weight="600" fill="#1E3A8A">
-      ※ 演示图片  请自行替换
-    </text>
-  </g>
-
   <!-- 中央水印（居中 + 半透明，裁剪也可见） -->
   <g opacity="0.45">
     <text x="640" y="360" text-anchor="middle"

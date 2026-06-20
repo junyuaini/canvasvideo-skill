@@ -17,22 +17,6 @@
     <text x="280" y="10" text-anchor="middle" font-size="36" font-weight="900" fill="#FFFFFF">3</text>
   </g>
 
-  <text x="640" y="490" text-anchor="middle"
-        font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-        font-size="32" font-weight="700" fill="#6EE7B7" letter-spacing="2">
-    SOLVE · 解决方案
-  </text>
-
-  <g transform="translate(640,580)">
-    <rect x="-260" y="-26" width="520" height="52" rx="26"
-          fill="#1F1F3A" opacity="0.85" stroke="#065F46" stroke-width="1"/>
-    <text x="0" y="6" text-anchor="middle"
-          font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-          font-size="20" font-weight="600" fill="#A7F3D0">
-      ※ 演示图片  请自行替换
-    </text>
-  </g>
-
   <!-- 中央水印（居中 + 半透明，裁剪也可见） -->
   <g opacity="0.45">
     <text x="640" y="360" text-anchor="middle"
