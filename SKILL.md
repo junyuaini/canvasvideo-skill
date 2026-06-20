@@ -1,3 +1,8 @@
+---
+name: "canvasvideo"
+description: "通过自然语言一键生成可分享的画布视频（H5）。支持创作模式（提供主题/时长/风格）与口播模式（提供音频+SRT）。当用户说'做视频/制作视频/生成视频/做一个 H5/出一个画布视频/视频迭代/换背景音乐/改章节内容'时触发。"
+---
+
 # CanvasVideo Skill
 
 CanvasVideo Skill 帮助用户通过自然语言创建符合 CanvasVideo 规范的视频项目，支持创作模式与口播模式。
