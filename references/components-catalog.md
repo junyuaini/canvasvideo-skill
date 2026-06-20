@@ -506,7 +506,15 @@
 
 ### 嵌套规则
 
-可以嵌套 `AggregateComponent`，**最多两层**（外层→内层→最内层）。
+可以嵌套 `AggregateComponent`，**最多 4 层深度**（即 children 中再含 AggregateComponent，最深 4 级）。
+
+> **嵌套上限设计原因**：
+> - 第 1 层：区域级聚合容器（如 P3 整体布局）
+> - 第 2 层：分组容器（如"对比 vs"左右两列）
+> - 第 3 层：单元容器（如"占位图组合"= Image + 水印 ShockComponent，详见 `templates/placeholders/url-factory.md`）
+> - 第 4 层：单元内的 figcaption / 装饰小元素
+>
+> **超过 4 层会触发渲染卡顿**，且很难维护。如果需要更复杂的层级，请考虑把内层做成独立组件 ID。
 
 ---
 

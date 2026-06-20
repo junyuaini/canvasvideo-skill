@@ -85,9 +85,56 @@ project.json：
 
 #### A. `[AI 自动生成 - 占位]` 的素材 → 引用占位图
 
-详见 [`../templates/placeholders/url-factory.md`](../templates/placeholders/url-factory.md)。**默认使用本地 SVG，更稳更兼容**：
+详见 [`../templates/placeholders/url-factory.md`](../templates/placeholders/url-factory.md)。**默认使用 Unsplash 图床 + Aggregate 叠中文水印**：
 
-**方式 1（推荐 / 默认）：本地 SVG 兜底**
+**方式 1（推荐 / 默认）：Unsplash 图床 + AggregateComponent 叠水印**
+
+视觉效果最好：真实摄影图 + 自加中文胶囊水印"※ 演示图片 请替换"，主题相关性远超几何 SVG。
+
+```json
+{
+  "id": "P3-PLACEHOLDER-001",
+  "type": "AggregateComponent",
+  "position": { "x": 0, "y": 0, "w": 760, "h": 480 },
+  "content": {},
+  "customStyle": { "background": "transparent", "padding": "0", "border": "none" },
+  "children": [
+    {
+      "id": "P3-PLACEHOLDER-001-img",
+      "type": "ImageComponent",
+      "position": { "x": 0, "y": 0, "w": 760, "h": 480 },
+      "content": {
+        "image": "https://source.unsplash.com/1280x720/?ai,technology",
+        "fit": "cover",
+        "borderRadius": 12
+      },
+      "customStyle": {}
+    },
+    {
+      "id": "P3-PLACEHOLDER-001-watermark",
+      "type": "ShockComponent",
+      "position": { "x": 180, "y": 200, "w": 400, "h": 80 },
+      "content": { "text": "※ 演示图片 请替换" },
+      "customStyle": {
+        "background": "rgba(15,23,42,0.55)",
+        "color": "#FFFFFF",
+        "fontSize": "28px",
+        "fontWeight": "700",
+        "padding": "14px 28px",
+        "borderRadius": "999px",
+        "border": "none",
+        "shadow": "0 4px 16px rgba(0,0,0,0.25)",
+        "letterSpacing": "2px"
+      }
+    }
+  ]
+}
+```
+
+**方式 2（备选 / 离线兜底）：本地 SVG**
+
+用户内网部署或 Unsplash 不可达时使用。SVG 自带水印，**不要再叠 Aggregate**。
+
 ```json
 {
   "type": "ImageComponent",
@@ -99,19 +146,9 @@ project.json：
 }
 ```
 
-**方式 2（备选）：在线水印图（仅英文水印）**
-```json
-{
-  "type": "ImageComponent",
-  "content": {
-    "image": "https://placehold.co/1280x720/F3F4F6/6B7280/png?text=Demo+Image%5CnReplace+Me&font=lato"
-  }
-}
-```
-
 > Skill 的 `scripts/scaffold.js` 在调用 `scaffoldWorkdir({theme})` 时会自动复制 7 张 SVG 到工作目录的 `assets/placeholders/{light|dark}/`，所以 LLM **直接写本地路径就行，不用担心文件不存在**。
 >
-> ⚠️ **placehold.co 内置字体不支持中文**，URL 中严禁写中文水印（会变方块）。需要中文水印请使用本地 SVG。
+> 完整决策表 + 主题适配胶囊样式见 [`url-factory.md`](../templates/placeholders/url-factory.md)。
 
 #### B. `[待用户提供]` 的素材 → 也用占位图，提示用户后续替换
 

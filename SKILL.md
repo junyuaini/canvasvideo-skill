@@ -270,6 +270,27 @@ P3 区：start=24, end=36, duration=12s
 - `contentZoomRatio = 1.0` 或 `< 0.85`
 - 漏掉这三个字段（系统 fallback 可能不符合预期）
 
+#### 2.6.3 占位图策略：Unsplash + AggregateComponent 叠水印
+
+**默认主用方案**（视觉效果最好）：
+- 图源：**Unsplash Source API** `https://source.unsplash.com/1280x720/?{keywords}` —— 免费、免 key、按关键词智能匹配主题
+- 水印：用 **AggregateComponent 把 ImageComponent 和 ShockComponent 组合在一起**，ShockComponent 显示中文胶囊水印"※ 演示图片 请替换"
+- 优势：图床字体不支持中文也无所谓（我们自己叠中文水印），且摄影图比 SVG 几何装饰生动数倍
+
+**离线兜底方案**：
+- 用户内网部署 / Unsplash 不可达 → 用本地 SVG（`./assets/placeholders/{light|dark}/{hint}.svg`）
+- SVG 自带水印，**不要再叠 Aggregate**，否则会双水印
+
+**详见 [`templates/placeholders/url-factory.md`](./templates/placeholders/url-factory.md)**：
+- 12 个场景 × 关键词速查表
+- 极简白 / 沉浸黑 主题适配的 Aggregate 完整模板（含胶囊样式）
+- 决策表 + 严禁清单
+
+**严禁**：
+- 在 ImageComponent 直接写 Unsplash URL 而不套 Aggregate（图片裸奔没水印，用户分不清是占位还是真实素材）
+- SVG 兜底再叠 Aggregate 水印（会重复）
+- 修改水印文字"※ 演示图片 请替换"
+
 ---
 
 ## 三、第二次交互：生成本地设计文档与素材清单

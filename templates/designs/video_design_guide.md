@@ -336,6 +336,8 @@
 ### 步骤 7：组件清单
 
 > ⚠️ **本步骤强制前置**：开始填写组件清单前，**必须先查阅 [`../../references/components-catalog.md`](../../references/components-catalog.md)** 的"选型决策树"和各组件 content 字段说明。不查直接写组件类型 / content / 必填字段会大概率出错。
+>
+> ⚠️ **占位图必须用 Aggregate 包装**：当某个组件是 `[AI 自动生成 - 占位]` 的 ImageComponent 时，**必须**写成 AggregateComponent (children: [ImageComponent (Unsplash URL) + ShockComponent (※ 演示图片 请替换 胶囊水印)])，详见 [`../../templates/placeholders/url-factory.md`](../../templates/placeholders/url-factory.md)。
 
 **说明**：列出每个区域的所有组件，包括父组件/子组件关系、类型、表达内容和位置。
 
