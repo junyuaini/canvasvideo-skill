@@ -331,134 +331,280 @@
 
 **说明**：为每个区域的组件设计 customStyle，包括字号、颜色、阴影、圆角等。
 
-**产出示例**：
+#### 9.0 ⚠️ customStyle 结构总规则（极其重要，错了会运行时报错）
 
-**P1**：
+**前端 `ComponentFactory._validateCustomStyle()` 对 customStyle 的格式有严格校验，必须按下表写**：
+
+| 组件类型 | 顶层结构 | 必填字段 |
+|------|------|------|
+| **TitleComponent** | `{ "level{N}": { ... } }`，N 由 `content.level` 决定，默认 1 → `level1` | fontSize, fontWeight, color, lineHeight |
+| **TextComponent** | `{ "{style}": { ... } }`，style 由 `content.style` 决定，默认 `paragraph` | fontSize, color, lineHeight |
+| **ImageComponent** | 直接平铺（无嵌套） | borderRadius, shadow, captionColor, captionFontSize |
+| **CardComponent** | 直接平铺 | background, borderRadius, padding, titleColor, titleFontSize, titleFontWeight, descriptionColor, descriptionFontSize |
+| **QuoteComponent** | 直接平铺 | background, borderLeft, borderRadius, padding, textColor, textFontSize, authorColor, authorFontSize, iconSize |
+| **BadgeComponent** | 直接平铺 | color, textColor, padding, borderRadius, fontSize, fontWeight, shadow |
+| **CornerComponent** | 直接平铺 | color, textColor, padding, borderRadius, fontSize, fontWeight |
+| **ShockComponent** | 直接平铺 | color, textColor, padding, borderRadius, fontSize, fontWeight, border, shadow |
+| **GraphicComponent** | 直接平铺 | background, textColor, primary, accent, secondary, lineColor, borderRadius, padding, titleFontSize, itemFontSize, shadow |
+| **AggregateComponent** | 不需要 customStyle（只负责布局） | — |
+
+#### 9.1 正确写法 vs 错误写法（务必避免）
+
+**✅ TitleComponent（正确，必须有 level1 嵌套层）**：
 ```json
 {
-  "title": {
+  "id": "P1-001",
+  "type": "TitleComponent",
+  "content": { "text": "画布视频", "level": 1 },
+  "customStyle": {
+    "level1": {
+      "fontSize": "60px",
+      "fontWeight": "900",
+      "color": "#111827",
+      "lineHeight": "1.1"
+    }
+  }
+}
+```
+
+**❌ TitleComponent（错误，会报"customStyle 缺少 level1"）**：
+```json
+{
+  "customStyle": {
     "fontSize": "60px",
     "fontWeight": "900",
     "color": "#111827",
     "lineHeight": "1.1"
-  },
-  "shock": {
+  }
+}
+```
+
+**✅ ShockComponent（正确，直接平铺，9 个必填字段都不能少）**：
+```json
+{
+  "id": "P1-002",
+  "type": "ShockComponent",
+  "content": { "text": "让AI轻松制作视频" },
+  "customStyle": {
+    "color": "transparent",
+    "textColor": "#FFFFFF",
+    "padding": "16px 32px",
+    "borderRadius": "16px",
     "fontSize": "36px",
     "fontWeight": "800",
-    "color": "#FFFFFF",
-    "background": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
-    "borderRadius": "16px",
-    "padding": "16px 32px",
+    "border": "none",
     "shadow": "0 4px 16px rgba(37,99,235,0.3)"
   }
 }
 ```
 
-**P2**：
+**✅ TextComponent（正确，必须有 paragraph 或自定义 style 嵌套层）**：
 ```json
 {
-  "title": {
-    "fontSize": "46px",
-    "fontWeight": "900",
-    "color": "#111827",
-    "lineHeight": "1.12"
-  },
-  "painBadge": {
-    "fontSize": "28px",
-    "fontWeight": "800",
-    "color": "#FFFFFF",
-    "background": "#DC2626",
-    "borderRadius": "999px",
-    "padding": "10px 24px",
-    "shadow": "0 4px 12px rgba(220,38,38,0.4)"
-  },
-  "solutionBadge": {
-    "fontSize": "32px",
-    "fontWeight": "900",
-    "color": "#FFFFFF",
-    "background": "#059669",
-    "borderRadius": "999px",
-    "padding": "12px 28px",
-    "shadow": "0 4px 12px rgba(5,150,105,0.4)"
+  "id": "P3-002",
+  "type": "TextComponent",
+  "content": { "text": "从JSON到成片", "style": "paragraph" },
+  "customStyle": {
+    "paragraph": {
+      "fontSize": "28px",
+      "color": "#6B7280",
+      "lineHeight": "1.4"
+    }
   }
 }
 ```
 
-**P3**：
+#### 9.2 各区域 customStyle 完整示例
+
+**P1（HOOK）**：
 ```json
 {
-  "title": {
-    "fontSize": "46px",
-    "fontWeight": "900",
-    "color": "#111827",
-    "lineHeight": "1.12"
+  "P1-001": {
+    "type": "TitleComponent",
+    "customStyle": {
+      "level1": {
+        "fontSize": "60px",
+        "fontWeight": "900",
+        "color": "#111827",
+        "lineHeight": "1.1"
+      }
+    }
   },
-  "subtitle": {
-    "fontSize": "28px",
-    "fontWeight": "600",
-    "color": "#6B7280",
-    "lineHeight": "1.4"
-  },
-  "stepCard": {
-    "background": "#FFFFFF",
-    "borderRadius": "14px",
-    "padding": "20px",
-    "shadow": "0 12px 28px rgba(15,23,42,0.08)",
-    "titleFontSize": "24px",
-    "titleFontWeight": "800",
-    "titleColor": "#2563EB",
-    "descriptionFontSize": "18px",
-    "descriptionColor": "#6B7280"
+  "P1-002": {
+    "type": "ShockComponent",
+    "customStyle": {
+      "color": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+      "textColor": "#FFFFFF",
+      "padding": "16px 32px",
+      "borderRadius": "16px",
+      "fontSize": "36px",
+      "fontWeight": "800",
+      "border": "none",
+      "shadow": "0 4px 16px rgba(37,99,235,0.3)"
+    }
   }
 }
 ```
 
-**P4**：
+**P2（PAIN）**：
 ```json
 {
-  "title": {
-    "fontSize": "46px",
-    "fontWeight": "900",
-    "color": "#111827",
-    "lineHeight": "1.12"
+  "P2-001": {
+    "type": "TitleComponent",
+    "customStyle": {
+      "level1": {
+        "fontSize": "46px",
+        "fontWeight": "900",
+        "color": "#111827",
+        "lineHeight": "1.12"
+      }
+    }
   },
-  "dataShock": {
-    "fontSize": "72px",
-    "fontWeight": "950",
-    "color": "#2563EB",
-    "background": "transparent",
-    "subtitleFontSize": "20px",
-    "subtitleColor": "#6B7280"
+  "P2-003_to_P2-005": {
+    "type": "BadgeComponent",
+    "customStyle": {
+      "color": "#DC2626",
+      "textColor": "#FFFFFF",
+      "padding": "10px 24px",
+      "borderRadius": "999px",
+      "fontSize": "28px",
+      "fontWeight": "800",
+      "shadow": "0 4px 12px rgba(220,38,38,0.4)"
+    }
+  },
+  "P2-006": {
+    "type": "BadgeComponent",
+    "customStyle": {
+      "color": "#059669",
+      "textColor": "#FFFFFF",
+      "padding": "12px 28px",
+      "borderRadius": "999px",
+      "fontSize": "32px",
+      "fontWeight": "900",
+      "shadow": "0 4px 12px rgba(5,150,105,0.4)"
+    }
   }
 }
 ```
 
-**P5**：
+**P3（SOLVE）**：
 ```json
 {
-  "title": {
-    "fontSize": "54px",
-    "fontWeight": "900",
-    "color": "#111827",
-    "lineHeight": "1.1"
+  "P3-001": {
+    "type": "TitleComponent",
+    "customStyle": {
+      "level1": {
+        "fontSize": "46px",
+        "fontWeight": "900",
+        "color": "#111827",
+        "lineHeight": "1.12"
+      }
+    }
   },
-  "shock": {
-    "fontSize": "40px",
-    "fontWeight": "900",
-    "color": "#F59E0B",
-    "background": "transparent"
+  "P3-002": {
+    "type": "TextComponent",
+    "customStyle": {
+      "paragraph": {
+        "fontSize": "28px",
+        "color": "#6B7280",
+        "lineHeight": "1.4"
+      }
+    }
   },
-  "ctaButton": {
-    "fontSize": "28px",
-    "fontWeight": "900",
-    "color": "#FFFFFF",
-    "background": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
-    "borderRadius": "999px",
-    "padding": "16px 40px",
-    "shadow": "0 4px 16px rgba(37,99,235,0.4)"
+  "P3-004_to_P3-007": {
+    "type": "CardComponent",
+    "customStyle": {
+      "background": "#FFFFFF",
+      "borderRadius": "14px",
+      "padding": "20px",
+      "titleColor": "#2563EB",
+      "titleFontSize": "24px",
+      "titleFontWeight": "800",
+      "descriptionColor": "#6B7280",
+      "descriptionFontSize": "18px"
+    }
   }
 }
 ```
+
+**P4（RESULT）**：
+```json
+{
+  "P4-001": {
+    "type": "TitleComponent",
+    "customStyle": {
+      "level1": {
+        "fontSize": "46px",
+        "fontWeight": "900",
+        "color": "#111827",
+        "lineHeight": "1.12"
+      }
+    }
+  },
+  "P4-003_to_P4-006": {
+    "type": "ShockComponent",
+    "customStyle": {
+      "color": "transparent",
+      "textColor": "#2563EB",
+      "padding": "20px 12px",
+      "borderRadius": "12px",
+      "fontSize": "72px",
+      "fontWeight": "950",
+      "border": "none",
+      "shadow": "0 4px 12px rgba(37,99,235,0.15)"
+    }
+  }
+}
+```
+
+**P5（CTA）**：
+```json
+{
+  "P5-001": {
+    "type": "TitleComponent",
+    "customStyle": {
+      "level1": {
+        "fontSize": "54px",
+        "fontWeight": "900",
+        "color": "#111827",
+        "lineHeight": "1.1"
+      }
+    }
+  },
+  "P5-002": {
+    "type": "ShockComponent",
+    "customStyle": {
+      "color": "transparent",
+      "textColor": "#F59E0B",
+      "padding": "12px 24px",
+      "borderRadius": "12px",
+      "fontSize": "40px",
+      "fontWeight": "900",
+      "border": "none",
+      "shadow": "none"
+    }
+  },
+  "P5-003": {
+    "type": "BadgeComponent",
+    "customStyle": {
+      "color": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+      "textColor": "#FFFFFF",
+      "padding": "16px 40px",
+      "borderRadius": "999px",
+      "fontSize": "28px",
+      "fontWeight": "900",
+      "shadow": "0 4px 16px rgba(37,99,235,0.4)"
+    }
+  }
+}
+```
+
+#### 9.3 自检要点（生成 project.json 前必查）
+
+- [ ] 每个 `TitleComponent` 的 customStyle 是否有 `level{content.level}` 嵌套？默认 `level1`
+- [ ] 每个 `TextComponent` 的 customStyle 是否有 `paragraph` 或 `content.style` 嵌套？
+- [ ] 平铺类组件（Image / Card / Quote / Badge / Corner / Shock / Graphic）是否所有必填字段都有值（不能为空字符串/null/undefined）？
+- [ ] `AggregateComponent` 没有 customStyle（如果加了会被忽略，但建议不要写）
 
 ### 步骤 10：时间轴设计
 
@@ -510,6 +656,9 @@
 | 组件 end ≤ 下一区域 start | ✅ 通过 | 无时间重叠 |
 | 相邻区域无时间重叠 | ✅ 通过 | P1(0-12), P2(12-24), P3(24-36), P4(36-48), P5(48-60) |
 | 图片切换 end=start | ✅ 通过 | 无图片切换场景 |
+| **TitleComponent.customStyle 含 `level{N}` 嵌套** | ✅ 通过 | 所有 Title 默认 level1，customStyle.level1 已配置 |
+| **TextComponent.customStyle 含 `paragraph` 或 style 嵌套** | ✅ 通过 | TextComponent 已用 paragraph 嵌套 |
+| **平铺类组件必填字段无空值** | ✅ 通过 | Badge/Card/Shock 等所有必填字段已写齐 |
 
 #### L1 检查（严重违规）
 
@@ -596,6 +745,9 @@
 7. **禁止 AggregateComponent 使用预设 layout 模板，必须用自定义 position 模式（手动配置 x/y/w/h）**
 8. **禁止组件 ID 使用英文单词，必须使用数字编号格式：`{区域}-###`（如 P1-001, P2-003, P3-005）**
 9. 禁止把设计文档上传到服务器（只保留在本地 `canvasvideo-workdir/{skillProjectId}/design.md`）
+10. **禁止 TitleComponent 的 customStyle 直接平铺**：必须有 `level{content.level}` 嵌套层（例：`{ "level1": { "fontSize": "60px", ... } }`），否则会触发 `customStyle 缺少 "level1"` 运行时报错
+11. **禁止 TextComponent 的 customStyle 直接平铺**：必须有 `paragraph` 或 `content.style` 嵌套层
+12. **禁止平铺类组件遗漏必填字段**：Image / Card / Quote / Badge / Corner / Shock / Graphic 各自有固定的必填字段表（见步骤 9.0），**任何字段空值或缺失都会运行时报错**
 
 ---
 
