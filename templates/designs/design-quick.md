@@ -1,21 +1,21 @@
-# 快速模式设计文档模板（design-quick.md）
+# 自助设计文档模板（design-quick.md）
 
-> 这是 CanvasVideo Skill **路径 B 快速模式**的设计文档模板。
+> 这是 CanvasVideo Skill **自助设计**的设计文档模板。
 >
 > **关键约定**：
 > - 一次性输出，**不要求用户确认**，生成后直接进入打包上传
 > - **不能省略**：5 块结构都必须填，留空 = 跳过思考脚手架 = 出来的视频空洞
 > - **必查规则保持不变**：[`components-catalog.md`](../../references/components-catalog.md) 选型决策、[`timing-rules.md`](../../references/timing-rules.md) 节奏门槛、[`layout-rules.md`](../../references/layout-rules.md) 布局公式
-> - **后续写 project.json 时仍必须按 [`build_project_json.md`](./build_project_json.md) 流程走**——包括 batch 查 API、本地 selfcheck、云端 precheck（快速模式不放宽任何质量底线）
+> - **后续写 project.json 时仍必须按 [`build_project_json.md`](./build_project_json.md) 流程走**——包括 batch 查 API、本地 selfcheck、云端 precheck（自助设计不放宽任何质量底线）
 
 ---
 
 ## 模板（LLM 按下面 5 块填即可）
 
 ```markdown
-# {项目名}（快速模式）
+# {项目名}（自助设计）
 
-> ⚡ 快速模式产出 — 跳过用户确认环节，由 LLM 直接生成 project.json 并上传
+> ⚡ 自助设计产出 — 跳过用户确认环节，由 LLM 直接生成 project.json 并上传
 
 ## 1. 基础设定
 
@@ -62,9 +62,9 @@
 
 ---
 
-## 与标准模式 design.md 的关键差异
+## 与协作设计 design.md 的关键差异
 
-| 维度 | 标准 design.md（video_design_guide.md） | 快速 design-quick.md |
+| 维度 | 完整 design.md（video_design_guide.md） | 自助设计 design-quick.md |
 |---|---|---|
 | **结构** | 11 个步骤、五阶段 | 5 块结构 |
 | **长度** | 通常 800-1500 行 | < 50 行 |
@@ -76,15 +76,15 @@
 
 ---
 
-## 快速模式产出后的局部编辑
+## 自助设计产出后的局部编辑
 
-用户拿到快速模式视频后，常见反馈：
+用户拿到自助设计视频后，常见反馈：
 
 > "把 P3-004 的图改成 ./assets/images/my-photo.png"
 > "P1-002 文字改成 'AI 让一切变简单'"
 > "P4-001 背景再深一点"
 
-**处理方式**（同标准模式）：
+**处理方式**（同协作设计）：
 - 直接修改 `{workdirRoot}/{skillProjectId}/project.json` 的对应字段
 - 修改后重新打包上传（previewToken 不变，URL 保持稳定）
 - **不重做 design-quick.md**
@@ -101,6 +101,6 @@
 
 1. 调 `state.markDesignConfirmed()` 标记设计已确认
 2. 进入 [`build_project_json.md`](./build_project_json.md) 子流程写 project.json
-3. **批量调 `POST /api/component/spec/batch` 查所有用到的组件字段**（这是硬规则，快速模式不放宽）
+3. **批量调 `POST /api/component/spec/batch` 查所有用到的组件字段**（这是硬规则，自助设计不放宽）
 4. 写完 project.json → `validate.js` 本地自检 → `uploadWithUser`（含云端 precheck）→ 返回 previewToken
-5. 输出文案前缀加 `⚡ 快速模式产出` 标记（详见 SKILL.md §五 输出文案）
+5. 输出文案前缀加 `⚡ 自助设计产出` 标记（详见 SKILL.md §五 输出文案）

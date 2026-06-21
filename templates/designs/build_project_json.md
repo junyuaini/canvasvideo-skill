@@ -3,8 +3,8 @@
 > 本文档是 **CanvasVideo Skill 主流程"第四次交互"中"打包前生成 project.json"那一步的子流程**。
 >
 > **两条路径都用本子流程**：
-> - **路径 A 标准**：用户在第三次交互确认 design.md 后，LLM 按本文档翻译成 `project.json`
-> - **路径 B 快速**：design-quick.md 写完即视为确认，直接按本文档翻译，但**信息来源是 design-quick.md** 的 5 块结构（基础设定 / 区域划分 / 主视觉决策 / 节奏曲线 / 自检清单）
+> - **协作设计**：用户在第三次交互确认 design.md 后，LLM 按本文档翻译成 `project.json`
+> - **自助设计**：design-quick.md 写完即视为确认，直接按本文档翻译，但**信息来源是 design-quick.md** 的 5 块结构（基础设定 / 区域划分 / 主视觉决策 / 节奏曲线 / 自检清单）
 >
 > ⚠️ **不论哪条路径，本文档的所有硬规则一概不放宽**：§3.1 batch 查 API、§4 11 步翻译、§6 三层自检、§8 严禁清单 全部生效。
 
@@ -14,9 +14,9 @@
 
 ```
 {workdirRoot}/{skillProjectId}/
-├── design.md          ← [路径 A] 第二+三次交互产物（你已经写好）
-├── design-quick.md    ← [路径 B] 第二次交互产物（精简版，一次性写好）
-├── project.json       ← ⭐ 本子流程产出（写到这里，路径 A/B 都一样）
+├── design.md          ← [协作设计] 第二+三次交互产物（你已经写好）
+├── design-quick.md    ← [自助设计] 第二次交互产物（精简版，一次性写好）
+├── project.json       ← ⭐ 本子流程产出（写到这里，两条路径都一样）
 └── assets/
     └── images/
 ```
