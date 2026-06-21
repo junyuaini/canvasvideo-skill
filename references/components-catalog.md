@@ -200,3 +200,72 @@ GET /cv/api/component/spec/GraphicComponent/comparison
 1. **写死项要看 hardcoded 字段**：每个组件返回结果里的 `hardcoded` 数组列出了无法通过 JSON 调整的视觉元素。如果用户要改的内容在 hardcoded 里，要明确告诉用户这个调不了。
 2. **不要凭直觉编字段名**：customStyle 字段必须是 API 返回里出现过的 key，否则前端会忽略。
 3. **API 永远是最新的**：本文档可能滞后于代码，**字段以 API 为准**，本文档只用来选型。
+
+---
+
+## ⚠️ 全局硬约束：每个组件必须有 customStyle 字段
+
+**规则**：除 `AggregateComponent` 之外，**所有组件都必须在 project.json 里写 `customStyle` 字段**——即使该组件所有样式都用默认值，也必须写空对象 `customStyle: {}`。
+
+**理由**：前端 [`ComponentFactory._validateCustomStyle`](file:///d:/TRAE SOLO/视频制作/video-maker-system/src/components/manager/ComponentFactory.js#L105-L111) 在组件加载时强制要求 `customStyle` 字段存在，缺失会抛出运行时错误：
+
+```
+加载项目失败: ImageComponent [P1-005] 未配置 theme，必须配置 customStyle。
+```
+
+### 正确写法
+
+```jsonc
+// ✅ 即使 ImageComponent 不需要任何自定义样式，也要写空对象
+{
+  "id": "P1-005",
+  "type": "ImageComponent",
+  "content": { "image": "./assets/images/hook.svg", "fit": "cover" },
+  "position": { "x": 20, "y": 100, "w": 740, "h": 360 },
+  "customStyle": {}  // ⭐ 必须写
+}
+
+// ✅ 有自定义样式时正常填字段（字段以 API 为准）
+{
+  "id": "P1-001",
+  "type": "TitleComponent",
+  "content": { "text": "标题", "level": 1 },
+  "position": { ... },
+  "customStyle": {
+    "level1": { "color": "#111827", "fontSize": "48px", "fontWeight": "900" }
+  }
+}
+
+// ✅ AggregateComponent 例外：不需要 customStyle
+{
+  "id": "P3-001",
+  "type": "AggregateComponent",
+  "position": { ... },
+  "children": [ ... ]
+  // 不写 customStyle 也可以
+}
+```
+
+### 错误写法
+
+```jsonc
+// ❌ 漏掉 customStyle 字段
+{
+  "id": "P1-005",
+  "type": "ImageComponent",
+  "content": { "image": "..." },
+  "position": { ... }
+  // 缺少 customStyle → 前端加载报错
+}
+
+// ❌ customStyle 写成 null
+{
+  "id": "P1-005",
+  "type": "ImageComponent",
+  "customStyle": null  // ❌ 必须是对象，可以是空对象 {} 但不能是 null
+}
+```
+
+### 自动校验
+
+本规则已经在 `scripts/validate.js` 和服务端 `server/utils/projectValidator.js` 中作为**业务规则强校验**——任何缺失 customStyle 的 project.json 在打包/上传时都会被拦截。详见 [`selfcheck-rules.md`](./selfcheck-rules.md) L0 检查。

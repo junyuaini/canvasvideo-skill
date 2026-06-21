@@ -58,6 +58,7 @@ function validate(projectOrPath) {
  * 业务规则校验
  * - subtitles 与 audio 共生
  * - audio 配音用法必须有字幕，BGM 用法可无字幕
+ * - 非 AggregateComponent 必须配置 customStyle 字段（允许空对象 {}）
  */
 function businessRules(project) {
   const errors = [];
@@ -88,7 +89,38 @@ function businessRules(project) {
     );
   }
 
+  // 非 AggregateComponent 必须有 customStyle 字段（前端 ComponentFactory 强制要求）
+  if (Array.isArray(project.components)) {
+    checkCustomStyleRecursive(project.components, errors);
+  }
+
   return errors;
+}
+
+/**
+ * 递归检查 components 数组：
+ * 非 AggregateComponent 必须有 customStyle 字段（即使是空对象 {}）
+ */
+function checkCustomStyleRecursive(components, errors, parentPath) {
+  components.forEach((comp, idx) => {
+    if (!comp || typeof comp !== 'object') return;
+    const pathStr = parentPath ? `${parentPath}.children[${idx}]` : `components[${idx}]`;
+    const labelId = comp.id ? ` [${comp.id}]` : '';
+
+    // AggregateComponent 不需要 customStyle，跳过自身但继续遍历 children
+    if (comp.type !== 'AggregateComponent') {
+      if (!comp.customStyle || typeof comp.customStyle !== 'object') {
+        errors.push(
+          `${pathStr} ${comp.type || ''}${labelId} 缺少 customStyle 字段：前端 ComponentFactory 要求所有非 AggregateComponent 组件必须配置 customStyle（如果无需自定义样式，写空对象 customStyle: {} 即可）。`
+        );
+      }
+    }
+
+    // 递归 children
+    if (Array.isArray(comp.children) && comp.children.length > 0) {
+      checkCustomStyleRecursive(comp.children, errors, pathStr);
+    }
+  });
 }
 
 // CLI 模式

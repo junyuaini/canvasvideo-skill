@@ -27,6 +27,7 @@
 | 组件 end ≤ 下一区域 start | 无时间重叠 | timing-rules.md |
 | 相邻区域无时间重叠 | P1(0-12), P2(12-24)... | timing-rules.md |
 | 图片切换 end=start | 无图片切换重叠 | — |
+| **非 AggregateComponent 必须有 customStyle 字段** | 所有非 Aggregate 组件含 `customStyle`，无样式时也要写 `{}` | components-catalog.md §"全局硬约束" |
 | TitleComponent.customStyle 含 `level{N}` 嵌套 | 默认 level1 | components-catalog.md |
 | TextComponent.customStyle 含 `paragraph` 或 style 嵌套 | 默认 paragraph | components-catalog.md |
 | 平铺类组件必填字段无空值 | Badge/Card/Shock 等已写齐 | API: /api/component/spec |

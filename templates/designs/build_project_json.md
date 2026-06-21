@@ -47,9 +47,11 @@
 | 内容字段（标题文字、items 等） | `content.{...}` | 步骤 7 |
 | 区域 x/y/w/h | `position: { x, y, w, h }` | 步骤 6 |
 | `fullRow`（标题独占整行） | `fullRow: true` | 步骤 7 |
-| customStyle | `customStyle: {...}` | 步骤 9（**API 查字段**） |
+| customStyle | **`customStyle: {...}`（⚠️ 必填，非 Aggregate 组件即使无样式也要写 `{}`）** | 步骤 9（**API 查字段**） |
 | 出场时间 | `start` / `end` | 步骤 10 |
 | 子组件（AggregateComponent） | `children: [...]` | 步骤 7 |
+
+> ⚠️ **硬约束**：除 `AggregateComponent` 之外，**所有组件必须有 `customStyle` 字段**。如果该组件用默认样式无需自定义，**也必须显式写 `"customStyle": {}` 空对象**，否则前端加载报错"未配置 theme，必须配置 customStyle"。详见 [`../../references/components-catalog.md`](../../references/components-catalog.md) §"全局硬约束"。
 
 ### 3.1 组件字段必查 API
 
@@ -311,6 +313,7 @@ if (!result.valid) {
 ## 8. 严禁清单
 
 - ❌ 跳过 §3.1 直接编 customStyle 字段名
+- ❌ **非 AggregateComponent 组件漏写 customStyle 字段**（即使无样式也要写空对象 `{}`，详见 §3）
 - ❌ position 用全局 canvas 坐标（必须是区域内相对坐标）
 - ❌ start/end 用区域内相对时间（必须是视频全局秒数）
 - ❌ 漏掉 `viewport` / `canvas` / `regions` / `settings` 任一字段

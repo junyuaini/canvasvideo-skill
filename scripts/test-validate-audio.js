@@ -7,7 +7,7 @@ const base = {
   viewport: { width: 780, height: 585 },
   regions: [{ name: 'P1', x: 0, y: 0 }],
   settings: { preFullViewDuration: 0.4, postFullViewDuration: 0.4, contentZoomRatio: 0.9 },
-  components: [{ id: 'P1-001', type: 'TitleComponent', position: { x: 0, y: 0, w: 780, h: 585 } }]
+  components: [{ id: 'P1-001', type: 'TitleComponent', position: { x: 0, y: 0, w: 780, h: 585 }, customStyle: {} }]
 };
 
 function test(name, proj, expectValid) {
