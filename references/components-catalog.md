@@ -105,7 +105,7 @@
 ### ImageComponent
 - ✅ 产品截图、照片墙轮播、独立大图展示
 - ❌ 图文结合卡片（用 CardComponent）、装饰性小图标（直接用 emoji）
-- 注意：主体图片建议 `borderRadius: 0`；长图高度 ≥ 400px
+- 注意：主体图片建议 borderRadius=0（API 返回的默认值可能不同，以 API 为准）；长图高度 ≥ 400px
 
 ### CardComponent
 - ✅ 步骤卡、特性介绍卡、角色卡、画廊集
@@ -216,7 +216,7 @@ GET /cv/api/component/spec/GraphicComponent/comparison
 ### 正确写法
 
 ```jsonc
-// ✅ 即使 ImageComponent 不需要任何自定义样式，也要写空对象
+// ✅ 无自定义样式时写空对象（最常用）
 {
   "id": "P1-005",
   "type": "ImageComponent",
@@ -225,14 +225,15 @@ GET /cv/api/component/spec/GraphicComponent/comparison
   "customStyle": {}  // ⭐ 必须写
 }
 
-// ✅ 有自定义样式时正常填字段（字段以 API 为准）
+// ✅ 有自定义样式时正常填字段（字段名和值以 API 返回为准）
 {
   "id": "P1-001",
   "type": "TitleComponent",
   "content": { "text": "标题", "level": 1 },
   "position": { ... },
   "customStyle": {
-    "level1": { "color": "#111827", "fontSize": "48px", "fontWeight": "900" }
+    // 字段名和值以 API 返回为准，禁止凭记忆编
+    "<API返回的styleKey>": { "<字段>": "<值>" }
   }
 }
 
@@ -263,6 +264,16 @@ GET /cv/api/component/spec/GraphicComponent/comparison
   "id": "P1-005",
   "type": "ImageComponent",
   "customStyle": null  // ❌ 必须是对象，可以是空对象 {} 但不能是 null
+}
+
+// ❌ 凭记忆编字段名（必须以 API 返回为准）
+{
+  "id": "P1-005",
+  "type": "ImageComponent",
+  "customStyle": {
+    "borderRadius": 12,  // ❌ 字段名可能不对，必须以 API 返回为准
+    "shadow": "..."
+  }
 }
 ```
 
