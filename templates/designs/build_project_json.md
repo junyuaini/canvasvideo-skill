@@ -2,11 +2,9 @@
 
 > 本文档是 **CanvasVideo Skill 主流程"第四次交互"中"打包前生成 project.json"那一步的子流程**。
 >
-> **两条路径都用本子流程**：
-> - **协作设计**：用户在第三次交互确认 design.md 后，LLM 按本文档翻译成 `project.json`
-> - **自主设计**：design.md 由 LLM 自我确认后，按本文档翻译成 `project.json`
+> 用户在第三次交互确认 design.md 后，LLM 按本文档翻译成 `project.json`。
 >
-> ⚠️ **不论哪条路径，本文档的所有硬规则一概不放宽**：§3.1 batch 查 API、§4 11 步翻译、§6 三层自检、§8 严禁清单 全部生效。
+> ⚠️ **本文档的所有硬规则一概不放宽**：§3.1 batch 查 API、§4 11 步翻译、§6 三层自检、§8 严禁清单 全部生效。
 
 ---
 
@@ -14,8 +12,8 @@
 
 ```
 {workdirRoot}/{skillProjectId}/
-├── design.md          ← [协作设计 + 自主设计] 第二次交互产物（你已经写好）
-├── project.json       ← ⭐ 本子流程产出（写到这里，两条路径都一样）
+├── design.md          ← 第二次交互产物（用户已确认）
+├── project.json       ← ⭐ 本子流程产出
 └── assets/
     └── images/
 ```

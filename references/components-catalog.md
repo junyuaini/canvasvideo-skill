@@ -6,7 +6,7 @@
 > - **开发阶段**（写 JSON 字段）：调 `POST /api/component/spec/batch` 批量查
 > - **微调阶段**（用户改某个字段）：调 `GET /api/component/spec/:type/:variant` 单查
 >
-> ⚡ **自主设计也必须调 batch API**——不放宽这条硬规则。
+> ⚡ **必须调 batch API**——不放宽这条硬规则。
 >
 > 单一事实来源：`video-maker-system/public/configs/component-spec.json`，前端代码改动后由维护者同步更新。
 

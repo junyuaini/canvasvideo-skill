@@ -17,7 +17,7 @@ const crypto = require('crypto');
 const STEPS = [
   'init',              // 初始化完成（工作目录、skillProjectId 已创建）
   'design',            // design.md 已生成
-  'design_confirmed',  // design.md 已确认（协作设计=用户确认，自主设计=LLM自检）
+  'design_confirmed',  // design.md 已确认（用户确认）
   'project_json',      // project.json 已生成
   'validated',         // 本地自检 + 云端预校验通过
   'packaged',          // zip 已打包
