@@ -71,6 +71,48 @@ GET {serverUrl}/api/health
 响应: { status: "ok" }
 ```
 
+### 2.6 项目预校验（云端权威）
+
+```
+POST {serverUrl}/api/projects/validate
+Content-Type: application/json
+  body: <project.json 原文对象>
+
+成功响应（校验通过）:
+  200 { success: true, valid: true }
+
+成功响应（校验未通过）:
+  200 { success: true, valid: false, errors: ["...", "..."] }
+
+异常响应:
+  400 / 500 { success: false, error: { code, message } }
+```
+
+**用途**：在打 zip 之前先把 `project.json` 发上来，由服务端镜像前端 `ComponentFactory` 的 customStyle 必填表做一次"权威校验"。这能提前捕获浏览器渲染期才会爆的硬错误（典型例：`ImageComponent customStyle.__self.borderRadius 是必填项`）。
+
+**关键设计**：
+- 校验未通过返 200 + `valid:false` + `errors[]`——这是接口正常产出，不是错误；只有服务端出问题才返 4xx/5xx。
+- `errors[]` 每条都精确到组件路径（`components[2].children[1] ImageComponent [P3-004] customStyle.__self.borderRadius 是必填项`），方便 LLM 逐条修。
+- 必填表来源：服务端 [`server/schemas/component-required-style.json`](https://github.com/...)，是前端 `ComponentFactory._getCustomStyleRequirements()` 的 1:1 镜像。
+
+**Skill 端调用**：
+
+```js
+const { precheckProjectJson, uploadWithUser } = require('./scripts/upload-video');
+
+// 方式 A：通过 uploadWithUser 一站式（推荐）
+const result = await uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, {
+  projectJsonPath: path.join(workdirRoot, skillProjectId, 'project.json'),
+});
+// 失败抛 { code: 'PRECHECK_FAILED', errors: [...] }
+
+// 方式 B：单独预校验（不上传）
+const { valid, errors } = await precheckProjectJson(serverUrl, projectJsonPath);
+if (!valid) {
+  // 逐条修复 errors 后再走打包流程
+}
+```
+
 ---
 
 ## 3. 用户体系（API Key 模式）
@@ -199,7 +241,11 @@ const state = require('./scripts/state').loadOrCreateProject(workdir);
 ## 6. 上传流程内部细节（脚本视角）
 
 ```
-uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath)
+uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, { projectJsonPath })
+├─ 0. (可选) precheckProjectJson(projectJsonPath)
+│   ├─ POST /api/projects/validate
+│   ├─ valid:true  → 继续
+│   └─ valid:false → 抛 { code:'PRECHECK_FAILED', errors:[...] }（不上传）
 ├─ 1. ensureWorkdirRoot()
 ├─ 2. readLocalUser(workdirRoot)
 │   ├─ 本地存在且合法 → user, isFirstTime=false
@@ -220,6 +266,7 @@ uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath)
 
 | 场景 | 默认行为 |
 |------|---------|
+| **precheck `valid:false`** | **抛 `{code:'PRECHECK_FAILED', errors:[]}`，不进入上传；上层逐条修 project.json 后重试** |
 | 注册返回 409（重试后仍冲突） | 抛错"账号生成异常，请稍后重试" |
 | 注册成功但本地写失败 | 抛错并把 userId/userToken 写在错误信息里（让用户手动备份） |
 | upload 返回 401 | 抛错"账号验证失败，请检查 .user.json 是否正确" |

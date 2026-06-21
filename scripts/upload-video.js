@@ -121,6 +121,51 @@ function buildRequestOptions(baseUrl, apiPath, body, extraHeaders) {
   };
 }
 
+// ---------- 服务端预校验（云端权威） ----------
+
+/**
+ * 调用云端 /api/projects/validate 预校验 project.json。
+ *
+ * 这是"云端权威校验"——服务端镜像了前端 ComponentFactory 的 customStyle 必填表，
+ * 能在不落盘的情况下提前捕获浏览器渲染期才会爆的硬错误（如 borderRadius 缺失）。
+ *
+ * @param {string} serverUrl
+ * @param {object|string} projectOrPath - project.json 对象或文件路径
+ * @returns {Promise<{ valid: boolean, errors: string[] }>}
+ * @throws 网络错误 / 5xx 服务异常
+ */
+async function precheckProjectJson(serverUrl, projectOrPath) {
+  let project;
+  if (typeof projectOrPath === 'string') {
+    project = JSON.parse(fs.readFileSync(projectOrPath, 'utf-8'));
+  } else {
+    project = projectOrPath;
+  }
+
+  const body = Buffer.from(JSON.stringify(project));
+  const options = buildRequestOptions(serverUrl, '/api/projects/validate', body, {
+    'Content-Type': 'application/json',
+  });
+
+  const { status, raw } = await httpRequestWithRetry(options, body);
+
+  let response = null;
+  try { response = JSON.parse(raw); } catch { /* keep null */ }
+
+  if (status >= 200 && status < 300 && response && response.success) {
+    return {
+      valid: !!response.valid,
+      errors: Array.isArray(response.errors) ? response.errors : [],
+    };
+  }
+
+  const msg = (response && response.error && response.error.message) || `预校验失败 (HTTP ${status})`;
+  const err = new Error(msg);
+  err.status = status;
+  err.code = 'PRECHECK_NETWORK_ERROR';
+  throw err;
+}
+
 // ---------- 路径与工作目录 ----------
 
 /**
@@ -351,10 +396,33 @@ async function upload(serverUrl, skillProjectId, zipPath, userId, userToken) {
 }
 
 /**
- * 高层封装：getOrCreateUser → upload
+ * 高层封装：precheck（可选）→ getOrCreateUser → upload
  * 上层只需调这一个接口即可，自动处理首次注册并返回 isFirstTime 让 LLM 决定输出文案。
+ *
+ * @param {string} serverUrl
+ * @param {string} workdirRoot
+ * @param {string} skillProjectId
+ * @param {string} zipPath
+ * @param {object} [options]
+ * @param {string} [options.projectJsonPath] - project.json 路径；提供则上传前先调云端预校验，失败直接抛 PRECHECK_FAILED
  */
-async function uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath) {
+async function uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, options) {
+  const opts = options || {};
+
+  // Step 0：云端预校验（若提供了 projectJsonPath）
+  if (opts.projectJsonPath) {
+    const pre = await precheckProjectJson(serverUrl, opts.projectJsonPath);
+    if (!pre.valid) {
+      const err = new Error(
+        '云端预校验未通过，已阻止上传。请逐条修复后重试：\n' +
+        pre.errors.map((e, i) => `  ${i + 1}. ${e}`).join('\n')
+      );
+      err.code = 'PRECHECK_FAILED';
+      err.errors = pre.errors;
+      throw err;
+    }
+  }
+
   const { user, isFirstTime, warnings } = await getOrCreateUser(serverUrl, workdirRoot);
   const { previewToken, previewUrl } = await upload(serverUrl, skillProjectId, zipPath, user.userId, user.userToken);
   return { previewToken, previewUrl, isFirstTime, user, warnings };
@@ -373,6 +441,23 @@ function buildFilePart(name, filename, buffer, boundary) {
 }
 
 // ---------- CLI ----------
+
+/**
+ * CLI 模式下推算 project.json 路径，找不到返回 null（跳过 precheck，不阻断老流程）
+ * 推算优先级：
+ *   1. workdirRoot/{skillProjectId}/project.json
+ *   2. zip 同级 project.json
+ */
+function resolveProjectJsonForCli(workdirRoot, skillProjectId, zipPath) {
+  const candidates = [
+    path.join(workdirRoot, skillProjectId, 'project.json'),
+    path.join(path.dirname(zipPath), 'project.json'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return null;
+}
 
 if (require.main === module) {
   // 支持两种 CLI 形式：
@@ -406,7 +491,9 @@ if (require.main === module) {
     // 否则保持 CWD 下的路径——后续 ensureWorkdirRoot 会自动创建
   }
 
-  uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath)
+  uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, {
+    projectJsonPath: resolveProjectJsonForCli(workdirRoot, skillProjectId, zipPath),
+  })
     .then(res => {
       if (res.warnings.length) {
         res.warnings.forEach(w => console.warn('⚠️  ' + w));
@@ -428,6 +515,11 @@ if (require.main === module) {
       process.exit(0);
     })
     .catch(err => {
+      if (err.code === 'PRECHECK_FAILED') {
+        console.error('❌ 云端预校验未通过，未上传。请按下面的错误清单逐条修复 project.json 后重试：');
+        err.errors.forEach((e, i) => console.error(`  ${i + 1}. ${e}`));
+        process.exit(2);
+      }
       console.error('❌ ' + err.message);
       if (err.code === 'LOCAL_USER_WRITE_FAILED' && err.user) {
         // 已经在 message 中暴露过，无需重复
@@ -446,6 +538,8 @@ module.exports = {
   getOrCreateUser,
   registerUser,
   ensureWorkdirRoot,
+  // 预校验
+  precheckProjectJson,
   // 上传
   upload,
   uploadWithUser,
