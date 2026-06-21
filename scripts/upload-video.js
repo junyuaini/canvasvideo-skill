@@ -28,8 +28,97 @@ const crypto = require('crypto');
 
 const DEFAULT_SERVER_URL = 'http://8.147.60.112/cv';
 
+// 网络层默认参数（单次请求超时 + 5xx 退避重试）
+const REQUEST_TIMEOUT_MS = 30000;   // 30s
+const RETRY_MAX = 1;                // 5xx 最多重试 1 次
+const RETRY_BACKOFF_MS = 1000;      // 重试前等待 1s
+
 function resolveServerUrl(serverUrl) {
   return serverUrl && typeof serverUrl === 'string' ? serverUrl : DEFAULT_SERVER_URL;
+}
+
+// ---------- HTTP 请求底层封装（超时 + 5xx 退避重试） ----------
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 底层 HTTP 请求：内置 30s 超时
+ * @param {object} options - http.request options
+ * @param {Buffer} body - 请求体
+ * @returns {Promise<{status: number, raw: string}>}
+ */
+function httpRequestOnce(options, body) {
+  return new Promise((resolve, reject) => {
+    const isHttps = options.protocol === 'https:';
+    const lib = isHttps ? https : http;
+    let settled = false;
+
+    const req = lib.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => (data += chunk));
+      res.on('end', () => {
+        if (settled) return;
+        settled = true;
+        resolve({ status: res.statusCode || 0, raw: data });
+      });
+    });
+
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      if (settled) return;
+      settled = true;
+      req.destroy();
+      const err = new Error(`请求超时（${REQUEST_TIMEOUT_MS}ms 无响应）`);
+      err.code = 'ETIMEDOUT';
+      reject(err);
+    });
+
+    req.on('error', (e) => {
+      if (settled) return;
+      settled = true;
+      reject(e);
+    });
+
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * 带 5xx 退避重试的 HTTP 请求
+ *   - 网络错误 / 超时 → 不重试（避免重复上传大文件）
+ *   - HTTP 5xx → 退避 RETRY_BACKOFF_MS 后重试 RETRY_MAX 次
+ *   - HTTP 4xx / 2xx → 直接返回
+ */
+async function httpRequestWithRetry(options, body) {
+  let lastResult = null;
+  for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
+    const result = await httpRequestOnce(options, body);
+    lastResult = result;
+    if (result.status < 500) return result;
+    if (attempt < RETRY_MAX) {
+      await sleep(RETRY_BACKOFF_MS);
+    }
+  }
+  return lastResult;
+}
+
+function buildRequestOptions(baseUrl, apiPath, body, extraHeaders) {
+  const base = new URL(resolveServerUrl(baseUrl));
+  const isHttps = base.protocol === 'https:';
+  const fullPath = base.pathname.replace(/\/$/, '') + apiPath;
+  return {
+    protocol: base.protocol,
+    hostname: base.hostname,
+    port: base.port || (isHttps ? 443 : 80),
+    path: fullPath,
+    method: 'POST',
+    headers: Object.assign({
+      'Content-Length': body ? body.length : 0,
+    }, extraHeaders || {}),
+    _base: base,
+  };
 }
 
 // ---------- 路径与工作目录 ----------
@@ -107,53 +196,35 @@ function writeLocalUser(workdirRoot, user) {
 }
 
 /**
- * 远程注册用户（带冲突重试一次）
+ * 远程注册用户（带 30s 超时 + 5xx 退避重试 + 409 冲突识别）
  * @param {string} serverUrl
  * @param {string} userId
  * @param {string} userToken
  * @returns {Promise<{ ok: true } | never>}
  */
 async function registerUser(serverUrl, userId, userToken) {
-  const base = new URL(resolveServerUrl(serverUrl));
-  const isHttps = base.protocol === 'https:';
-  const apiPath = base.pathname.replace(/\/$/, '') + '/api/users/register';
   const body = Buffer.from(JSON.stringify({ userId, userToken }));
-
-  return await new Promise((resolve, reject) => {
-    const req = (isHttps ? https : http).request({
-      hostname: base.hostname,
-      port: base.port || (isHttps ? 443 : 80),
-      path: apiPath,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': body.length,
-      },
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => (data += chunk));
-      res.on('end', () => {
-        const status = res.statusCode || 0;
-        let response = null;
-        try { response = JSON.parse(data); } catch { /* keep null */ }
-        if (status === 409 || (response && response.error && response.error.code === 'USER_ID_CONFLICT')) {
-          const err = new Error('USER_ID_CONFLICT');
-          err.code = 'USER_ID_CONFLICT';
-          return reject(err);
-        }
-        if (status >= 200 && status < 300 && response && response.success) {
-          return resolve({ ok: true });
-        }
-        const msg = (response && response.error && response.error.message) || `注册失败 (HTTP ${status})`;
-        const err = new Error(msg);
-        err.status = status;
-        reject(err);
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
+  const options = buildRequestOptions(serverUrl, '/api/users/register', body, {
+    'Content-Type': 'application/json',
   });
+
+  const { status, raw } = await httpRequestWithRetry(options, body);
+
+  let response = null;
+  try { response = JSON.parse(raw); } catch { /* keep null */ }
+
+  if (status === 409 || (response && response.error && response.error.code === 'USER_ID_CONFLICT')) {
+    const err = new Error('USER_ID_CONFLICT');
+    err.code = 'USER_ID_CONFLICT';
+    throw err;
+  }
+  if (status >= 200 && status < 300 && response && response.success) {
+    return { ok: true };
+  }
+  const msg = (response && response.error && response.error.message) || `注册失败 (HTTP ${status})`;
+  const err = new Error(msg);
+  err.status = status;
+  throw err;
 }
 
 /**
@@ -241,61 +312,42 @@ async function upload(serverUrl, skillProjectId, zipPath, userId, userToken) {
   ];
   const body = Buffer.concat(parts.map(p => typeof p === 'string' ? Buffer.from(p) : p));
 
-  const base = new URL(resolveServerUrl(serverUrl));
-  const isHttps = base.protocol === 'https:';
-  const apiPath = base.pathname.replace(/\/$/, '') + '/api/projects/upload';
-
-  return await new Promise((resolve, reject) => {
-    const req = (isHttps ? https : http).request({
-      hostname: base.hostname,
-      port: base.port || (isHttps ? 443 : 80),
-      path: apiPath,
-      method: 'POST',
-      headers: {
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': body.length,
-      },
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => (data += chunk));
-      res.on('end', () => {
-        const status = res.statusCode || 0;
-        let response = null;
-        try { response = JSON.parse(data); } catch { /* keep null */ }
-        if (status === 401) {
-          const err = new Error('账号验证失败：本地 userToken 与服务器记录不匹配，请检查 .user.json');
-          err.status = 401;
-          return reject(err);
-        }
-        if (status === 413) {
-          const err = new Error('视频包体积超过服务器限制，请压缩素材或减少时长');
-          err.status = 413;
-          return reject(err);
-        }
-        if (status >= 500) {
-          const err = new Error(`服务器内部错误 (HTTP ${status})`);
-          err.status = status;
-          return reject(err);
-        }
-        if (response && response.success) {
-          const previewUrl = response.previewUrl;
-          // 如果服务端返回相对路径，拼绝对（保留 base.pathname 前缀）
-          let absUrl = previewUrl;
-          if (previewUrl && previewUrl.startsWith('/')) {
-            const prefix = base.pathname.replace(/\/$/, '');
-            // previewUrl 已包含 /view/...；若 base 是 /cv，则补成 /cv/view/...
-            absUrl = `${base.origin}${prefix}${previewUrl}`;
-          }
-          return resolve({ previewToken: response.previewToken, previewUrl: absUrl });
-        }
-        const msg = (response && response.error && response.error.message) || `上传失败 (HTTP ${status})`;
-        reject(new Error(msg));
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
+  const options = buildRequestOptions(serverUrl, '/api/projects/upload', body, {
+    'Content-Type': `multipart/form-data; boundary=${boundary}`,
   });
+
+  const { status, raw } = await httpRequestWithRetry(options, body);
+
+  let response = null;
+  try { response = JSON.parse(raw); } catch { /* keep null */ }
+
+  if (status === 401) {
+    const err = new Error('账号验证失败：本地 userToken 与服务器记录不匹配，请检查 .user.json');
+    err.status = 401;
+    throw err;
+  }
+  if (status === 413) {
+    const err = new Error('视频包体积超过服务器限制，请压缩素材或减少时长');
+    err.status = 413;
+    throw err;
+  }
+  if (status >= 500) {
+    const err = new Error(`服务器内部错误 (HTTP ${status})，已重试 ${RETRY_MAX} 次仍失败`);
+    err.status = status;
+    throw err;
+  }
+  if (response && response.success) {
+    const previewUrl = response.previewUrl;
+    let absUrl = previewUrl;
+    if (previewUrl && previewUrl.startsWith('/')) {
+      const base = options._base;
+      const prefix = base.pathname.replace(/\/$/, '');
+      absUrl = `${base.origin}${prefix}${previewUrl}`;
+    }
+    return { previewToken: response.previewToken, previewUrl: absUrl };
+  }
+  const msg = (response && response.error && response.error.message) || `上传失败 (HTTP ${status})`;
+  throw new Error(msg);
 }
 
 /**
@@ -342,8 +394,17 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  // CLI 默认把工作目录定位到 zipPath 所在目录的父级（即 canvasvideo-workdir/）
-  const workdirRoot = path.resolve(path.dirname(zipPath), '..');
+  // 工作目录推算（与 api-rules.md §4 保持一致：CWD 优先，兜底回 zipPath 父级）
+  //   1) Agent 当前工作目录（CWD）下的 canvasvideo-workdir/
+  //   2) 如果 CWD 下不存在 canvasvideo-workdir/，但 zipPath 父级是 canvasvideo-workdir/，回退到该路径
+  let workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
+  if (!fs.existsSync(workdirRoot)) {
+    const fallback = path.resolve(path.dirname(zipPath), '..');
+    if (path.basename(fallback) === 'canvasvideo-workdir' && fs.existsSync(fallback)) {
+      workdirRoot = fallback;
+    }
+    // 否则保持 CWD 下的路径——后续 ensureWorkdirRoot 会自动创建
+  }
 
   uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath)
     .then(res => {

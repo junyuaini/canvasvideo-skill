@@ -1,15 +1,18 @@
 /**
  * 校验 project.json
  *
- * 校验分两层：
+ * 校验分三层：
  *   1. 结构校验：用 ../schema/project.schema.json 跑 schemaValidator（零依赖）
- *   2. 业务规则：subtitles/audio 共生、BGM 用法判定（schema 表达不出来的逻辑）
+ *   2. 业务规则：subtitles/audio 共生、customStyle 必填（schema 表达不出来的逻辑）
+ *   3. 程序化自检：调用 selfcheck.js 检查节奏 4 门槛 + 布局 Y 坐标
+ *      （把 selfcheck-rules.md L0/L4 中可机器判定的硬规则落到代码里）
  *
  * 用法：node validate.js <project.json路径>
  */
 const fs = require('fs');
 const path = require('path');
 const { validateAgainstSchema } = require('./schemaValidator');
+const { selfcheck } = require('./selfcheck');
 
 const SCHEMA_PATH = path.join(__dirname, '..', 'schema', 'project.schema.json');
 let SCHEMA_CACHE = null;
@@ -40,6 +43,7 @@ function validate(projectOrPath) {
 
   const schema = loadSchema();
   const errors = [];
+  const warnings = [];
 
   // 第一层：schema 结构校验
   const schemaErrors = validateAgainstSchema(project, schema);
@@ -48,9 +52,17 @@ function validate(projectOrPath) {
   // 第二层：业务规则（schema 表达不出来的）
   errors.push(...businessRules(project));
 
+  // 第三层：程序化自检（节奏门槛 + 布局 Y 坐标）
+  //   selfcheck 失败也归入 errors，与 schema/业务规则同级阻断打包
+  const sc = selfcheck(project);
+  errors.push(...sc.errors);
+  warnings.push(...sc.warnings);
+
   return {
     valid: errors.length === 0,
-    errors
+    errors,
+    warnings,
+    mode: sc.mode,
   };
 }
 
@@ -133,8 +145,15 @@ if (require.main === module) {
 
   try {
     const result = validate(projectPath);
+    if (result.mode) {
+      console.log(`模式: ${result.mode}`);
+    }
+    if (result.warnings && result.warnings.length) {
+      console.log('Warnings:');
+      result.warnings.forEach(w => console.log('  - ' + w));
+    }
     if (result.valid) {
-      console.log('✓ project.json 校验通过');
+      console.log('✓ project.json 校验通过（含程序化自检）');
       process.exit(0);
     } else {
       console.error('✗ project.json 校验失败:');
