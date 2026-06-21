@@ -299,7 +299,12 @@
 - **模式二（纯固定）**：整个区域就是一个 AggregateComponent，内部所有子组件位置固定，需手动配置 x/y/w/h
 - **模式三（混合）**：外层组件（普通组件 + AggregateComponent）按动态模式自动聚拢，内层 AggregateComponent 按固定模式手动配置位置
 
-**嵌套规则**：AggregateComponent 可以嵌套 AggregateComponent，最多嵌套两层（外层→内层→最内层）。
+> **[硬规则] 单一模式占比不得超过 60%**
+> 如果总共 5 个区域，同一种模式最多用 3 个（3/5=60%）。
+> 目的：避免整段视频布局单调，强制模式多样化。
+> 示例：5 区域 → 模式一 2 个 + 模式二 2 个 + 模式三 1 个 ✅；模式一 4 个 + 模式二 1 个 ❌
+
+**嵌套规则**：AggregateComponent 可以嵌套 AggregateComponent，**最多可四层级**（区域级 → 分组容器 → 单元容器 → 装饰小元素）。
 
 **时间控制说明**：所有模式下，每个组件（包括 AggregateComponent 内部的子组件）都可以独立配置 start/end 时间，根据内容需要决定出现顺序。
 
