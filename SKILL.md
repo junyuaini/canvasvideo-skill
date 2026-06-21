@@ -484,7 +484,7 @@ canvasvideo-skill/
 │   │   └── dark/               # 沉浸黑主题 SVG
 │   └── bgm/                    # BGM 库
 │       ├── bgm-catalog.md
-│       └── *.wav
+│       └── *.mp3
 └── scripts/
     ├── scaffold.js             # 创建工作目录 + 写 design.md + 拷贝素材
     ├── state.js                # skillProjectId 管理 + 确认状态
