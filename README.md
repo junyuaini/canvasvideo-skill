@@ -111,6 +111,7 @@ canvasvideo-skill/
     ├── selfcheck.js           # 节奏 4 门槛 + 布局 Y 坐标
     ├── package.js             # 打包 zip 准备上传
     ├── upload-video.js        # 用户体系 + 云端 precheck + 上传
+    ├── query-api.js           # 封装后端 API 调用（batch spec / validate / health）
     ├── generate-bgm.js        # 生成合成 BGM（兜底）
     ├── download-incompetech.js / .ps1 # 拉取 Incompetech 真实 BGM
     └── test-*.js              # 自测脚本

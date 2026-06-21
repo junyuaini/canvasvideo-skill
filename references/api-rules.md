@@ -95,23 +95,30 @@ Content-Type: application/json
 - `errors[]` 每条都精确到组件路径（`components[2].children[1] ImageComponent [P3-004] customStyle.__self.borderRadius 是必填项`），方便 LLM 逐条修。
 - 必填表来源：服务端 [`server/schemas/component-required-style.json`](https://github.com/...)，是前端 `ComponentFactory._getCustomStyleRequirements()` 的 1:1 镜像。
 
-**Skill 端调用**：
+**Skill 端调用（禁止用 curl，必须用脚本）**：
 
 ```js
-const { precheckProjectJson, uploadWithUser } = require('./scripts/upload-video');
-
-// 方式 A：通过 uploadWithUser 一站式（推荐）
+// 方式 A：通过 upload-video.js 一站式（推荐）
+const { uploadWithUser } = require('./scripts/upload-video');
 const result = await uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, {
   projectJsonPath: path.join(workdirRoot, skillProjectId, 'project.json'),
 });
 // 失败抛 { code: 'PRECHECK_FAILED', errors: [...] }
 
-// 方式 B：单独预校验（不上传）
-const { valid, errors } = await precheckProjectJson(serverUrl, projectJsonPath);
+// 方式 B：通过 query-api.js 单独预校验（不上传）
+const { validateProjectJson } = require('./scripts/query-api');
+const { valid, errors } = await validateProjectJson(projectJsonPath);
 if (!valid) {
   // 逐条修复 errors 后再走打包流程
 }
+
+// 方式 C：通过 query-api.js 批量查组件字段
+const { queryComponentSpecBatch } = require('./scripts/query-api');
+const { specs } = await queryComponentSpecBatch(['TitleComponent', 'ImageComponent']);
 ```
+
+> ⚠️ **严禁 LLM 自己敲 curl 调 API**——这会触发 Windows 网络安全弹窗，打断用户。
+> 所有后端调用必须通过 `scripts/query-api.js` 或 `scripts/upload-video.js` 完成。
 
 ---
 
@@ -160,22 +167,22 @@ data/users/{userId}.json
 > **v1.5 起**：工作目录从"Skill 目录的父目录"改为 **Agent 当前工作目录（CWD）**。
 > **原因**：Skill 安装目录（如 `C:\Users\xxx\.trae-cn\skills\canvasvideo\`）通常需要管理员权限，且全局共享会冲突；放到 Agent CWD 下更符合直觉，权限稳定，每个项目互不干扰。
 
-### 4.2 路径推算优先级
+### 4.2 路径推算（唯一方式）
 
-| 优先级 | 路径来源 | 计算公式 |
-|---|---|---|
-| **第 1 优先** | **Agent 当前工作目录（CWD）** | `process.cwd() + "/canvasvideo-workdir/"` |
-| 第 2 优先（兜底） | Skill 目录的父目录 | `path.dirname(SKILL.md 父目录) + "/canvasvideo-workdir/"`（只在 Agent 无法获取 CWD 时用） |
+> **v1.5 起只有一种路径**：Agent 当前工作目录（CWD）下的 `canvasvideo-workdir/`。
+> 不再支持 Skill 目录父目录作为兜底——该路径通常需要管理员权限，且全局共享会冲突。
+
+| 项 | 计算 |
+|---|---|
+| **工作根目录** | `path.resolve(process.cwd(), 'canvasvideo-workdir')` |
 
 ### 4.3 LLM 实现指引
 
 ```javascript
-// ✅ 推荐写法（v1.5 起）
+// ✅ 唯一写法（v1.5 起）
 const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
 
-// ❌ 旧写法（v1.4 及以前），权限可能受限
-const skillDir = path.dirname(__filename);
-const workdirRoot = path.resolve(skillDir, '../canvasvideo-workdir');
+// ❌ 严禁：不要尝试从 __dirname、Skill 安装目录、用户 home 目录推算路径
 ```
 
 **给用户的提示**（首次启动时）：

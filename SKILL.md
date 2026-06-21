@@ -200,6 +200,7 @@ B. 自助设计（适合 demo / 试错 / 短视频 / 一次性预览）
 - ❌ **自助设计跳过 batch 查 API、validate.js 自检、云端 precheck（这三条硬规则不放宽）**
 - ❌ **用户已选自助设计后又给他生成完整 design.md（违反路径选择）**
 - ❌ **用户已选协作设计后又跳过用户确认（违反路径选择）**
+- ❌ **LLM 自己敲 curl 调后端 API**——必须通过 `scripts/query-api.js` 或 `scripts/upload-video.js` 调用，curl 会触发 Windows 网络安全弹窗打断用户
 
 ---
 
