@@ -233,40 +233,49 @@
   ],
   "chapters": [
     {
-      "time": 0,
-      "title": "开场钩子"
+      "start": 0,
+      "name": "开场钩子",
+      "end": 3.633
     },
     {
-      "time": 3.633,
-      "title": "场景引入"
+      "start": 3.633,
+      "name": "场景引入",
+      "end": 8.833
     },
     {
-      "time": 8.833,
-      "title": "痛点与承诺"
+      "start": 8.833,
+      "name": "痛点与承诺",
+      "end": 13.766
     },
     {
-      "time": 13.766,
-      "title": "交付与需求"
+      "start": 13.766,
+      "name": "交付与需求",
+      "end": 21.2
     },
     {
-      "time": 21.2,
-      "title": "设计文档"
+      "start": 21.2,
+      "name": "设计文档",
+      "end": 31.4
     },
     {
-      "time": 31.4,
-      "title": "自查与测试"
+      "start": 31.4,
+      "name": "自查与测试",
+      "end": 40.8
     },
     {
-      "time": 40.8,
-      "title": "成果展示"
+      "start": 40.8,
+      "name": "成果展示",
+      "end": 44.633
     },
     {
-      "time": 44.633,
-      "title": "金句收尾"
+      "start": 44.633,
+      "name": "金句收尾",
+      "end": 48.866
     },
     {
-      "time": 48.866,
-      "title": "CTA"
+      "start": 48.866,
+      "name": "CTA",
+      "end": 52.966
     }
   ],
   "components": [
@@ -277,7 +286,9 @@
       "end": 3.633,
       "position": {
         "w": 720,
-        "h": 80
+        "h": 80,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -301,7 +312,9 @@
       "end": 3.633,
       "position": {
         "w": 720,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -324,7 +337,9 @@
       "end": 3.633,
       "position": {
         "w": 120,
-        "h": 40
+        "h": 40,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "4小时"
@@ -346,7 +361,9 @@
       "end": 3.633,
       "position": {
         "w": 120,
-        "h": 40
+        "h": 40,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "AI开发"
@@ -368,7 +385,9 @@
       "end": 3.633,
       "position": {
         "w": 120,
-        "h": 40
+        "h": 40,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "免费"
@@ -390,7 +409,9 @@
       "end": 6.3,
       "position": {
         "w": 720,
-        "h": 460
+        "h": 460,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -410,7 +431,8 @@
             "image": "./assets/20260617/温馨小区理发店插画.png",
             "fit": "contain",
             "borderRadius": 16
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P2-003",
@@ -549,7 +571,8 @@
         "image": "./assets/20260617/deliver-chat.jpg",
         "fit": "contain",
         "borderRadius": 16
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P4-001",
@@ -558,7 +581,9 @@
       "end": 21.2,
       "position": {
         "w": 720,
-        "h": 400
+        "h": 400,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -736,7 +761,9 @@
       "layoutOrder": 1,
       "position": {
         "w": 500,
-        "h": 60
+        "h": 60,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "<span style=\"color:#DC2626;font-weight:900\">设计文档</span>最关键",
@@ -761,7 +788,9 @@
       "layoutOrder": 2,
       "position": {
         "w": 180,
-        "h": 50
+        "h": 50,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "不黑盒关键"
@@ -784,7 +813,9 @@
       "layoutOrder": 3,
       "position": {
         "w": 720,
-        "h": 380
+        "h": 380,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "theme": "default",
@@ -792,7 +823,8 @@
         "image": "./assets/20260617/template-preview1.png",
         "fit": "contain",
         "borderRadius": 12
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P6-001",
@@ -801,14 +833,17 @@
       "end": 38.466,
       "position": {
         "w": 350,
-        "h": 280
+        "h": 280,
+        "x": 0,
+        "y": 0
       },
       "theme": "default",
       "content": {
         "image": "./assets/20260617/check-result.png",
         "fit": "contain",
         "borderRadius": 12
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P6-002",
@@ -817,14 +852,17 @@
       "end": 38.466,
       "position": {
         "w": 350,
-        "h": 280
+        "h": 280,
+        "x": 0,
+        "y": 0
       },
       "theme": "default",
       "content": {
         "image": "./assets/20260617/test-case.png",
         "fit": "contain",
         "borderRadius": 12
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P6-003",
@@ -833,7 +871,9 @@
       "end": 38.466,
       "position": {
         "w": 160,
-        "h": 38
+        "h": 38,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "代码自查清单"
@@ -855,7 +895,9 @@
       "end": 38.466,
       "position": {
         "w": 140,
-        "h": 38
+        "h": 38,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "测试案例"
@@ -877,7 +919,9 @@
       "end": 40.8,
       "position": {
         "w": 720,
-        "h": 480
+        "h": 480,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1054,7 +1098,9 @@
       "end": 44.633,
       "position": {
         "w": 720,
-        "h": 520
+        "h": 520,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1074,7 +1120,8 @@
             "image": "./assets/20260617/system-pc-1.png",
             "fit": "contain",
             "borderRadius": 12
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P8-003",
@@ -1092,7 +1139,8 @@
             "image": "./assets/20260617/system-pc-2.png",
             "fit": "contain",
             "borderRadius": 12
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P8-004",
@@ -1127,7 +1175,9 @@
       "end": 48.866,
       "position": {
         "w": 720,
-        "h": 520
+        "h": 520,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1196,7 +1246,8 @@
             "image": "./assets/20260617/system-h5-1.jpg",
             "fit": "contain",
             "borderRadius": 0
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P9-005",
@@ -1214,7 +1265,8 @@
             "image": "./assets/20260617/system-h5-2.jpg",
             "fit": "contain",
             "borderRadius": 0
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P9-006",
@@ -1232,7 +1284,8 @@
             "image": "./assets/20260617/system-h5-3.jpg",
             "fit": "contain",
             "borderRadius": 0
-          }
+          },
+          "customStyle": {}
         }
       ]
     },
@@ -1243,7 +1296,9 @@
       "end": 52.966,
       "position": {
         "w": 720,
-        "h": 60
+        "h": 60,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1267,14 +1322,17 @@
       "end": 52.966,
       "position": {
         "w": 220,
-        "h": 160
+        "h": 160,
+        "x": 0,
+        "y": 0
       },
       "theme": "default",
       "content": {
         "image": "./assets/20260617/template-preview1.png",
         "fit": "contain",
         "borderRadius": 10
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P10-003",
@@ -1283,14 +1341,17 @@
       "end": 52.966,
       "position": {
         "w": 220,
-        "h": 160
+        "h": 160,
+        "x": 0,
+        "y": 0
       },
       "theme": "default",
       "content": {
         "image": "./assets/20260617/template-preview2.png",
         "fit": "contain",
         "borderRadius": 10
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P10-004",
@@ -1299,14 +1360,17 @@
       "end": 52.966,
       "position": {
         "w": 220,
-        "h": 160
+        "h": 160,
+        "x": 0,
+        "y": 0
       },
       "theme": "default",
       "content": {
         "image": "./assets/20260617/template-preview3.png",
         "fit": "contain",
         "borderRadius": 10
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P10-005",
@@ -1315,7 +1379,9 @@
       "end": 52.966,
       "position": {
         "w": 720,
-        "h": 44
+        "h": 44,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1338,7 +1404,9 @@
       "end": 52.966,
       "position": {
         "w": 120,
-        "h": 40
+        "h": 40,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "免费领"

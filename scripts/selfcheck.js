@@ -101,9 +101,17 @@ function groupByRegion(project) {
 
 /**
  * 节奏 4 条门槛检查
+ *
+ * ⚠️ 严重级别按模式区分（详见 references/timing-rules.md / mode-rules.md §3）：
+ *   - 创作模式：LLM 自由生成，节奏完全由 Skill 控制 → 违规一律 error，阻断打包
+ *   - 口播模式：一切以 SRT 为准（音频/字幕的真实时间是不可动的"硬约束"）
+ *               节奏门槛违规仅 warning（提示但不阻断），避免与 SRT 对齐冲突时被迫破坏对齐
  */
 function checkTiming(project, mode, regions, errors, warnings) {
   const cfg = TIMING[mode];
+  // 口播模式下，节奏违规降级为 warning（SRT 才是硬约束）
+  const bucket = mode === 'voice' ? warnings : errors;
+  const tag = mode === 'voice' ? '[warn]' : '';
   const regionIds = Object.keys(regions).sort((a, b) => {
     return parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10);
   });
@@ -114,8 +122,8 @@ function checkTiming(project, mode, regions, errors, warnings) {
 
     // 门槛 3：区域时长上限
     if (region.duration > cfg.maxRegionDuration) {
-      errors.push(
-        `[节奏门槛3] ${cfg.label}区域 ${rid} duration=${region.duration}s > 上限 ${cfg.maxRegionDuration}s（请拆分区域）`
+      bucket.push(
+        `${tag}[节奏门槛3] ${cfg.label}区域 ${rid} duration=${region.duration}s > 上限 ${cfg.maxRegionDuration}s（${mode === 'voice' ? '口播模式以 SRT 为准，仅提示' : '请拆分区域'}）`
       );
     }
 
@@ -131,8 +139,8 @@ function checkTiming(project, mode, regions, errors, warnings) {
     const lastComp = sortedByStart[sortedByStart.length - 1];
     const trail = region.end - lastComp.start;
     if (trail > cfg.maxLastCompTrail) {
-      errors.push(
-        `[节奏门槛1] ${cfg.label}区域 ${rid} 末组件 ${lastComp.id} stop→end 间隔=${trail.toFixed(2)}s > 上限 ${cfg.maxLastCompTrail}s（需要补收尾组件或前移末组件 start）`
+      bucket.push(
+        `${tag}[节奏门槛1] ${cfg.label}区域 ${rid} 末组件 ${lastComp.id} stop→end 间隔=${trail.toFixed(2)}s > 上限 ${cfg.maxLastCompTrail}s（${mode === 'voice' ? '口播模式以 SRT 为准，仅提示' : '需要补收尾组件或前移末组件 start'}）`
       );
     }
 
@@ -140,14 +148,14 @@ function checkTiming(project, mode, regions, errors, warnings) {
     for (let i = 1; i < sortedByStart.length; i++) {
       const gap = sortedByStart[i].start - sortedByStart[i - 1].start;
       if (gap > cfg.maxAdjacentGap) {
-        errors.push(
-          `[节奏门槛2] ${cfg.label}区域 ${rid} 相邻组件 ${sortedByStart[i - 1].id} → ${sortedByStart[i].id} start 间隔=${gap.toFixed(2)}s > 上限 ${cfg.maxAdjacentGap}s（需要补过渡组件）`
+        bucket.push(
+          `${tag}[节奏门槛2] ${cfg.label}区域 ${rid} 相邻组件 ${sortedByStart[i - 1].id} → ${sortedByStart[i].id} start 间隔=${gap.toFixed(2)}s > 上限 ${cfg.maxAdjacentGap}s（${mode === 'voice' ? '口播模式以 SRT 为准，仅提示' : '需要补过渡组件'}）`
         );
       }
     }
   }
 
-  // 门槛 4：创作模式平均出场密度 ≥ 0.6
+  // 门槛 4：创作模式平均出场密度 ≥ 0.6（口播模式无此门槛）
   if (mode === 'creation' && cfg.minDensityPerSecond !== null) {
     const compCount = Array.isArray(project.components) ? project.components.length : 0;
     const totalDuration = typeof project.duration === 'number' ? project.duration : null;

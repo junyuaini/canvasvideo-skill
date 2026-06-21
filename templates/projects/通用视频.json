@@ -1,41 +1,157 @@
 {
   "name": "通用视频项目",
+  "description": "最小可用模板，符合创作模式所有硬规则（节奏 4 门槛 + customStyle 必填 + 布局 Y 递增）",
   "theme": "white",
-  "duration": 60,
-  "audio": "assets/audio.mp3",
+  "duration": 9,
   "viewport": { "width": 780, "height": 585 },
-  "canvas": { "width": 5000, "height": 6000 },
-  "subtitles": [
-    { "start": 0, "end": 5, "text": "欢迎观看" },
-    { "start": 5, "end": 10, "text": "这是一个示例视频" }
-  ],
-  "chapters": [
-    { "name": "开场", "start": 0, "end": 5 },
-    { "name": "内容", "start": 5, "end": 10 }
-  ],
+  "canvas": { "width": 3300, "height": 700 },
   "regions": [
-    { "name": "P1", "x": 0, "y": 0 }
+    { "name": "P1", "x": 120, "y": 50 },
+    { "name": "P2", "x": 900, "y": 50 },
+    { "name": "P3", "x": 1680, "y": 50 }
   ],
   "components": [
     {
       "id": "P1-001",
       "type": "TitleComponent",
-      "content": "示例标题",
-      "position": { "x": 50, "y": 50, "w": 680, "h": 80 },
+      "position": { "x": 100, "y": 80, "w": 580, "h": 80 },
+      "content": { "text": "示例标题" },
+      "customStyle": {
+        "level1": {
+          "fontSize": "44px",
+          "fontWeight": "700",
+          "color": "#111827"
+        }
+      },
       "start": 0,
-      "end": 10
+      "end": 3
     },
     {
       "id": "P1-002",
       "type": "TextComponent",
-      "content": "这是一段示例文字内容",
-      "position": { "x": 50, "y": 150, "w": 680, "h": 100 },
-      "start": 0,
-      "end": 10
+      "position": { "x": 100, "y": 220, "w": 580, "h": 80 },
+      "content": { "text": "副标题 / 概述句" },
+      "customStyle": {
+        "paragraph": {
+          "fontSize": "20px",
+          "color": "#374151",
+          "lineHeight": "1.6"
+        }
+      },
+      "start": 1.0,
+      "end": 3
+    },
+    {
+      "id": "P1-003",
+      "type": "BadgeComponent",
+      "position": { "x": 100, "y": 340, "w": 220, "h": 60 },
+      "content": { "text": "立即了解" },
+      "customStyle": {
+        "background": "#2563EB",
+        "color": "#FFFFFF",
+        "borderRadius": "8px",
+        "fontSize": "18px",
+        "padding": "12px 24px"
+      },
+      "start": 2.0,
+      "end": 3
+    },
+    {
+      "id": "P2-001",
+      "type": "TitleComponent",
+      "position": { "x": 100, "y": 80, "w": 580, "h": 80 },
+      "content": { "text": "核心要点" },
+      "customStyle": {
+        "level1": {
+          "fontSize": "44px",
+          "fontWeight": "700",
+          "color": "#111827"
+        }
+      },
+      "start": 3,
+      "end": 6
+    },
+    {
+      "id": "P2-002",
+      "type": "TextComponent",
+      "position": { "x": 100, "y": 220, "w": 580, "h": 80 },
+      "content": { "text": "用一段话点明价值" },
+      "customStyle": {
+        "paragraph": {
+          "fontSize": "20px",
+          "color": "#374151",
+          "lineHeight": "1.6"
+        }
+      },
+      "start": 4.0,
+      "end": 6
+    },
+    {
+      "id": "P2-003",
+      "type": "BadgeComponent",
+      "position": { "x": 100, "y": 340, "w": 220, "h": 60 },
+      "content": { "text": "查看详情" },
+      "customStyle": {
+        "background": "#10B981",
+        "color": "#FFFFFF",
+        "borderRadius": "8px",
+        "fontSize": "18px",
+        "padding": "12px 24px"
+      },
+      "start": 5.0,
+      "end": 6
+    },
+    {
+      "id": "P3-001",
+      "type": "TitleComponent",
+      "position": { "x": 100, "y": 80, "w": 580, "h": 80 },
+      "content": { "text": "号召行动" },
+      "customStyle": {
+        "level1": {
+          "fontSize": "44px",
+          "fontWeight": "700",
+          "color": "#111827"
+        }
+      },
+      "start": 6,
+      "end": 9
+    },
+    {
+      "id": "P3-002",
+      "type": "TextComponent",
+      "position": { "x": 100, "y": 220, "w": 580, "h": 80 },
+      "content": { "text": "邀请用户下一步行动" },
+      "customStyle": {
+        "paragraph": {
+          "fontSize": "20px",
+          "color": "#374151",
+          "lineHeight": "1.6"
+        }
+      },
+      "start": 7.0,
+      "end": 9
+    },
+    {
+      "id": "P3-003",
+      "type": "BadgeComponent",
+      "position": { "x": 100, "y": 340, "w": 220, "h": 60 },
+      "content": { "text": "扫码体验" },
+      "customStyle": {
+        "background": "#F59E0B",
+        "color": "#FFFFFF",
+        "borderRadius": "8px",
+        "fontSize": "18px",
+        "padding": "12px 24px"
+      },
+      "start": 8.0,
+      "end": 9
     }
   ],
   "settings": {
     "autoPlay": false,
-    "loop": false
+    "loop": false,
+    "contentZoomRatio": 0.9,
+    "preFullViewDuration": 0.4,
+    "postFullViewDuration": 0.4
   }
 }

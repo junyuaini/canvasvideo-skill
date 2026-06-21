@@ -14,16 +14,18 @@
 >
 > 已覆盖的程序化检查（**LLM 不需要手填**）：
 >
-> | 检查项 | 自动触发 |
-> |--------|---------|
-> | 节奏门槛 1 末组件停留（按模式区分） | ✅ selfcheck.js |
-> | 节奏门槛 2 相邻组件间隔（按模式区分） | ✅ selfcheck.js |
-> | 节奏门槛 3 区域时长（按模式区分） | ✅ selfcheck.js |
-> | 节奏门槛 4 创作模式密度 ≥ 0.6/s | ✅ selfcheck.js |
-> | 组件 Y 坐标连续递增 | ✅ selfcheck.js |
-> | 组件 y+h ≤ viewport.height-10 | ✅ selfcheck.js |
-> | subtitles / audio 共生 | ✅ validate.js businessRules |
-> | 非 AggregateComponent customStyle 必填 | ✅ validate.js businessRules |
+> | 检查项 | 创作模式 | 口播模式 |
+> |--------|---------|---------|
+> | 节奏门槛 1 末组件停留 | ❌ error 阻断 | ⚠️ warning（SRT 为准） |
+> | 节奏门槛 2 相邻组件间隔 | ❌ error 阻断 | ⚠️ warning（SRT 为准） |
+> | 节奏门槛 3 区域时长 | ❌ error 阻断 | ⚠️ warning（SRT 为准） |
+> | 节奏门槛 4 创作模式密度 ≥ 0.6/s | ❌ error 阻断 | — 不适用 |
+> | 组件 Y 坐标连续递增 | ❌ error 阻断 | ❌ error 阻断 |
+> | 组件 y+h ≤ viewport.height-10 | ❌ error 阻断 | ❌ error 阻断 |
+> | subtitles / audio 共生 | ❌ error 阻断 | ❌ error 阻断 |
+> | 非 AggregateComponent customStyle 必填 | ❌ error 阻断 | ❌ error 阻断 |
+>
+> **口播模式节奏门槛仅 warning**：详见 [`timing-rules.md`](./timing-rules.md) "严重级别按模式区分"——一切以 SRT 为准，节奏冲突时优先保 SRT 对齐，仅上报警告。
 >
 > **LLM 仍需手填的部分**（无法机器判定）：
 > - L0 中的"组件 start ≥ 字幕 start"、"图片切换 end=start"、"customStyle 含 level{N}/paragraph 嵌套"等结构性检查

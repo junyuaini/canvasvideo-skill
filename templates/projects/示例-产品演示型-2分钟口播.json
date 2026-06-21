@@ -393,28 +393,34 @@
   ],
   "chapters": [
     {
-      "time": 0,
-      "title": "开场：问题不在工具"
+      "start": 0,
+      "name": "开场：问题不在工具",
+      "end": 22.066
     },
     {
-      "time": 22.066,
-      "title": "Step1：准备两份材料"
+      "start": 22.066,
+      "name": "Step1：准备两份材料",
+      "end": 46.566
     },
     {
-      "time": 46.566,
-      "title": "Step2：生成规则化 H5"
+      "start": 46.566,
+      "name": "Step2：生成规则化 H5",
+      "end": 58.566
     },
     {
-      "time": 58.566,
-      "title": "Step3：自然语言微调"
+      "start": 58.566,
+      "name": "Step3：自然语言微调",
+      "end": 69.833
     },
     {
-      "time": 69.833,
-      "title": "Step4：转换 PPTX"
+      "start": 69.833,
+      "name": "Step4：转换 PPTX",
+      "end": 82.233
     },
     {
-      "time": 82.233,
-      "title": "可控流程与交付"
+      "start": 82.233,
+      "name": "可控流程与交付",
+      "end": 120.466
     }
   ],
   "components": [
@@ -425,7 +431,9 @@
       "end": 17.7,
       "position": {
         "w": 760,
-        "h": 132
+        "h": 132,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -461,7 +469,9 @@
       "end": 17.7,
       "position": {
         "w": 720,
-        "h": 66
+        "h": 66,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -497,7 +507,9 @@
       "end": 17.7,
       "position": {
         "w": 760,
-        "h": 250
+        "h": 250,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -558,7 +570,9 @@
       "end": 22.066,
       "position": {
         "w": 690,
-        "h": 58
+        "h": 58,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -594,7 +608,9 @@
       "end": 22.066,
       "position": {
         "w": 760,
-        "h": 220
+        "h": 220,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -643,7 +659,9 @@
       "end": 22.066,
       "position": {
         "w": 600,
-        "h": 319
+        "h": 319,
+        "x": 0,
+        "y": 0
       },
       "theme": "default",
       "fullRow": true,
@@ -651,7 +669,8 @@
         "image": "./assets/20260610/poster_final.png",
         "fit": "contain",
         "borderRadius": 0
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P2-001",
@@ -660,7 +679,9 @@
       "end": 46.566,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -696,7 +717,9 @@
       "end": 37.166,
       "position": {
         "w": 261,
-        "h": 230
+        "h": 230,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "variant": "title-image",
@@ -730,7 +753,9 @@
       "end": 37.166,
       "position": {
         "w": 319,
-        "h": 230
+        "h": 230,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "variant": "title-image",
@@ -764,7 +789,9 @@
       "end": 38.7,
       "position": {
         "w": 410,
-        "h": 225
+        "h": 225,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -799,7 +826,9 @@
       "end": 46.566,
       "position": {
         "w": 744,
-        "h": 340
+        "h": 340,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -819,7 +848,8 @@
             "image": "./assets/20260610/step1-4-design-doc-result.png",
             "fit": "contain",
             "borderRadius": 18
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P2-007",
@@ -929,7 +959,9 @@
       "end": 58.566,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "Step 2：生成规则化 H5",
@@ -965,7 +997,9 @@
       "end": 52.9,
       "position": {
         "w": 300,
-        "h": 255
+        "h": 255,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "variant": "title-image",
@@ -999,7 +1033,9 @@
       "end": 52.9,
       "position": {
         "w": 275,
-        "h": 188
+        "h": 188,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "variant": "image-text",
@@ -1034,7 +1070,9 @@
       "end": 58.566,
       "position": {
         "w": 640,
-        "h": 380
+        "h": 380,
+        "x": 0,
+        "y": 0
       },
       "children": [
         {
@@ -1053,7 +1091,8 @@
             "image": "./assets/20260610/step3-1-h5-preview.png",
             "fit": "cover",
             "borderRadius": 22
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P3-006",
@@ -1164,7 +1203,9 @@
       "end": 66.966,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1200,7 +1241,9 @@
       "end": 66.966,
       "position": {
         "w": 720,
-        "h": 310
+        "h": 310,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1284,7 +1327,8 @@
             "image": "./assets/20260610/step3-2-adjust-prompt.png",
             "fit": "cover",
             "borderRadius": 18
-          }
+          },
+          "customStyle": {}
         }
       ]
     },
@@ -1295,7 +1339,9 @@
       "end": 69.833,
       "position": {
         "w": 560,
-        "h": 420
+        "h": 420,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1315,7 +1361,8 @@
             "image": "./assets/20260610/step3-3-adjust-result.png",
             "fit": "cover",
             "borderRadius": 18
-          }
+          },
+          "customStyle": {}
         }
       ]
     },
@@ -1326,7 +1373,9 @@
       "end": 77.1,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1362,7 +1411,9 @@
       "end": 77.1,
       "position": {
         "w": 720,
-        "h": 295
+        "h": 295,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1398,7 +1449,9 @@
       "end": 78.266,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1434,7 +1487,9 @@
       "end": 78.266,
       "position": {
         "w": 690,
-        "h": 410
+        "h": 410,
+        "x": 0,
+        "y": 0
       },
       "theme": "clean-rounded",
       "fullRow": true,
@@ -1442,7 +1497,8 @@
         "image": "./assets/20260610/step5-1-ppt-final-preview.png",
         "fit": "contain",
         "borderRadius": 18
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P5-005",
@@ -1451,7 +1507,9 @@
       "end": 82.233,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1487,7 +1545,9 @@
       "end": 82.233,
       "position": {
         "w": 690,
-        "h": 410
+        "h": 410,
+        "x": 0,
+        "y": 0
       },
       "theme": "clean-rounded",
       "fullRow": true,
@@ -1495,7 +1555,8 @@
         "image": "./assets/20260610/step5-2-ppt-text-editable.png",
         "fit": "contain",
         "borderRadius": 18
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P5-007",
@@ -1504,7 +1565,9 @@
       "end": 87.166,
       "position": {
         "w": 690,
-        "h": 56
+        "h": 56,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "content": {
@@ -1540,7 +1603,9 @@
       "end": 87.166,
       "position": {
         "w": 690,
-        "h": 410
+        "h": 410,
+        "x": 0,
+        "y": 0
       },
       "theme": "clean-rounded",
       "fullRow": true,
@@ -1548,7 +1613,8 @@
         "image": "./assets/20260610/step5-3-h5-ppt-comparison.png",
         "fit": "contain",
         "borderRadius": 18
-      }
+      },
+      "customStyle": {}
     },
     {
       "id": "P5-009",
@@ -1557,7 +1623,9 @@
       "end": 91.266,
       "position": {
         "w": 440,
-        "h": 440
+        "h": 440,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "diagram": "cycle-arrows",
@@ -1611,7 +1679,9 @@
       "end": 102.1,
       "position": {
         "w": 690,
-        "h": 165
+        "h": 165,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "variant": "text-only",
@@ -1643,7 +1713,9 @@
       "end": 102.1,
       "position": {
         "w": 570,
-        "h": 150
+        "h": 150,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "diagram": "flow",
@@ -1696,7 +1768,9 @@
       "end": 111,
       "position": {
         "w": 690,
-        "h": 190
+        "h": 190,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "variant": "text-only",
@@ -1728,7 +1802,9 @@
       "end": 111,
       "position": {
         "w": 560,
-        "h": 60
+        "h": 60,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1869,7 +1945,9 @@
       "end": 118.1,
       "position": {
         "w": 650,
-        "h": 320
+        "h": 320,
+        "x": 0,
+        "y": 0
       },
       "fullRow": true,
       "children": [
@@ -1889,7 +1967,8 @@
             "image": "./assets/20260610/step6-materials-showcase1.png",
             "fit": "contain",
             "borderRadius": 18
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P6-011",
@@ -1907,7 +1986,8 @@
             "image": "./assets/20260610/step6-materials-showcase3.png",
             "fit": "contain",
             "borderRadius": 18
-          }
+          },
+          "customStyle": {}
         },
         {
           "id": "P6-012",
@@ -1950,7 +2030,9 @@
       "end": 120.466,
       "position": {
         "w": 690,
-        "h": 110
+        "h": 110,
+        "x": 0,
+        "y": 0
       },
       "content": {
         "text": "用工具帮你解决加班",
