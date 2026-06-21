@@ -59,6 +59,9 @@
 | 文字叠图→shadow / backdropFilter | 所有图片上方文字加防护 | layout-rules.md §4 |
 | 彩色背景块→对比鲜明 | 橙底用黑字，蓝底用白字 | layout-rules.md §4 |
 | 无低对比度配色 | 浅灰底+更浅灰字 严禁 | layout-rules.md §4 |
+| **宽度合理性**（防空荡） | 文字利用率 ≥ 60%；组件 w 不超过文字宽度 × 1.5 | layout-rules.md §3.2/3.5 |
+| **强调组件居中** | 单独的 Shock/Badge/CTA 在区域内水平居中 | layout-rules.md §3.6 |
+| **内边距充足**（防贴边） | 文字类组件 customStyle.padding 不为 0/"0px"；按组件类型采用推荐 padding 区间 | layout-rules.md §3.6 |
 | 主体图片 borderRadius=0 | — | — |
 | 长图高度 ≥ 400px | — | — |
 | Badge 文字 > 4 字 → 宽度 ≥ 120px | — | — |

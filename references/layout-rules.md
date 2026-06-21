@@ -130,8 +130,30 @@ h = 上边距 + 行数 × 行高 + 下边距
 
 ### 3.2 宽度约束
 
+**上限**（防溢出）：
 - 区域内组件的 `w` 不应超过 `viewport.width - 40`（左右各 20px 边距）
 - 默认 780px 视口下，文字组件 `w ≤ 740`
+
+**下限**（防空荡）：
+- 组件的 `w` 不应**远大于**实际内容宽度，否则组件看起来空荡
+- 经验值：文字利用率应 ≥ 60%——即"文字渲染宽度 / position.w ≥ 0.6"
+- 例如：「确认」两个字（约 80px 宽）放在 `w=600` 的组件里，利用率 = 80/600 ≈ 13%，**严重失衡**
+
+**示例**：
+
+```jsonc
+// ❌ 错误：BadgeComponent 文字只 4 字（≈ 80px），但 w=600 → 利用率 13%
+{ "type": "BadgeComponent", "content": { "text": "立即开始" },
+  "position": { "x": 20, "y": 100, "w": 600, "h": 50 } }
+
+// ✅ 正确：根据文字内容收窄到 w=160（4 字 × 32px + padding × 2）
+{ "type": "BadgeComponent", "content": { "text": "立即开始" },
+  "position": { "x": 20, "y": 100, "w": 160, "h": 50 } }
+
+// ✅ 正确：长文字保持 w=600
+{ "type": "TextComponent", "content": { "text": "这是一段需要换行的长描述文字" },
+  "position": { "x": 20, "y": 100, "w": 600, "h": 80 } }
+```
 
 ### 3.3 高度约束（防止溢出）
 
@@ -162,6 +184,75 @@ h = 上边距 + 行数 × 行高 + 下边距
 - 文字组件 `h` 小于实际内容所需高度
 - 组件堆叠总高度超过 `viewport.height`
 - 把 `h` 写死成固定小值（如所有组件 h=50）
+- 把 `w` 写死成固定大值（如所有 Badge/Shock 都 w=720，造成空荡）
+
+### 3.5 尺寸与内容的比例（防止"小内容大组件"）
+
+**规则**：组件容器大小应与内容体量匹配，**避免在大容器里放一小撮内容**。
+
+| 内容类型 | 建议宽度上限 | 建议高度上限 |
+|---------|------------|------------|
+| 短标语 / Badge（≤ 6 字） | 200-280px | 50-70px |
+| 单行标题（10-15 字） | 480-640px | 60-90px |
+| 多行段落（30-60 字） | 600-740px | 80-160px |
+| 装饰性数字 / ShockComponent | 240-360px | 100-160px |
+| 完整图片 | 600-740px | 300-480px |
+
+**判断方法**：
+- 文字组件：估算文字渲染宽度 ≈ 字数 × 字号 × 0.6（中文）或 × 0.55（英文）
+- 容器宽度应在「文字宽度 + 2 × padding」到「文字宽度 × 1.5」之间
+- **超过文字宽度 × 1.5** → 组件过宽，需要收窄
+
+**示例**：
+
+```jsonc
+// ❌ 错误：单数字 "98%"（约 120px）放在 w=720 的 ShockComponent → 视觉空荡
+{ "type": "ShockComponent", "content": { "text": "98%" },
+  "position": { "x": 30, "y": 100, "w": 720, "h": 200 } }
+
+// ✅ 正确：收窄到 w=280，居中显示
+{ "type": "ShockComponent", "content": { "text": "98%" },
+  "position": { "x": 250, "y": 100, "w": 280, "h": 200 } }
+```
+
+### 3.6 内边距与居中（视觉呼吸感）
+
+**规则**：组件内容不能贴着边框，必须留出适度内边距；强调类组件应在容器内居中。
+
+#### customStyle.padding 建议值
+
+| 组件类型 | 推荐 padding | 严禁 |
+|---------|------------|------|
+| BadgeComponent / CornerComponent | `8-16px` 或 `"6px 16px"` | 写 `0` 或不写 → 文字贴边 |
+| ShockComponent | `12-24px` 或 `"16px 32px"` | 写 `0` |
+| CardComponent | `16-24px` | < 8px |
+| QuoteComponent | `20-32px` | < 12px |
+| GraphicComponent | `16-24px` | < 8px |
+
+**严禁**：
+- 任何文字类组件的 `customStyle.padding` 设为 `"0"` / `0` / `"0px"`（文字会贴住边框，视觉极不舒服）
+- 设了背景色或边框但 padding 接近 0（背景紧贴文字，看起来像系统报错弹窗）
+
+#### 容器位置居中
+
+- 当一个区域只有 1-2 个强调组件时（如单独的 ShockComponent / BadgeComponent），**应在区域内水平居中**：
+  - 居中公式：`position.x = (viewport.width - position.w) / 2`
+  - 例如：viewport.width = 780，组件 w = 280，则 x = (780 - 280) / 2 = **250**
+- 避免把单一组件强行靠左（x=0）或靠右（x=viewport.width - w）——除非区域内有多个组件横向排布
+
+**示例**：
+
+```jsonc
+// ❌ 错误：单个 CTA Badge 靠左 + padding=0 → 文字贴住背景边
+{ "type": "BadgeComponent", "content": { "text": "立即开始 →" },
+  "position": { "x": 0, "y": 200, "w": 200, "h": 50 },
+  "customStyle": { "padding": "0", "color": "#FF6B6B", "textColor": "#fff" } }
+
+// ✅ 正确：居中 + 适度 padding
+{ "type": "BadgeComponent", "content": { "text": "立即开始 →" },
+  "position": { "x": 290, "y": 200, "w": 200, "h": 50 },
+  "customStyle": { "padding": "10px 24px", "color": "#FF6B6B", "textColor": "#fff" } }
+```
 
 ---
 
