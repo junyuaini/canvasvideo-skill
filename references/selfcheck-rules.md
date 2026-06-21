@@ -78,6 +78,7 @@
 | 无与字幕重复文字 | 字幕已说的文字不要再放在屏幕上 | mode-rules.md |
 | 标题→副标题→图片顺序 | 视觉层级正确 | layout-rules.md |
 | 多逻辑分组用 Aggregate | 多列对比、4 卡片网格等用 AggregateComponent | components-catalog.md |
+| **单一模式占比 ≤ 60%** | 同一种模式（纯动态/纯固定/混合）的区域数 ≤ 总区域数 × 60% | video_design_guide.md |
 
 ---
 
