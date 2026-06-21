@@ -69,17 +69,19 @@ if (Test-Path $skillDir) {
     Write-Host ""
 
     # Sync all tracked files (exclude .git, node_modules, etc.)
+    # Use .NET methods to handle UTF-8 filenames correctly
+    $srcRoot = (Get-Location).Path
     $trackedFiles = git ls-files
     $count = 0
     foreach ($file in $trackedFiles) {
-        $src = Join-Path (Get-Location) $file
-        $dst = Join-Path $skillDir $file
-        if (Test-Path $src) {
-            $dstDir = Split-Path -Parent $dst
-            if (-not (Test-Path $dstDir)) {
-                New-Item -ItemType Directory -Path $dstDir -Force | Out-Null
+        $src = [System.IO.Path]::Combine($srcRoot, $file)
+        $dst = [System.IO.Path]::Combine($skillDir, $file)
+        if ([System.IO.File]::Exists($src)) {
+            $dstDir = [System.IO.Path]::GetDirectoryName($dst)
+            if (-not [System.IO.Directory]::Exists($dstDir)) {
+                [System.IO.Directory]::CreateDirectory($dstDir) | Out-Null
             }
-            Copy-Item -Path $src -Destination $dst -Force
+            [System.IO.File]::Copy($src, $dst, $true)
             $count++
         }
     }
