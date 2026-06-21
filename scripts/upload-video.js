@@ -497,17 +497,10 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  // 工作目录推算（与 api-rules.md §4 保持一致：CWD 优先，兜底回 zipPath 父级）
-  //   1) Agent 当前工作目录（CWD）下的 canvasvideo-workdir/
-  //   2) 如果 CWD 下不存在 canvasvideo-workdir/，但 zipPath 父级是 canvasvideo-workdir/，回退到该路径
-  let workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  if (!fs.existsSync(workdirRoot)) {
-    const fallback = path.resolve(path.dirname(zipPath), '..');
-    if (path.basename(fallback) === 'canvasvideo-workdir' && fs.existsSync(fallback)) {
-      workdirRoot = fallback;
-    }
-    // 否则保持 CWD 下的路径——后续 ensureWorkdirRoot 会自动创建
-  }
+  // 工作目录推算（与 api-rules.md §4 保持一致：强制使用 CWD 下的 canvasvideo-workdir/）
+  // 严禁从 zipPath 或其他路径回退——避免工作目录跑到 agent 自身目录
+  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
+  // 如果不存在，ensureWorkdirRoot 会自动创建
 
   uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, {
     projectJsonPath: (function () {

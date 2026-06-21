@@ -171,6 +171,7 @@ data/users/{userId}.json
 
 > **v1.5 起只有一种路径**：Agent 当前工作目录（CWD）下的 `canvasvideo-workdir/`。
 > 不再支持 Skill 目录父目录作为兜底——该路径通常需要管理员权限，且全局共享会冲突。
+> **严禁从 zipPath、__dirname 或其他路径回退**——避免工作目录跑到 agent 自身目录。
 
 | 项 | 计算 |
 |---|---|
@@ -223,7 +224,7 @@ const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
 **规则**：`skillProjectId` **必须通过 [`scripts/state.js`](../scripts/state.js) 的 `loadOrCreateProject()` 生成**，禁止 LLM 自己编造 ID。
 
 ```js
-const state = require('./scripts/state').loadOrCreateProject(workdir);
+const state = require('./scripts/state').loadOrCreateProject(workdirRoot);
 // state.skillProjectId 由程序自动生成，格式：cv_{timestamp36}_{random8}
 // 示例：cv_m3v9z_a1b2c3d4
 ```
@@ -242,6 +243,10 @@ const state = require('./scripts/state').loadOrCreateProject(workdir);
 3. 如果 LLM 每次自己编一个新 ID，同一项目会被当成不同项目，导致重复创建、previewToken 不固定
 
 **自检**：生成 ID 后检查格式是否为 `cv_{7-10 位字母数字}_{8 位十六进制}`。
+
+**运行时校验（state.js 已内置）**：
+- `loadOrCreateProject()` 返回的 `skillProjectId` 必须是代码生成的，不能是传入的参数
+- 如果状态文件已存在，必须复用其中保存的 `skillProjectId`，严禁重新生成
 
 ---
 
