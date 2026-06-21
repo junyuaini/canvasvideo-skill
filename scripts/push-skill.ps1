@@ -87,6 +87,22 @@ if (Test-Path $skillDir) {
     }
 
     Write-Host "Synced $count files to Skill directory" -ForegroundColor Green
+
+    # Clean up files in Skill dir that no longer exist in source
+    Write-Host ""
+    Write-Host "Cleaning up removed files..." -ForegroundColor Cyan
+    $deletedCount = 0
+    $allSkillFiles = [System.IO.Directory]::GetFiles($skillDir, "*", [System.IO.SearchOption]::AllDirectories)
+    foreach ($skillFile in $allSkillFiles) {
+        $relPath = $skillFile.Substring($skillDir.Length + 1)
+        $srcPath = [System.IO.Path]::Combine($srcRoot, $relPath)
+        if (-not [System.IO.File]::Exists($srcPath)) {
+            [System.IO.File]::Delete($skillFile)
+            Write-Host "  Deleted: $relPath" -ForegroundColor DarkGray
+            $deletedCount++
+        }
+    }
+    Write-Host "Cleaned up $deletedCount files" -ForegroundColor Green
 } else {
     Write-Host ""
     Write-Host "Warning: Trae Skill directory not found at $skillDir" -ForegroundColor Yellow
