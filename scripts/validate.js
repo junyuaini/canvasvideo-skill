@@ -16,28 +16,18 @@
  *
  * 真正阻止上传的硬错（schema/customStyle 字段缺失）由 upload-video.js 的云端 precheck 兜底。
  *
- * 状态机约束：
- *   - validate 要求 step === 'project_json'
- *   - 通过后推进到 step === 'validated'
- *
  * 用法：node validate.js <project.json路径>
  */
 const fs = require('fs');
 const { selfcheck } = require('./selfcheck');
-const { assertStep, advanceStep } = require('./state');
+
 
 /**
  * 本地自检 project.json
  * @param {Object|string} projectOrPath - 解析后的对象或文件路径
- * @param {string} [workdirRoot] - 工作根目录（用于状态机校验，可选）
  * @returns {{ valid: boolean, errors: string[], warnings: string[], mode: string }}
  */
-function validate(projectOrPath, workdirRoot) {
-  // 状态机校验：必须在 project_json 步骤才能校验
-  if (workdirRoot) {
-    assertStep(workdirRoot, 'project_json');
-  }
-
+function validate(projectOrPath) {
   let project;
   if (typeof projectOrPath === 'string') {
     project = JSON.parse(fs.readFileSync(projectOrPath, 'utf-8'));
@@ -52,11 +42,6 @@ function validate(projectOrPath, workdirRoot) {
     warnings: sc.warnings,
     mode: sc.mode,
   };
-
-  // 如果通过且提供了 workdirRoot，推进状态机到 validated
-  if (result.valid && workdirRoot) {
-    advanceStep(workdirRoot, 'validated');
-  }
 
   return result;
 }
