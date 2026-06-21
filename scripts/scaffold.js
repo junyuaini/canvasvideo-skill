@@ -8,9 +8,16 @@
  *  - scaffoldWorkdir         ：根据素材清单批量创建占位文件
  *  - writeDesignMd / readDesignMd ：读写设计文档
  *  - copyUserAsset           ：把用户提供的素材安全拷贝到 assets/，校验路径不越界
+ *
+ * 状态机约束：
+ *  - writeDesignMd  要求 step === 'init'
+ *  - readDesignMd   要求 step === 'design' 或 'design_confirmed'
+ *  - scaffoldWorkdir 要求 step === 'design_confirmed'
+ *  - ensurePlaceholders / ensureBgm 要求 step === 'design_confirmed'
  */
 const fs = require('fs');
 const path = require('path');
+const { assertStep, advanceStep } = require('./state');
 
 /**
  * 7 个标准 hint 关键词（与 templates/placeholders/{theme}/{hint}.svg 一一对应）
@@ -139,6 +146,7 @@ function ensureBgm(workdirRoot, skillProjectId, styleHint) {
 
 /**
  * 创建 workdir 目录结构 + 按素材清单批量占位
+ * 状态机要求：step === 'design_confirmed'
  * @param {string} workdirRoot
  * @param {string} skillProjectId
  * @param {Object} assetChecklist - 素材清单（类别 -> [{ path, status, type, hint? }]）
@@ -147,6 +155,9 @@ function ensureBgm(workdirRoot, skillProjectId, styleHint) {
  * @returns {string} 项目工作目录路径
  */
 function scaffoldWorkdir(workdirRoot, skillProjectId, assetChecklist = {}, options = {}) {
+  // 状态机校验：必须在 design_confirmed 步骤才能创建素材
+  assertStep(workdirRoot, 'design_confirmed');
+
   const theme = options.theme || 'white';
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
 
@@ -206,18 +217,38 @@ function createPlaceholder(type, hint, theme) {
 
 /**
  * 写入 design.md
+ * 状态机要求：step === 'init'
+ * 执行后推进到：step === 'design'
  */
 function writeDesignMd(workdirRoot, skillProjectId, content) {
+  // 状态机校验：必须在 init 步骤才能写 design.md
+  assertStep(workdirRoot, 'init');
+
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
   const designPath = path.join(workdir, 'design.md');
   fs.writeFileSync(designPath, content, 'utf-8');
+
+  // 推进状态机到 design
+  advanceStep(workdirRoot, 'design');
+
   return designPath;
 }
 
 /**
  * 读取 design.md
+ * 状态机要求：step === 'design' 或 'design_confirmed'
  */
 function readDesignMd(workdirRoot, skillProjectId) {
+  // 状态机校验：必须在 design 或 design_confirmed 步骤才能读 design.md
+  const state = require('./state').loadOrCreateProject(workdirRoot);
+  const currentStep = state.step || 'init';
+  if (currentStep !== 'design' && currentStep !== 'design_confirmed') {
+    throw new Error(
+      `步骤校验失败：当前步骤是 "${currentStep}"，但 readDesignMd 要求步骤为 "design" 或 "design_confirmed"。\n` +
+      `请先调用 writeDesignMd 生成设计文档。`
+    );
+  }
+
   const workdir = path.join(workdirRoot, skillProjectId);
   const designPath = path.join(workdir, 'design.md');
   if (!fs.existsSync(designPath)) {

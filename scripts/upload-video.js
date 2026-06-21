@@ -25,6 +25,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
+const { assertStep, advanceStep } = require('./state');
 
 const DEFAULT_SERVER_URL = 'http://8.147.60.112/cv';
 
@@ -411,7 +412,15 @@ async function upload(serverUrl, skillProjectId, zipPath, userId, userToken) {
  * @param {object} options
  * @param {string} options.projectJsonPath - project.json 路径（v2.0 起必传）
  */
+/**
+ * 上传视频（高层封装）
+ * 状态机要求：step === 'validated'
+ * 执行后推进到：step === 'uploaded'
+ */
 async function uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, options) {
+  // 状态机校验：必须在 validated 步骤才能上传
+  assertStep(workdirRoot, 'validated');
+
   const opts = options || {};
 
   if (!opts.projectJsonPath || typeof opts.projectJsonPath !== 'string') {
@@ -443,6 +452,10 @@ async function uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, o
 
   const { user, isFirstTime, warnings } = await getOrCreateUser(serverUrl, workdirRoot);
   const { previewToken, previewUrl } = await upload(serverUrl, skillProjectId, zipPath, user.userId, user.userToken);
+
+  // 推进状态机到 uploaded
+  advanceStep(workdirRoot, 'uploaded');
+
   return { previewToken, previewUrl, isFirstTime, user, warnings };
 }
 
