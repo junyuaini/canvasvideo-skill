@@ -104,16 +104,13 @@ canvasvideo-skill/
 │       ├── bgm-catalog.md     # 6 首 BGM 风格匹配决策树
 │       └── *.wav              # tech-pulse / warm-cafe / uplifting / corporate / light-pop / cinematic
 │
-├── schema/
-│   └── project.schema.json    # project.json JSON Schema（与 server 同源）
-│
 └── scripts/                   # 🛠️ Node.js 工具脚本
     ├── scaffold.js            # 创建工作目录 + 拉取占位素材 + 写 design.md
     ├── state.js               # skillProjectId 管理 + 确认状态
-    ├── schemaValidator.js     # 零依赖 JSON Schema 校验（与 server 同源）
-    ├── validate.js            # 校验 project.json（schema + 业务规则）
+    ├── validate.js            # 本地自检（仅节奏/布局，B 方案 v2.0 起不再做 schema 校验）
+    ├── selfcheck.js           # 节奏 4 门槛 + 布局 Y 坐标
     ├── package.js             # 打包 zip 准备上传
-    ├── upload-video.js        # 用户体系 + 上传，拿到 previewToken
+    ├── upload-video.js        # 用户体系 + 云端 precheck + 上传
     ├── generate-bgm.js        # 生成合成 BGM（兜底）
     ├── download-incompetech.js / .ps1 # 拉取 Incompetech 真实 BGM
     └── test-*.js              # 自测脚本
@@ -198,10 +195,10 @@ AI 第一次给你做视频时大致会这样走：
 生成 project.json
    │  ├─ 用 templates/placeholders/ 填占位图
    │  ├─ 创作模式：用 templates/bgm/ 默认配 BGM
-   │  └─ 用 schema/project.schema.json 自校验
+   │  └─ 云端 /api/projects/validate 权威校验（schema + customStyle 字段级）
    │
    ▼
-scripts/scaffold.js → scripts/validate.js → scripts/package.js → scripts/upload-video.js
+scripts/scaffold.js → scripts/validate.js（本地节奏/布局自检） → scripts/package.js → scripts/upload-video.js（含云端 precheck）
    │
    ▼
 返回视频分享链接
@@ -219,7 +216,7 @@ scripts/scaffold.js → scripts/validate.js → scripts/package.js → scripts/u
 | **AI 生成模板** | `templates/projects/*.json` | AI（作样板复制改写） |
 | **AI 设计规范** | `templates/designs/video_design_guide.md` | AI（生成 design.md 时严格遵守） |
 | **AI 资源库** | `templates/placeholders/`、`templates/bgm/` | AI（写 project.json 时直接引用） |
-| **结构校验** | `schema/project.schema.json` | AI 调 `validate.js` 时使用 |
+| **结构校验** | 云端 `/api/projects/validate` | upload-video.js Step 0 自动调用（B 方案 v2.0）|
 | **执行脚本** | `scripts/*.js` | AI（工作流中调用） |
 | **README** | `templates/projects/README.md`、`templates/placeholders/url-factory.md`、`templates/bgm/bgm-catalog.md` | AI（局部速查） |
 

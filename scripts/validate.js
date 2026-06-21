@@ -1,138 +1,46 @@
 /**
- * 校验 project.json
+ * 本地自检（B 方案 v2.0）
  *
- * 校验分三层：
- *   1. 结构校验：用 ../schema/project.schema.json 跑 schemaValidator（零依赖）
- *   2. 业务规则：subtitles/audio 共生、customStyle 必填（schema 表达不出来的逻辑）
- *   3. 程序化自检：调用 selfcheck.js 检查节奏 4 门槛 + 布局 Y 坐标
- *      （把 selfcheck-rules.md L0/L4 中可机器判定的硬规则落到代码里）
+ * 历史变更：
+ *   v1.x —— 三层校验：schema 结构 + 业务规则 + selfcheck 节奏/布局
+ *   v2.0 —— 单层自检：只跑 selfcheck（节奏 4 门槛 + 布局 Y 坐标）
+ *
+ * 为什么砍掉前两层：
+ *   - schema 结构 + customStyle 字段 + audio/subtitles 共生 = 全部交给云端 /api/projects/validate（权威）
+ *   - 本地保留 schema 副本会形成"前端/本地 Skill/服务端"三份同步负担
+ *   - 节奏 4 门槛 / 布局 Y 坐标是云端不懂的"设计规则"，必须留在 Skill 端
+ *
+ * 因此本脚本不再叫"校验器"，更准确地说是"本地自检（selfcheck wrapper）"——
+ *   - 通过 = 进入打 zip 步骤
+ *   - 失败 = 改 project.json 重跑
+ *
+ * 真正阻止上传的硬错（schema/customStyle 字段缺失）由 upload-video.js 的云端 precheck 兜底。
  *
  * 用法：node validate.js <project.json路径>
  */
 const fs = require('fs');
-const path = require('path');
-const { validateAgainstSchema } = require('./schemaValidator');
 const { selfcheck } = require('./selfcheck');
 
-const SCHEMA_PATH = path.join(__dirname, '..', 'schema', 'project.schema.json');
-let SCHEMA_CACHE = null;
-
-function loadSchema() {
-  if (SCHEMA_CACHE) return SCHEMA_CACHE;
-  try {
-    SCHEMA_CACHE = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf-8'));
-    return SCHEMA_CACHE;
-  } catch (e) {
-    throw new Error(`无法加载 schema: ${SCHEMA_PATH}, ${e.message}`);
-  }
-}
-
 /**
- * 校验 project.json
+ * 本地自检 project.json
  * @param {Object|string} projectOrPath - 解析后的对象或文件路径
- * @returns {{ valid: boolean, errors: string[] }}
+ * @returns {{ valid: boolean, errors: string[], warnings: string[], mode: string }}
  */
 function validate(projectOrPath) {
   let project;
-
   if (typeof projectOrPath === 'string') {
     project = JSON.parse(fs.readFileSync(projectOrPath, 'utf-8'));
   } else {
     project = projectOrPath;
   }
 
-  const schema = loadSchema();
-  const errors = [];
-  const warnings = [];
-
-  // 第一层：schema 结构校验
-  const schemaErrors = validateAgainstSchema(project, schema);
-  errors.push(...schemaErrors);
-
-  // 第二层：业务规则（schema 表达不出来的）
-  errors.push(...businessRules(project));
-
-  // 第三层：程序化自检（节奏门槛 + 布局 Y 坐标）
-  //   selfcheck 失败也归入 errors，与 schema/业务规则同级阻断打包
   const sc = selfcheck(project);
-  errors.push(...sc.errors);
-  warnings.push(...sc.warnings);
-
   return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
+    valid: sc.errors.length === 0,
+    errors: sc.errors,
+    warnings: sc.warnings,
     mode: sc.mode,
   };
-}
-
-/**
- * 业务规则校验
- * - subtitles 与 audio 共生
- * - audio 配音用法必须有字幕，BGM 用法可无字幕
- * - 非 AggregateComponent 必须配置 customStyle 字段（允许空对象 {}）
- */
-function businessRules(project) {
-  const errors = [];
-
-  // 拿到 audio 路径
-  let audioPath = '';
-  if (typeof project.audio === 'string') {
-    audioPath = project.audio;
-  } else if (project.audio && typeof project.audio === 'object' && typeof project.audio.path === 'string') {
-    audioPath = project.audio.path;
-  }
-  const hasAudio = audioPath.trim().length > 0;
-
-  // 判定 BGM 用法：audio 是对象且包含 loop/fadeIn/fadeOut 任一字段
-  const isBgmUsage = (typeof project.audio === 'object' && project.audio !== null
-    && (project.audio.loop !== undefined
-        || project.audio.fadeIn !== undefined
-        || project.audio.fadeOut !== undefined));
-
-  const hasSubtitles = Array.isArray(project.subtitles) && project.subtitles.length > 0;
-
-  // 字幕 → 音频已经在 schema dependencies 里检查过了，这里只补充配音用法的反向规则
-  if (hasAudio && !hasSubtitles && !isBgmUsage) {
-    errors.push(
-      'audio 字段已设置但视为配音用法（未配置 loop/fadeIn/fadeOut），但 subtitles 数组为空：' +
-      '配音模式必须提供 SRT 字幕。要让这段音频作为 BGM，请把 audio 改为对象形式并设置 ' +
-      '{ "path": "...", "loop": true, "fadeIn": 1, "fadeOut": 2 }；详见 SKILL.md §2.4。'
-    );
-  }
-
-  // 非 AggregateComponent 必须有 customStyle 字段（前端 ComponentFactory 强制要求）
-  if (Array.isArray(project.components)) {
-    checkCustomStyleRecursive(project.components, errors);
-  }
-
-  return errors;
-}
-
-/**
- * 递归检查 components 数组：
- * 非 AggregateComponent 必须有 customStyle 字段（即使是空对象 {}）
- */
-function checkCustomStyleRecursive(components, errors, parentPath) {
-  components.forEach((comp, idx) => {
-    if (!comp || typeof comp !== 'object') return;
-    const pathStr = parentPath ? `${parentPath}.children[${idx}]` : `components[${idx}]`;
-    const labelId = comp.id ? ` [${comp.id}]` : '';
-
-    // AggregateComponent 不需要 customStyle，跳过自身但继续遍历 children
-    if (comp.type !== 'AggregateComponent') {
-      if (!comp.customStyle || typeof comp.customStyle !== 'object') {
-        errors.push(
-          `${pathStr} ${comp.type || ''}${labelId} 缺少 customStyle 字段：前端 ComponentFactory 要求所有非 AggregateComponent 组件必须配置 customStyle（如果无需自定义样式，写空对象 customStyle: {} 即可）。`
-        );
-      }
-    }
-
-    // 递归 children
-    if (Array.isArray(comp.children) && comp.children.length > 0) {
-      checkCustomStyleRecursive(comp.children, errors, pathStr);
-    }
-  });
 }
 
 // CLI 模式
@@ -153,15 +61,16 @@ if (require.main === module) {
       result.warnings.forEach(w => console.log('  - ' + w));
     }
     if (result.valid) {
-      console.log('✓ project.json 校验通过（含程序化自检）');
+      console.log('✓ 本地自检通过（节奏/布局规则）');
+      console.log('  注意：schema 结构 + customStyle 字段级 校验由云端 /api/projects/validate 在上传前自动完成');
       process.exit(0);
     } else {
-      console.error('✗ project.json 校验失败:');
+      console.error('✗ 本地自检未通过:');
       result.errors.forEach(err => console.error(`  - ${err}`));
       process.exit(1);
     }
   } catch (err) {
-    console.error('校验异常:', err.message);
+    console.error('自检异常:', err.message);
     process.exit(1);
   }
 }

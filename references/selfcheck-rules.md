@@ -10,20 +10,23 @@
 ## ⚙️ 程序化自检（强制，自动执行）
 
 > ⚠️ **L0 / L4 中可机器判定的硬规则已经落到 [`scripts/selfcheck.js`](../scripts/selfcheck.js)**，
-> 并被 [`scripts/validate.js`](../scripts/validate.js) 在打包前自动调用。
+> 并被 [`scripts/validate.js`](../scripts/validate.js) 在打包前自动调用（仅做节奏 / 布局 / 时间轴自检）。
+>
+> ⚠️ **schema 结构 + customStyle 字段级 + subtitles/audio 共生 等结构硬错由云端 `/api/projects/validate` 在 [`upload-video.js`](../scripts/upload-video.js) Step 0 强制执行**，本地不再保留 schema 副本（B 方案）。
 >
 > 已覆盖的程序化检查（**LLM 不需要手填**）：
 >
-> | 检查项 | 创作模式 | 口播模式 |
-> |--------|---------|---------|
-> | 节奏门槛 1 末组件停留 | ❌ error 阻断 | ⚠️ warning（SRT 为准） |
-> | 节奏门槛 2 相邻组件间隔 | ❌ error 阻断 | ⚠️ warning（SRT 为准） |
-> | 节奏门槛 3 区域时长 | ❌ error 阻断 | ⚠️ warning（SRT 为准） |
-> | 节奏门槛 4 创作模式密度 ≥ 0.6/s | ❌ error 阻断 | — 不适用 |
-> | 组件 Y 坐标连续递增 | ❌ error 阻断 | ❌ error 阻断 |
-> | 组件 y+h ≤ viewport.height-10 | ❌ error 阻断 | ❌ error 阻断 |
-> | subtitles / audio 共生 | ❌ error 阻断 | ❌ error 阻断 |
-> | 非 AggregateComponent customStyle 必填 | ❌ error 阻断 | ❌ error 阻断 |
+> | 检查项 | 创作模式 | 口播模式 | 由谁执行 |
+> |--------|---------|---------|---------|
+> | 节奏门槛 1 末组件停留 | ❌ error 阻断 | ⚠️ warning（SRT 为准） | 本地 selfcheck |
+> | 节奏门槛 2 相邻组件间隔 | ❌ error 阻断 | ⚠️ warning（SRT 为准） | 本地 selfcheck |
+> | 节奏门槛 3 区域时长 | ❌ error 阻断 | ⚠️ warning（SRT 为准） | 本地 selfcheck |
+> | 节奏门槛 4 创作模式密度 ≥ 0.6/s | ❌ error 阻断 | — 不适用 | 本地 selfcheck |
+> | 组件 Y 坐标连续递增 | ❌ error 阻断 | ❌ error 阻断 | 本地 selfcheck |
+> | 组件 y+h ≤ viewport.height-10 | ❌ error 阻断 | ❌ error 阻断 | 本地 selfcheck |
+> | subtitles / audio 共生 | ❌ error 阻断 | ❌ error 阻断 | **云端 precheck** |
+> | 非 AggregateComponent customStyle 必填 | ❌ error 阻断 | ❌ error 阻断 | **云端 precheck** |
+> | customStyle 字段级（如 ImageComponent borderRadius） | ❌ error 阻断 | ❌ error 阻断 | **云端 precheck** |
 >
 > **口播模式节奏门槛仅 warning**：详见 [`timing-rules.md`](./timing-rules.md) "严重级别按模式区分"——一切以 SRT 为准，节奏冲突时优先保 SRT 对齐，仅上报警告。
 >

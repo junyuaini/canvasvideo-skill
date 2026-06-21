@@ -88,7 +88,7 @@ Content-Type: application/json
   400 / 500 { success: false, error: { code, message } }
 ```
 
-**用途**：在打 zip 之前先把 `project.json` 发上来，由服务端镜像前端 `ComponentFactory` 的 customStyle 必填表做一次"权威校验"。这能提前捕获浏览器渲染期才会爆的硬错误（典型例：`ImageComponent customStyle.__self.borderRadius 是必填项`）。
+**用途**：在打 zip 之后、上传之前由 `uploadWithUser` Step 0 强制调用（B 方案 v2.0：本地不再做 schema 校验，云端是唯一权威）。服务端镜像了前端 `ComponentFactory` 的 customStyle 必填表，能在不落盘的情况下提前捕获浏览器渲染期才会爆的硬错误（典型例：`ImageComponent customStyle.__self.borderRadius 是必填项`）。
 
 **关键设计**：
 - 校验未通过返 200 + `valid:false` + `errors[]`——这是接口正常产出，不是错误；只有服务端出问题才返 4xx/5xx。
@@ -242,10 +242,11 @@ const state = require('./scripts/state').loadOrCreateProject(workdir);
 
 ```
 uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, { projectJsonPath })
-├─ 0. (可选) precheckProjectJson(projectJsonPath)
+├─ 0. precheckProjectJson(projectJsonPath)（v2.0 起强制，B 方案）
 │   ├─ POST /api/projects/validate
 │   ├─ valid:true  → 继续
-│   └─ valid:false → 抛 { code:'PRECHECK_FAILED', errors:[...] }（不上传）
+│   ├─ valid:false → 抛 { code:'PRECHECK_FAILED', errors:[...] }（不上传）
+│   └─ 网络异常   → 抛 { code:'PRECHECK_NETWORK_ERROR' }（硬拦，不降级）
 ├─ 1. ensureWorkdirRoot()
 ├─ 2. readLocalUser(workdirRoot)
 │   ├─ 本地存在且合法 → user, isFirstTime=false
@@ -266,6 +267,7 @@ uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, { projectJsonPat
 
 | 场景 | 默认行为 |
 |------|---------|
+| **precheck 网络失败** | **抛 `{code:'PRECHECK_NETWORK_ERROR'}`，硬拦不降级（B 方案 v2.0）** |
 | **precheck `valid:false`** | **抛 `{code:'PRECHECK_FAILED', errors:[]}`，不进入上传；上层逐条修 project.json 后重试** |
 | 注册返回 409（重试后仍冲突） | 抛错"账号生成异常，请稍后重试" |
 | 注册成功但本地写失败 | 抛错并把 userId/userToken 写在错误信息里（让用户手动备份） |

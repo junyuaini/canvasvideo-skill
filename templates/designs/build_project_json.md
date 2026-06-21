@@ -186,9 +186,9 @@ for (let region of design.regions) {
 
 **素材清单实现率必须 = 100%**（详见 visual-richness-rules.md 门槛 4）。
 
-### 步骤 F：本地校验（必须）
+### 步骤 F：本地自检（必须）
 
-写完后立即调 `scripts/validate.js` 做两层校验：
+写完后立即调 `scripts/validate.js` 做本地自检（仅节奏 / 布局 / 时间轴，B 方案 v2.0）：
 
 ```js
 const { validate } = require('./scripts/validate');
@@ -198,7 +198,9 @@ if (!result.valid) {
 }
 ```
 
-校验失败 → 回到 §4 修复对应字段；通过 → 保存到 `{workdirRoot}/{skillProjectId}/project.json`。
+自检失败 → 回到 §4 修复对应字段；通过 → 保存到 `{workdirRoot}/{skillProjectId}/project.json`。
+
+> **注意**：schema 结构、customStyle 字段级、audio/subtitles 共生 等"硬错"由云端 `/api/projects/validate` 在 `upload-video.js` 的 Step 0 自动权威校验，本地 validate.js 不再做这些检查。打包前的本地自检只保证"节奏 / 布局 / 时间轴"等设计规则正确。
 
 ---
 
@@ -288,10 +290,11 @@ if (!result.valid) {
 
 生成 project.json 后必须通过：
 
-1. **scripts/validate.js**：JSON 结构 + 业务规则校验（schema dependencies 强约束）
+1. **scripts/validate.js**：本地节奏 / 布局 / 时间轴自检（B 方案 v2.0 后只保留这一层）
 2. **selfcheck-rules.md L0~L4**：人工自检填进 design.md 步骤 11
+3. **云端 `/api/projects/validate`**：由 `upload-video.js` 在打包后、上传前自动调用，做 schema 结构 + customStyle 字段级 + audio/subtitles 共生 等权威校验（不可跳过）
 
-只有两步都通过才能进入第四次交互的打包+上传环节。
+只有三步都通过才能进入第四次交互的打包+上传环节。
 
 ---
 
@@ -320,5 +323,5 @@ if (!result.valid) {
 - ❌ 漏掉 `viewport` / `canvas` / `regions` / `settings` 任一字段
 - ❌ 创作模式写 `subtitles` / `audio` 用法判定错误（详见 mode-rules.md §3）
 - ❌ 素材清单里有 N 个素材但 project.json 引用 ≠ N
-- ❌ 跳过 validate.js 直接打包
+- ❌ 跳过 validate.js（本地自检）或绕过 upload-video.js 的云端 precheck 直接打包上传
 - ❌ project.json 写到 design.md 旁边以外的位置

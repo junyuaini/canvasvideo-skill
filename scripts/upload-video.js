@@ -396,31 +396,49 @@ async function upload(serverUrl, skillProjectId, zipPath, userId, userToken) {
 }
 
 /**
- * 高层封装：precheck（可选）→ getOrCreateUser → upload
+ * 高层封装：precheck（强制）→ getOrCreateUser → upload
  * 上层只需调这一个接口即可，自动处理首次注册并返回 isFirstTime 让 LLM 决定输出文案。
+ *
+ * v2.0 起 precheck 从可选升级为强制（B 方案）：
+ *   - 必须传 options.projectJsonPath
+ *   - 网络失败（PRECHECK_NETWORK_ERROR）直接硬拦，不降级到本地兜底
+ *   - 这是因为本地 validate.js 已不再做 schema/customStyle 字段校验，云端是唯一权威
  *
  * @param {string} serverUrl
  * @param {string} workdirRoot
  * @param {string} skillProjectId
  * @param {string} zipPath
- * @param {object} [options]
- * @param {string} [options.projectJsonPath] - project.json 路径；提供则上传前先调云端预校验，失败直接抛 PRECHECK_FAILED
+ * @param {object} options
+ * @param {string} options.projectJsonPath - project.json 路径（v2.0 起必传）
  */
 async function uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, options) {
   const opts = options || {};
 
-  // Step 0：云端预校验（若提供了 projectJsonPath）
-  if (opts.projectJsonPath) {
-    const pre = await precheckProjectJson(serverUrl, opts.projectJsonPath);
-    if (!pre.valid) {
-      const err = new Error(
-        '云端预校验未通过，已阻止上传。请逐条修复后重试：\n' +
-        pre.errors.map((e, i) => `  ${i + 1}. ${e}`).join('\n')
-      );
-      err.code = 'PRECHECK_FAILED';
-      err.errors = pre.errors;
-      throw err;
-    }
+  if (!opts.projectJsonPath || typeof opts.projectJsonPath !== 'string') {
+    const err = new Error(
+      'uploadWithUser v2.0 起必须传 options.projectJsonPath：\n' +
+      '  云端预校验是唯一权威，不可跳过。\n' +
+      '  示例：uploadWithUser(url, workdir, id, zip, { projectJsonPath: "..." })'
+    );
+    err.code = 'PRECHECK_PATH_MISSING';
+    throw err;
+  }
+  if (!fs.existsSync(opts.projectJsonPath)) {
+    const err = new Error(`project.json 不存在：${opts.projectJsonPath}`);
+    err.code = 'PRECHECK_FILE_MISSING';
+    throw err;
+  }
+
+  // Step 0：云端预校验（强制）
+  const pre = await precheckProjectJson(serverUrl, opts.projectJsonPath);
+  if (!pre.valid) {
+    const err = new Error(
+      '云端预校验未通过，已阻止上传。请逐条修复后重试：\n' +
+      pre.errors.map((e, i) => `  ${i + 1}. ${e}`).join('\n')
+    );
+    err.code = 'PRECHECK_FAILED';
+    err.errors = pre.errors;
+    throw err;
   }
 
   const { user, isFirstTime, warnings } = await getOrCreateUser(serverUrl, workdirRoot);
@@ -443,7 +461,7 @@ function buildFilePart(name, filename, buffer, boundary) {
 // ---------- CLI ----------
 
 /**
- * CLI 模式下推算 project.json 路径，找不到返回 null（跳过 precheck，不阻断老流程）
+ * CLI 模式下推算 project.json 路径。v2.0 起强制要求能找到，否则报错退出。
  * 推算优先级：
  *   1. workdirRoot/{skillProjectId}/project.json
  *   2. zip 同级 project.json
@@ -492,7 +510,17 @@ if (require.main === module) {
   }
 
   uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, {
-    projectJsonPath: resolveProjectJsonForCli(workdirRoot, skillProjectId, zipPath),
+    projectJsonPath: (function () {
+      const p = resolveProjectJsonForCli(workdirRoot, skillProjectId, zipPath);
+      if (!p) {
+        console.error('❌ 找不到 project.json（CLI 推算失败）。期望路径：');
+        console.error('   1. ' + path.join(workdirRoot, skillProjectId, 'project.json'));
+        console.error('   2. ' + path.join(path.dirname(zipPath), 'project.json'));
+        console.error('   云端预校验是强制步骤，请确认 project.json 已生成。');
+        process.exit(1);
+      }
+      return p;
+    })(),
   })
     .then(res => {
       if (res.warnings.length) {

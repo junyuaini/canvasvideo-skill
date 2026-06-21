@@ -268,4 +268,4 @@ GET /cv/api/component/spec/GraphicComponent/comparison
 
 ### 自动校验
 
-本规则已经在 `scripts/validate.js` 和服务端 `server/utils/projectValidator.js` 中作为**业务规则强校验**——任何缺失 customStyle 的 project.json 在打包/上传时都会被拦截。详见 [`selfcheck-rules.md`](./selfcheck-rules.md) L0 检查。
+本规则已经在云端 `/api/projects/validate`（由 `scripts/upload-video.js` Step 0 自动调用）中作为**业务规则强校验**——任何缺失 customStyle 或字段级缺失（如 ImageComponent 的 borderRadius）的 project.json 在上传前都会被拦截。本地 `scripts/validate.js` 仅做节奏 / 布局自检（B 方案 v2.0）。详见 [`selfcheck-rules.md`](./selfcheck-rules.md) L0 检查。

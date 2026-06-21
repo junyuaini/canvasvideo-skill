@@ -4,7 +4,7 @@
 > **本文档是 hard rule 单一来源**，被以下流程引用：
 > - 主流程：SKILL.md「第一次交互」「打包上传前 validate」
 > - 子流程：video_design_guide.md 步骤 0
-> - 校验：scripts/validate.js + server/utils/projectValidator.js（`subtitles` 与 `audio` 共生由 schema dependencies 表达）
+> - 校验：云端 `/api/projects/validate`（`subtitles` 与 `audio` 共生由 schema dependencies 表达，本地不再做 schema 校验，B 方案）
 
 ---
 
@@ -74,7 +74,7 @@
 | 配音用法（不设 loop/fade） | ✅ 有 | ✅ 允许 | 标准口播模式 |
 | BGM 用法（设了 loop/fade） | ❌ 无 | ✅ 允许 | 标准 BGM 模式 |
 | 无 audio | ❌ 无 | ✅ 允许 | 纯静音创作模式（不推荐，详见 §4） |
-| 配音用法 | ❌ 无 | ❌ **不允许** | validate.js 拦截 |
+| 配音用法 | ❌ 无 | ❌ **不允许** | 云端 precheck 拦截 |
 | BGM 用法 | ✅ 有 | ❌ **严禁** | 字幕条会跟着音乐进度走，毫无意义 |
 | 无 audio | ✅ 有 | ❌ **绝对禁止** | LLM 严禁主动生成 subtitles（schema dependencies 强约束） |
 
