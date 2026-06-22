@@ -25,7 +25,9 @@
 
 ### 第 1 步：读取模板
 
-读取 `templates/artifacts/design-skeleton.md`，了解输出格式。
+根据模式选择模板：
+- **创作模式**：读取 `templates/artifacts/design-skeleton-creative.md`
+- **口播模式**：读取 `templates/artifacts/design-skeleton-dubbing.md`
 
 ### 第 2 步：确定项目元信息（步骤 0）
 
@@ -53,6 +55,7 @@
   - 字幕文本 100% 不动，严禁改写
   - 总时长以音频/SRT 为准
   - 素材白名单：只允许 `.mp3/.wav/.m4a` 和 `.srt`
+  - **口播模式也必须写 design-skeleton 文档**：侧重视觉策略和语义分段，不是跳过设计
 
 ### 第 3 步：内容理解（阶段一）
 
@@ -65,8 +68,8 @@
 | 1 | 0-12秒 | ... | ✅ |
 
 **分段原则**：
-- 创作模式：每段不超过 5 秒（对应一个区域）
-- 口播模式：每段不超过 8 秒，按 SRT 语义自然分段
+- **创作模式**：每段不超过 5 秒（对应一个区域），AI 自动生成文案
+- **口播模式**：每段不超过 8 秒，**必须按 SRT 语义自然分段**（详见 `rules/04-timing.md` §R4）
 
 #### 步骤 2：内容类型标注
 
@@ -262,7 +265,7 @@ fs.writeFileSync(
 
 | 文件 | 路径 | 说明 |
 |------|------|------|
-| design-skeleton.md | `{workdir}/{skillProjectId}/design-skeleton.md` | 骨架设计文档 |
+| design-skeleton-creative.md / design-skeleton-dubbing.md | `{workdir}/{skillProjectId}/design-skeleton.md` | 骨架设计文档（根据模式选择模板） |
 
 ---
 

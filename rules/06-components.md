@@ -23,6 +23,8 @@
 
 ## R2 组件选型决策树
 
+### 基础场景
+
 | 场景 | 推荐组件 |
 |------|---------|
 | 主标题 | TitleComponent |
@@ -33,6 +35,19 @@
 | 标签/分类 | BadgeComponent |
 | 角标/水印 | CornerComponent |
 | 占位图包装 | AggregateComponent (Image + Shock) |
+
+### 按内容类型推荐（口播模式画面设计）
+
+| 内容类型 | 字幕示例 | 画面设计方向 | 推荐组件组合 |
+|---------|---------|-------------|-------------|
+| 痛点/问题 | "样式翻车了" | 场景图、对比图（Before） | ImageComponent + BadgeComponent |
+| 数据/金句 | "4步搞定" | 大字号数字 + 渐变背景 | ShockComponent（单独） |
+| 步骤/流程 | "第1步：输入主题" | 步骤卡片、流程图 | CardComponent / GraphicComponent |
+| 产品展示 | "AI自动生成PPT" | 产品界面截图 + 标签 | ImageComponent + BadgeComponent |
+| 结论/号召 | "评论区领取" | 醒目按钮、大标题 | TitleComponent + ShockComponent |
+| 场景描述 | "想象一下" | 相关场景插画 | ImageComponent（单独） |
+| HOOK/开场 | "AI时代如何学习" | 大标题 + 品牌色背景 | TitleComponent + ShockComponent |
+| CTA/结尾 | "关注获取更多信息" | 二维码、引导图 | ImageComponent + TitleComponent |
 
 ---
 
