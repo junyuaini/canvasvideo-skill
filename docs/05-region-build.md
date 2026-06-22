@@ -78,7 +78,25 @@ fs.writeFileSync(
 );
 ```
 
-### 第 6 步：区域级校验
+### 第 6 步：验证时间范围
+
+检查组件时间是否在区域时间范围内：
+
+```js
+// 从 skeleton.json 获取区域时间范围
+const regionIndex = skeleton.regions.findIndex(r => r.name === regionName);
+const regionStart = calculateRegionStart(skeleton, regionIndex); // 如 10
+const regionEnd = calculateRegionEnd(skeleton, regionIndex);     // 如 25
+
+// 验证每个组件
+regionJson.components.forEach(comp => {
+  if (comp.start < regionStart || comp.end > regionEnd) {
+    throw new Error(`${comp.id} 时间 ${comp.start}-${comp.end} 超出区域范围 ${regionStart}-${regionEnd}`);
+  }
+});
+```
+
+### 第 7 步：区域级校验
 
 ```js
 const { validateRegion } = require('./scripts/validate');

@@ -3,6 +3,8 @@
  * 用法：node merge-regions.js <workdir路径> [输出路径]
  *   workdir: 包含 skeleton.json 和 regions/ 目录的工作目录
  *   输出路径: 默认为 workdir/project.json
+ * 
+ * 注意：区域组件时间使用全局绝对时间，合并时无需偏移
  */
 const fs = require('fs');
 const path = require('path');
