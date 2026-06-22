@@ -2,10 +2,6 @@
   "name": "20260610 HTML2PPT工具演示",
   "description": "20260610 口播介绍视频：已根据新版 audio.mp3 与 subtitle.srt 重排节奏，覆盖 120.466 秒新版口播。",
   "theme": "white",
-  "audio": {
-    "path": "./assets/20260610/audio.mp3",
-    "loop": false
-  },
   "duration": 120.466,
   "viewport": {
     "width": 780,
@@ -24,6 +20,10 @@
     "maxScale": 5,
     "preFullViewDuration": 0.4,
     "postFullViewDuration": 0.4
+  },
+  "audio": {
+    "path": "./assets/20260610/audio.mp3",
+    "loop": false
   },
   "regions": [
     {
