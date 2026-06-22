@@ -21,6 +21,12 @@
     "preFullViewDuration": 0.4,
     "postFullViewDuration": 0.4
   },
+  "audio": {
+    "path": "assets/placeholders/bgm/tech-pulse.mp3",
+    "loop": true,
+    "fadeIn": 1,
+    "fadeOut": 2
+  },
   "regions": [
     {
       "name": "P1",
@@ -32,11 +38,5 @@
       "x": 120,
       "y": 50
     }
-  ],
-  "audio": {
-    "path": "assets/placeholders/bgm/tech-pulse.mp3",
-    "loop": true,
-    "fadeIn": 1,
-    "fadeOut": 2
-  }
+  ]
 }
