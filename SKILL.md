@@ -617,13 +617,34 @@ const skillProjectId = state.skillProjectId; // 格式：cv_{timestamp36}_{rando
 const { ensureProjectWorkdir } = require('./scripts/scaffold');
 ensureProjectWorkdir(workdirRoot, skillProjectId);
 
-// 4. 生成 design.md（子流程详见 templates/designs/video_design_guide.md）
-require('./scripts/scaffold').writeDesignMd(workdirRoot, skillProjectId, designMd);
+// 4. 骨架设计（子流程详见 templates/designs/video-design-guide.md）
+//    生成 design-skeleton.md，确定区域划分、时长分配
+require('./scripts/scaffold').writeDesignMd(workdirRoot, skillProjectId, designSkeletonMd, 'design-skeleton.md');
 
-// 5. 用户确认
-require('./scripts/state').markDesignConfirmed(workdirRoot);
+// 5. 用户确认骨架
+require('./scripts/state').markDesignConfirmed(workdirRoot, 'skeleton');
 
-// 6. 占位素材 + BGM（详见 mode-rules.md §4）
+// 6. 生成 skeleton.json（子流程详见 templates/designs/build-skeleton-json.md）
+const skeleton = buildSkeletonJson(workdirRoot, skillProjectId);
+
+// 7. 逐区域设计与开发
+const regions = skeleton.regions;
+for (const region of regions) {
+  // 7.1 区域设计（子流程详见 templates/designs/region-design-guide.md）
+  require('./scripts/scaffold').writeDesignMd(workdirRoot, skillProjectId, designRegionMd, `design-${region.name}.md`);
+  
+  // 7.2 用户确认区域设计
+  require('./scripts/state').markDesignConfirmed(workdirRoot, region.name);
+  
+  // 7.3 生成区域 JSON（子流程详见 templates/designs/build-region-json.md）
+  buildRegionJson(workdirRoot, skillProjectId, region.name);
+}
+
+// 8. 合并区域为 project.json（子流程详见 templates/designs/merge-regions.md）
+const { mergeRegions } = require('./scripts/merge-regions');
+const project = mergeRegions(path.join(workdirRoot, skillProjectId));
+
+// 9. 占位素材 + BGM（详见 mode-rules.md §4）
 // ⚠️ 必须先复制 BGM 文件到 workdir，再写 project.json 的 audio.path
 const { ensurePlaceholders, ensureBgm } = require('./scripts/scaffold');
 ensurePlaceholders(workdirRoot, skillProjectId, project.theme);
@@ -634,10 +655,10 @@ if (bgm.hasBgm) {
   throw new Error(`BGM 复制失败：templates/bgm/ 下没有 ${project.bgmStyle} 对应的 mp3 文件。请检查 bgmStyle 是否正确，或改用其他风格。`);
 }
 
-// 7. 校验（详见 selfcheck-rules.md）
+// 10. 校验（详见 selfcheck-rules.md）
 require('./scripts/validate').validate(project);
 
-// 8. 打包 + 上传（详见 api-rules.md §6）
+// 11. 打包 + 上传（详见 api-rules.md §6）
 const { uploadWithUser } = require('./scripts/upload-video');
 const result = await uploadWithUser(SERVER_URL, workdirRoot, skillProjectId, zipPath, {
   projectJsonPath: path.join(workdirRoot, skillProjectId, 'project.json'),

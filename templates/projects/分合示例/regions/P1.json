@@ -1,0 +1,62 @@
+{
+  "regionId": "P1",
+  "subtitles": [
+    {
+      "start": 0,
+      "end": 2.5,
+      "text": "AI时代，学习即提问"
+    }
+  ],
+  "components": [
+    {
+      "id": "P1-001",
+      "type": "TitleComponent",
+      "content": {
+        "text": "AI时代，学习即提问",
+        "level": 1,
+        "align": "center"
+      },
+      "position": {
+        "x": 20,
+        "y": 30,
+        "w": 740,
+        "h": 70
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "48px",
+          "fontWeight": "900",
+          "color": "#FFFFFF",
+          "lineHeight": "1.1"
+        }
+      },
+      "start": 0,
+      "end": 5
+    },
+    {
+      "id": "P1-002",
+      "type": "ShockComponent",
+      "content": {
+        "text": "善用工具，持续迭代"
+      },
+      "position": {
+        "x": 120,
+        "y": 120,
+        "w": 540,
+        "h": 80
+      },
+      "customStyle": {
+        "color": "linear-gradient(135deg, #06B6D4 0%, #A855F7 100%)",
+        "textColor": "#FFFFFF",
+        "padding": "16px 32px",
+        "borderRadius": "16px",
+        "fontSize": "36px",
+        "fontWeight": "800",
+        "border": "none",
+        "shadow": "0 4px 16px rgba(6,182,212,0.3)"
+      },
+      "start": 1.5,
+      "end": 5
+    }
+  ]
+}
