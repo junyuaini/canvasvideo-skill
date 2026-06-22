@@ -15,7 +15,7 @@
 
 | 来源 | 说明 |
 |------|------|
-| 上一步产出 | `design-skeleton.md`（如有迭代）|
+| 上一步产出 | `design-skeleton-creative.md` 或 `design-skeleton-dubbing.md`（如有迭代）|
 | 用户输入 | 视频主题、时长、风格 |
 | 引用规则 | `rules/03-layout.md`、`rules/02-mode.md`、`rules/04-timing.md`、`rules/07-theme.md` |
 
@@ -177,7 +177,7 @@
 
 ### 第 6 步：生成设计文档
 
-按模板结构生成 `design-skeleton.md`：
+按模板结构生成设计文档：
 
 ```markdown
 # 视频骨架设计：{主题}
@@ -253,8 +253,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const designFile = isDubbingMode ? 'design-skeleton-dubbing.md' : 'design-skeleton-creative.md';
 fs.writeFileSync(
-  path.join(workdirRoot, skillProjectId, 'design-skeleton.md'),
+  path.join(workdirRoot, skillProjectId, designFile),
   designContent
 );
 ```
