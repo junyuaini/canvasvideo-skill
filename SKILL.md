@@ -624,11 +624,14 @@ require('./scripts/scaffold').writeDesignMd(workdirRoot, skillProjectId, designM
 require('./scripts/state').markDesignConfirmed(workdirRoot);
 
 // 6. 占位素材 + BGM（详见 mode-rules.md §4）
+// ⚠️ 必须先复制 BGM 文件到 workdir，再写 project.json 的 audio.path
 const { ensurePlaceholders, ensureBgm } = require('./scripts/scaffold');
 ensurePlaceholders(workdirRoot, skillProjectId, project.theme);
 const bgm = ensureBgm(workdirRoot, skillProjectId, project.bgmStyle);
 if (bgm.hasBgm) {
   project.audio = { path: bgm.copied[0], loop: true, fadeIn: 1, fadeOut: 2 };
+} else if (project.bgmStyle) {
+  throw new Error(`BGM 复制失败：templates/bgm/ 下没有 ${project.bgmStyle} 对应的 mp3 文件。请检查 bgmStyle 是否正确，或改用其他风格。`);
 }
 
 // 7. 校验（详见 selfcheck-rules.md）
