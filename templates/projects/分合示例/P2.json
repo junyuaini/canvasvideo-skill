@@ -1,11 +1,5 @@
 {
   "regionId": "P2",
-  "audio": {
-    "path": "assets/placeholders/bgm/tech-pulse.mp3",
-    "loop": true,
-    "fadeIn": 1,
-    "fadeOut": 2
-  },
   "subtitles": [
     {
       "start": 2.5,
