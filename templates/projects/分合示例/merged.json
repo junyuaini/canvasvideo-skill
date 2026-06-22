@@ -26,6 +26,11 @@
       "name": "P1",
       "x": 120,
       "y": 50
+    },
+    {
+      "name": "P2",
+      "x": 120,
+      "y": 50
     }
   ],
   "audio": {
@@ -86,7 +91,7 @@
       "end": 5
     },
     {
-      "id": "P1-003",
+      "id": "P2-001",
       "type": "BadgeComponent",
       "content": {
         "text": "AI LEARNING"
@@ -110,7 +115,7 @@
       "end": 5
     },
     {
-      "id": "P1-004",
+      "id": "P2-002",
       "type": "ImageComponent",
       "content": {
         "image": "assets/placeholders/dark/tech.svg",
@@ -133,7 +138,7 @@
       "end": 5
     },
     {
-      "id": "P1-005",
+      "id": "P2-003",
       "type": "TextComponent",
       "content": {
         "text": "专业人士必读",

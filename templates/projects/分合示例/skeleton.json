@@ -26,12 +26,11 @@
       "name": "P1",
       "x": 120,
       "y": 50
+    },
+    {
+      "name": "P2",
+      "x": 120,
+      "y": 50
     }
-  ],
-  "audio": {
-    "path": "assets/placeholders/bgm/tech-pulse.mp3",
-    "loop": true,
-    "fadeIn": 1,
-    "fadeOut": 2
-  }
+  ]
 }
