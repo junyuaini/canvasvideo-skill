@@ -91,7 +91,8 @@ sequenceDiagram
 
 ```
 {workdirRoot}/{skillProjectId}/
-├── design-skeleton.md          # 骨架设计（步骤2产出）
+├── design-skeleton-creative.md # 骨架设计（创作模式）
+├── design-skeleton-dubbing.md  # 骨架设计（口播模式）
 ├── design-P1.md                # 区域1设计（步骤4产出）
 ├── design-P2.md                # 区域2设计（步骤4产出）
 ├── skeleton.json               # 骨架配置（步骤3产出）
@@ -186,7 +187,8 @@ canvasvideo-skill/
 │   └── selfcheck.js
 ├── templates/                  # 模板
 │   ├── artifacts/              # 过程模板
-│   │   ├── design-skeleton.md
+│   │   ├── design-skeleton-creative.md
+│   │   ├── design-skeleton-dubbing.md
 │   │   └── design-region.md
 │   ├── themes/                 # 主题配置
 │   ├── bgm/                    # BGM 目录

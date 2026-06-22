@@ -7,7 +7,7 @@
 
 ## 目标
 
-从 design-skeleton.md 生成 skeleton.json。
+从 design-skeleton 生成 skeleton.json。
 
 ---
 
@@ -15,7 +15,7 @@
 
 | 来源 | 说明 |
 |------|------|
-| 上一步产出 | `design-skeleton.md` |
+| 上一步产出 | `design-skeleton-creative.md` 或 `design-skeleton-dubbing.md` |
 | 引用规则 | `rules/03-layout.md`、`rules/02-mode.md` |
 
 ---
@@ -28,7 +28,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const designPath = path.join(workdirRoot, skillProjectId, 'design-skeleton.md');
+const designFile = isDubbingMode ? 'design-skeleton-dubbing.md' : 'design-skeleton-creative.md';
+const designPath = path.join(workdirRoot, skillProjectId, designFile);
 const designContent = fs.readFileSync(designPath, 'utf-8');
 ```
 

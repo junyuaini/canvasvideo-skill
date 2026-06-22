@@ -35,7 +35,8 @@
 ```
 {workdirRoot}/
   └── {skillProjectId}/
-        ├── design-skeleton.md
+        ├── design-skeleton-creative.md
+        ├── design-skeleton-dubbing.md
         ├── design-P1.md
         ├── design-P2.md
         ├── ...

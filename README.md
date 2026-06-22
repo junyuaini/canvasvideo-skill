@@ -102,7 +102,8 @@ canvasvideo-skill/
 │
 ├── templates/                 # 🎨 模板（AI 生成时参考/复制）
 │   ├── artifacts/             # 设计文档模板
-│   │   ├── design-skeleton.md  # 骨架设计模板
+│   │   ├── design-skeleton-creative.md  # 骨架设计模板（创作模式）
+│   │   ├── design-skeleton-dubbing.md   # 骨架设计模板（口播模式）
 │   │   └── design-region.md    # 区域设计模板
 │   ├── projects/              # project.json 样板库
 │   │   ├── README.md          # 样板选型指南
