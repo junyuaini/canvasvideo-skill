@@ -191,8 +191,8 @@ regionJson.components.forEach(comp => {
 ### 第 7 步：区域级校验
 
 ```js
-const { validateRegion } = require('./scripts/validate');
-validateRegion(regionJson, skeleton);
+const { validate } = require('./scripts/validate');
+validate(regionJson, skeleton);
 ```
 
 ---

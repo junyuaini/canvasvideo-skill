@@ -37,7 +37,11 @@ function loadOrCreateProject(workdirRoot) {
   const statePath = getStatePath(workdirRoot);
 
   if (fs.existsSync(statePath)) {
-    return JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    try {
+      return JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    } catch (e) {
+      throw new Error(`加载状态文件失败: ${e.message}`);
+    }
   }
 
   // 创建新状态

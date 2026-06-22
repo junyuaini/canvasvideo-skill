@@ -67,54 +67,67 @@ git clone git@github.com:junyuaini/canvasvideo-skill.git
 
 ---
 
-## 文档结构（核心）
+## 目录结构
 
 ```
 canvasvideo-skill/
-├── SKILL.md                   # ⭐ 主流程文档（7 次交互编排，AI 必读）
+├── SKILL.md                   # ⭐ Skill 协议入口（AI 必读）
 ├── README.md                  # 本文件（人类读的项目介绍）
 ├── LICENSE                    # MIT
 ├── .gitignore
 │
-├── references/                # 📚 规则原典（hard rule 单一来源）
-│   ├── mode-rules.md          # 创作/口播模式 + 音频用法 + 字幕共生 + 默认 BGM
-│   ├── themes-catalog.md      # 主题二选一：white / black + 选型 + 沟通话术
-│   ├── timing-rules.md        # 节奏 4 条门槛 + settings 三参数
-│   ├── layout-rules.md        # viewport/canvas/regions 公式 + 组件 Y/尺寸 + 对比度 + 多样化
-│   ├── components-catalog.md  # 10 个组件选型决策树（字段走云端 API）
-│   ├── visual-richness-rules.md # 丰富度 6 条门槛 + 评分 + 提升示例
-│   ├── selfcheck-rules.md     # L0~L4 自检表 + 设计原则 + 丰富度评分
-│   ├── principles.md          # 不打扰用户 + 不强行追问 + 凭证安全等基本原则
-│   └── api-rules.md           # 服务端 API + 用户体系 + 工作目录路径推算
+├── docs/                      # � 执行步骤（10 步流程）
+│   ├── 01-init.md            # 步骤1：初始化 + 模式判定
+│   ├── 02-skeleton-design.md  # 步骤2：骨架设计
+│   ├── 03-skeleton-build.md  # 步骤3：骨架实现
+│   ├── 04-region-design.md   # 步骤4：区域设计
+│   ├── 05-region-build.md    # 步骤5：区域实现
+│   ├── 06-merge.md            # 步骤6：合并
+│   ├── 07-assets.md           # 步骤7：素材处理
+│   ├── 08-validate.md        # 步骤8：校验
+│   ├── 09-package.md          # 步骤9：打包
+│   └── 10-upload.md           # 步骤10：上传
 │
-├── templates/                 # 🎨 模板（AI 生成时复制/参考）
-│   ├── designs/
-│   │   ├── video_design_guide.md  # design.md 步骤 0~11 子流程（被第二次交互调用）
-│   │   └── build_project_json.md  # design.md → project.json 子流程（被第四次交互调用）
+├── rules/                     # 📚 规则原典（hard rule 单一来源）
+│   ├── RULES.md              # 规则总清单
+│   ├── 01-principles.md      # 基本原则
+│   ├── 02-mode.md            # 创作/口播模式 + 音频用法 + 字幕共生 + 默认 BGM
+│   ├── 03-layout.md          # viewport/canvas/regions 公式 + 组件 Y/尺寸 + 对比度
+│   ├── 04-timing.md          # 节奏 4 条门槛 + settings 三参数
+│   ├── 05-richness.md        # 丰富度 6 条门槛 + 评分
+│   ├── 06-components.md      # 10 个组件选型决策树（字段走云端 API）
+│   ├── 07-theme.md           # 主题配色：white / black + 选型 + 沟通话术
+│   ├── 08-api.md             # 服务端 API + 用户体系 + 工作目录路径
+│   └── 09-selfcheck.md       # 自检规则
+│
+├── templates/                 # 🎨 模板（AI 生成时参考/复制）
+│   ├── artifacts/             # 设计文档模板
+│   │   ├── design-skeleton.md  # 骨架设计模板
+│   │   └── design-region.md    # 区域设计模板
 │   ├── projects/              # project.json 样板库
 │   │   ├── README.md          # 样板选型指南
 │   │   ├── 通用视频.json
 │   │   ├── 示例-产品演示型-2分钟口播.json
-│   │   └── 示例-案例分享型-1分钟口播.json
+│   │   ├── 示例-案例分享型-1分钟口播.json
+│   │   └── 分合示例/          # skeleton + regions 分离示例
 │   ├── placeholders/          # 占位图资源
-│   │   ├── url-factory.md     # Picsum + Aggregate 水印速查
+│   │   ├── README.md          # 占位图速查（Picsum + Aggregate 水印）
 │   │   ├── light/             # 极简白主题 SVG 兜底图
 │   │   └── dark/              # 沉浸黑主题 SVG 兜底图
 │   └── bgm/                   # 内置 BGM
-│       ├── bgm-catalog.md     # 6 首 BGM 风格匹配决策树
-│       └── *.wav              # tech-pulse / warm-cafe / uplifting / corporate / light-pop / cinematic
+│       ├── README.md         # BGM 风格匹配速查
+│       └── *.mp3             # tech-pulse / warm-cafe / uplifting / corporate / light-pop / cinematic
 │
 └── scripts/                   # 🛠️ Node.js 工具脚本
-    ├── scaffold.js            # 创建工作目录 + 拉取占位素材 + 写 design.md
-    ├── state.js               # skillProjectId 管理 + 确认状态
-    ├── validate.js            # 本地自检（仅节奏/布局，B 方案 v2.0 起不再做 schema 校验）
-    ├── selfcheck.js           # 节奏 4 门槛 + 布局 Y 坐标
-    ├── package.js             # 打包 zip 准备上传
-    ├── upload-video.js        # 用户体系 + 云端 precheck + 上传
-    ├── query-api.js           # 封装后端 API 调用（batch spec / validate / health）
-    ├── generate-bgm.js        # 生成合成 BGM（兜底）
-    ├── download-incompetech.js / .ps1 # 拉取 Incompetech 真实 BGM
-    └── test-*.js              # 自测脚本
+    ├── scaffold.js            # 创建工作目录 + 生成 design.md
+    ├── validate.js           # 本地校验入口（调用 selfcheck.js）
+    ├── selfcheck.js          # 节奏/布局/丰富度自检
+    ├── merge-regions.js      # 合并 skeleton + regions → project.json
+    ├── query-api.js          # 封装后端 API 调用（batch spec / validate / health）
+    ├── package.js            # 打包 zip 准备上传
+    ├── upload-video.js       # 用户体系 + 云端 precheck + 上传
+    ├── srt-parser.js         # SRT 字幕解析工具
+    └── state.js              # 状态管理（skillProjectId 等）
 ```
 
 ---
@@ -126,23 +139,18 @@ canvasvideo-skill/
 │ 流程文档（Workflow）                                          │
 │                                                            │
 │ ┌─ 主流程 ─────────────────────────────────────┐           │
-│ │ SKILL.md  — 7 次交互的整体编排                 │           │
+│ │ SKILL.md  — 整体编排                          │           │
 │ └────────────────────────────────────────────┘           │
 │            ↓                                              │
-│ ┌─ 子流程 1（第二次交互）──────────────────────┐           │
-│ │ templates/designs/video_design_guide.md      │           │
-│ │ design.md 步骤 0~11 子流程                     │           │
-│ └────────────────────────────────────────────┘           │
-│            ↓                                              │
-│ ┌─ 子流程 2（第四次交互）──────────────────────┐           │
-│ │ templates/designs/build_project_json.md      │           │
-│ │ design.md → project.json 字段映射子流程        │           │
+│ ┌─ 步骤文档 ──────────────────────────────────┐           │
+│ │ docs/01-init.md ~ 10-upload.md               │           │
+│ │ 步骤 1~10 执行流程                            │           │
 │ └────────────────────────────────────────────┘           │
 └────────────────────────────────────────────────────────────┘
               ↓ 引用（横切）
 ┌────────────────────────────────────────────────────────────┐
 │ 规则原典（Rules）                                              │
-│ references/*.md — 每条 hard rule 只在这里写一次                │
+│ rules/*.md — 每条 hard rule 只在这里写一次                    │
 │ 被所有流程节点引用                                              │
 └────────────────────────────────────────────────────────────┘
               ↓ 调用
@@ -173,33 +181,34 @@ AI 第一次给你做视频时大致会这样走：
 [读 SKILL.md] ── 知道整体规则、强制门槛、API 端点
    │
    ▼
-[阶段 0-2] 步骤 0~5：理解主题、规划区域、选主题
-   │  ├─ 查 references/themes-catalog.md（选 white/black）
+[步骤 1] 初始化 + 模式判定（推断 + 确认）
+   │  ├─ 查 rules/02-mode.md（选创作/口播）
    │  └─ 查 templates/projects/README.md（选样板）
    │
    ▼
-[阶段 3] 步骤 6~8：布局、选组件、节奏
-   │  └─ 查 references/components-catalog.md（选型决策树）
+[步骤 2-3] 骨架设计 + 实现
+   │  └─ 查 rules/03-layout.md、rules/07-theme.md
    │
    ▼
-[阶段 4] 步骤 9~10：写 customStyle + 时间轴
-   │  └─ 调后端 API：POST /cv/api/component/spec/batch（拿字段规范）
+[步骤 4-5] 区域设计 + 实现
+   │  └─ 查 rules/06-components.md（选型决策树）
    │
    ▼
-[阶段 5] 步骤 11：自检
-   │  └─ 查 references/visual-richness-rules.md（L4 丰富度门槛）
+[步骤 6] 合并
+   │  └─ scripts/merge-regions.js
    │
    ▼
-生成 design.md（用户确认）
+[步骤 7] 素材处理
+   │  ├─ 查 templates/placeholders/README.md
+   │  └─ 查 templates/bgm/README.md
    │
    ▼
-生成 project.json
-   │  ├─ 用 templates/placeholders/ 填占位图
-   │  ├─ 创作模式：用 templates/bgm/ 默认配 BGM
-   │  └─ 云端 /api/projects/validate 权威校验（schema + customStyle 字段级）
+[步骤 8] 校验
+   │  └─ scripts/selfcheck.js
    │
    ▼
-scripts/scaffold.js → scripts/validate.js（本地节奏/布局自检） → scripts/package.js → scripts/upload-video.js（含云端 precheck）
+[步骤 9-10] 打包 + 上传
+   │  └─ scripts/package.js → scripts/upload-video.js
    │
    ▼
 返回视频分享链接
@@ -213,13 +222,13 @@ scripts/scaffold.js → scripts/validate.js（本地节奏/布局自检） → s
 |------|------|--------|
 | **协议入口** | `SKILL.md` | AI（必读，Skill 装上后会 import） |
 | **项目介绍** | `README.md` | 人 |
-| **AI 设计知识库** | `references/*.md` | AI（设计阶段查阅） |
+| **执行步骤** | `docs/01-init.md` ~ `10-upload.md` | AI（按步骤执行） |
+| **AI 设计知识库** | `rules/*.md` | AI（设计阶段查阅） |
 | **AI 生成模板** | `templates/projects/*.json` | AI（作样板复制改写） |
-| **AI 设计规范** | `templates/designs/video_design_guide.md` | AI（生成 design.md 时严格遵守） |
 | **AI 资源库** | `templates/placeholders/`、`templates/bgm/` | AI（写 project.json 时直接引用） |
-| **结构校验** | 云端 `/api/projects/validate` | upload-video.js Step 0 自动调用（B 方案 v2.0）|
+| **结构校验** | 云端 `/api/projects/validate` | upload-video.js Step 0 自动调用 |
 | **执行脚本** | `scripts/*.js` | AI（工作流中调用） |
-| **README** | `templates/projects/README.md`、`templates/placeholders/url-factory.md`、`templates/bgm/bgm-catalog.md` | AI（局部速查） |
+| **局部速查** | `templates/projects/README.md`、`templates/placeholders/README.md`、`templates/bgm/README.md` | AI（局部速查） |
 
 ---
 
@@ -246,7 +255,7 @@ Content-Type: application/json
 
 - `SKILL.md` — Skill 协议入口（**不要改文件名**）
 - `scripts/` — Node.js 脚本，维持 CommonJS 写法以便老 AI 工具兼容
-- `references/` / `templates/` — 改了别忘了同步 SKILL.md 里的引用
+- `docs/` / `rules/` / `templates/` — 改了别忘了同步 SKILL.md 里的引用
 
 ---
 

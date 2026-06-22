@@ -175,7 +175,7 @@ canvasvideo-skill/
 │   ├── 08-api.md
 │   └── 09-selfcheck.md
 ├── scripts/                    # 脚本工具
-│   ├── init.js
+│   ├── srt-parser.js
 │   ├── scaffold.js
 │   ├── state.js
 │   ├── query-api.js

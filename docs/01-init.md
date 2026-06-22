@@ -71,7 +71,7 @@ state.mode = 'creative'; // 或 'voiceover'
 state.theme = userTheme;
 state.duration = userDuration;
 state.audience = userAudience;
-require('./scripts/state').saveProject(workdirRoot, state);
+require('./scripts/state').saveProjectState(workdirRoot, state);
 ```
 
 ---

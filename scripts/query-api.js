@@ -105,7 +105,7 @@ function buildRequestOptions(baseUrl, apiPath, body, extraHeaders, method = 'POS
  * 批量查询组件字段规范
  * @param {string[]} types - 组件类型列表，如 ['TitleComponent', 'ImageComponent']
  * @param {string} [serverUrl]
- * @returns {Promise<Object>} - { success, specs: { TitleComponent: {...}, ... } }
+ * @returns {Promise<Object>} - { success, data: { components: { Type.variant: {...} } } }
  */
 async function queryComponentSpecBatch(types, serverUrl) {
   if (!Array.isArray(types) || types.length === 0) {

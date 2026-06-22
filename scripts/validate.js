@@ -30,7 +30,11 @@ const { selfcheck } = require('./selfcheck');
 function validate(projectOrPath) {
   let project;
   if (typeof projectOrPath === 'string') {
-    project = JSON.parse(fs.readFileSync(projectOrPath, 'utf-8'));
+    try {
+      project = JSON.parse(fs.readFileSync(projectOrPath, 'utf-8'));
+    } catch (e) {
+      throw new Error(`JSON.parse 失败: ${e.message}`);
+    }
   } else {
     project = projectOrPath;
   }

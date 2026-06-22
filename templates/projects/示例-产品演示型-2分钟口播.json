@@ -641,7 +641,12 @@
         "fit": "contain",
         "borderRadius": 0
       },
-      "customStyle": {}
+      "customStyle": {
+        "borderRadius": 0,
+        "shadow": "none",
+        "captionColor": "#FFFFFF",
+        "captionFontSize": "14px"
+      }
     },
     {
       "id": "P2-001",
@@ -820,7 +825,12 @@
             "fit": "contain",
             "borderRadius": 18
           },
-          "customStyle": {}
+          "customStyle": {
+            "borderRadius": 18,
+            "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          }
         },
         {
           "id": "P2-007",
@@ -1063,7 +1073,12 @@
             "fit": "cover",
             "borderRadius": 22
           },
-          "customStyle": {}
+          "customStyle": {
+            "borderRadius": 22,
+            "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          }
         },
         {
           "id": "P3-006",
@@ -1299,7 +1314,12 @@
             "fit": "cover",
             "borderRadius": 18
           },
-          "customStyle": {}
+          "customStyle": {
+            "borderRadius": 18,
+            "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          }
         }
       ]
     },
@@ -1333,7 +1353,12 @@
             "fit": "cover",
             "borderRadius": 18
           },
-          "customStyle": {}
+          "customStyle": {
+            "borderRadius": 18,
+            "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          }
         }
       ]
     },
@@ -1469,7 +1494,12 @@
         "fit": "contain",
         "borderRadius": 18
       },
-      "customStyle": {}
+      "customStyle": {
+        "borderRadius": 18,
+        "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+        "captionColor": "#FFFFFF",
+        "captionFontSize": "14px"
+      }
     },
     {
       "id": "P5-005",
@@ -1527,7 +1557,12 @@
         "fit": "contain",
         "borderRadius": 18
       },
-      "customStyle": {}
+      "customStyle": {
+        "borderRadius": 18,
+        "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+        "captionColor": "#FFFFFF",
+        "captionFontSize": "14px"
+      }
     },
     {
       "id": "P5-007",
@@ -1585,7 +1620,12 @@
         "fit": "contain",
         "borderRadius": 18
       },
-      "customStyle": {}
+      "customStyle": {
+        "borderRadius": 18,
+        "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+        "captionColor": "#FFFFFF",
+        "captionFontSize": "14px"
+      }
     },
     {
       "id": "P5-009",
@@ -1939,7 +1979,12 @@
             "fit": "contain",
             "borderRadius": 18
           },
-          "customStyle": {}
+          "customStyle": {
+            "borderRadius": 18,
+            "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          }
         },
         {
           "id": "P6-011",
@@ -1958,7 +2003,12 @@
             "fit": "contain",
             "borderRadius": 18
           },
-          "customStyle": {}
+          "customStyle": {
+            "borderRadius": 18,
+            "shadow": "0 4px 12px rgba(0,0,0,0.15)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          }
         },
         {
           "id": "P6-012",

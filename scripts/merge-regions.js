@@ -42,7 +42,7 @@ function mergeRegions(workdir) {
   const regionsDir = path.join(workdir, 'regions');
   
   for (const region of skeleton.regions) {
-    const regionFile = path.join(regionsDir, `${region.id}.json`);
+    const regionFile = path.join(regionsDir, `${region.name}.json`);
     
     if (!fs.existsSync(regionFile)) {
       console.warn(`警告: 区域文件不存在 ${regionFile}`);
@@ -51,9 +51,9 @@ function mergeRegions(workdir) {
     
     const regionData = JSON.parse(fs.readFileSync(regionFile, 'utf-8'));
     
-    // 验证 regionId 匹配
-    if (regionData.regionId !== region.id) {
-      console.warn(`警告: regionId 不匹配 ${regionData.regionId} !== ${region.id}`);
+    // 验证 regionName 匹配
+    if (regionData.regionName !== region.name) {
+      console.warn(`警告: regionName 不匹配 ${regionData.regionName} !== ${region.name}`);
     }
     
     // 合并组件
