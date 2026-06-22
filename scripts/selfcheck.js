@@ -64,12 +64,15 @@ function checkDuplicateIds(components) {
  * 检查时间冲突
  */
 function checkTimeConflict(components, regionIndex) {
-  for (let i = 0; i < components.length; i++) {
-    for (let j = i + 1; j < components.length; j++) {
-      const a = components[i];
-      const b = components[j];
-      if (a.start < b.end && a.end > b.start) {
-        return `区域 ${regionIndex} 组件时间重叠: ${a.id} 与 ${b.id}`;
+  // AggregateComponent 的 children 是视觉子元素，不是独立时间轴组件
+  const timeComponents = components.filter(c => c.type !== 'AggregateComponent');
+  for (let i = 0; i < timeComponents.length; i++) {
+    for (let j = i + 1; j < timeComponents.length; j++) {
+      const a = timeComponents[i];
+      const b = timeComponents[j];
+      // 允许时间重叠：组件可以共存于同一时间
+      if (a.start === b.start && a.end === b.end) {
+        return `区域 ${regionIndex} 组件时间完全重叠: ${a.id} 与 ${b.id}`;
       }
     }
   }
