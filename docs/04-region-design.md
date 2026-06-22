@@ -77,22 +77,19 @@
 
 **硬规则**：单一模板占比不得超过 60%（详见 `rules/05-richness.md` §R1 门槛 7）。如果总共 5 个区域，同一模板最多用 3 个区域。
 
-### 第 4 步：选择组件
+### 第 4 步：选择设计模式
 
-查阅 `rules/06-components.md` 选型决策树。
+查阅 `rules/06-components.md` §R1，根据内容选择设计模式：
 
-| 组件类型 | 适用场景 | 数量限制 |
-|----------|----------|----------|
-| TitleComponent | 主标题 | 每区域 1 个 |
-| TextComponent | 正文、说明 | 每区域 ≤ 2 个 |
-| ShockComponent | 强调数据、金句 | 每区域 ≤ 1 个 |
-| BadgeComponent | 标签、分类 | 每区域 ≤ 2 个 |
-| ImageComponent | 图片展示 | 每区域 ≤ 1 个 |
-| CardComponent | 结构化信息 | 每区域 ≤ 2 个 |
-| GraphicComponent | 图表、流程 | 每区域 ≤ 1 个 |
-| QuoteComponent | 名言、证言 | 每区域 ≤ 1 个 |
+| 模式 | 选择条件 | 典型组件组合 |
+|------|---------|-------------|
+| 极简/快闪 | 一句话能说完，情绪点 | ShockComponent（单独） |
+| 标准 | 介绍、说明、步骤 | Title + Shock + Badge |
+| 复杂 | 架构图、流程图 | AggregateComponent + 多个子组件 |
+| 沉浸 | 场景渲染、品牌氛围 | ImageComponent（全屏）+ Title |
+| 对比 | Before/After、优劣对比 | AggregateComponent（左右分栏） |
 
-**原则**：单个区域组件总数 ≤ 5 个
+**原则**：不强制限制组件数量，但需满足四项设计原则（焦点唯一、层级清晰、留白舒适、语义一致）。
 
 **占位图必须用 Aggregate 包装**：当某个组件是 `[AI 自动生成 - 占位]` 的 ImageComponent 时，**必须**写成 AggregateComponent，children 包含 ImageComponent + ShockComponent（水印）。
 
