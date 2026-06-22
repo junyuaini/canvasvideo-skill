@@ -1,3 +1,8 @@
+---
+name: "canvasvideo"
+description: "生成画布视频（CanvasVideo），支持创作模式和口播模式。按步骤执行：骨架设计→逐区域开发→合并→打包上传。"
+---
+
 # CanvasVideo Skill
 
 > 本 Skill 用于生成画布视频（H5 视频），支持创作模式和口播模式。
