@@ -115,7 +115,22 @@ async function queryComponentSpecBatch(types, serverUrl) {
     throw new Error('批量查询最多 20 个组件');
   }
 
-  const body = Buffer.from(JSON.stringify({ types }));
+  // 服务端期望格式: { components: [{ type, variant }, ...] }
+  // component-spec.json 的 key 是 "Type.variant" 格式，需要给每个 type 配默认 variant
+  const defaultVariants = {
+    'TitleComponent': 'level1',
+    'TextComponent': 'paragraph',
+    'ImageComponent': 'default',
+    'CardComponent': 'overlay',
+    'QuoteComponent': 'default',
+    'BadgeComponent': 'default',
+    'CornerComponent': 'default',
+    'ShockComponent': 'default',
+    'GraphicComponent': 'flow',
+    'AggregateComponent': 'default',
+  };
+  const components = types.map(t => ({ type: t, variant: defaultVariants[t] || 'default' }));
+  const body = Buffer.from(JSON.stringify({ components }));
   const options = buildRequestOptions(serverUrl, '/api/component/spec/batch', body, {
     'Content-Type': 'application/json',
   });

@@ -104,25 +104,62 @@ const { specs } = await queryComponentSpecBatch(types);
 
 ---
 
-## R6 占位图规则
+## R6 AggregateComponent 规则
 
-### 推荐方案：Picsum + Aggregate 叠水印
+### 子组件必填字段
+
+AggregateComponent 的 `children` 数组中，**每个子组件都是独立组件**，必须包含完整字段：
+
+| 字段 | 说明 |
+|------|------|
+| `id` | 唯一标识（如 `P3-PLACEHOLDER-001-img`） |
+| `type` | 组件类型 |
+| `position` | `{ x, y, w, h }` |
+| `content` | 内容对象 |
+| `customStyle` | 样式对象（可为 `{}`，但不能省略） |
+
+**严禁**：
+- ❌ 子组件省略 `id`
+- ❌ 子组件省略 `position`
+- ❌ 子组件省略 `customStyle`
+
+### 占位图方案：Picsum + Aggregate 叠水印
 
 ```json
 {
+  "id": "P3-PLACEHOLDER-001",
   "type": "AggregateComponent",
+  "position": { "x": 0, "y": 0, "w": 760, "h": 480 },
+  "content": {},
+  "customStyle": { "background": "transparent", "padding": "0", "border": "none" },
   "children": [
     {
+      "id": "P3-PLACEHOLDER-001-img",
       "type": "ImageComponent",
+      "position": { "x": 0, "y": 0, "w": 760, "h": 480 },
       "content": {
         "image": "https://picsum.photos/seed/{seed}/1280/720",
         "fit": "cover",
         "borderRadius": 12
-      }
+      },
+      "customStyle": {}
     },
     {
+      "id": "P3-PLACEHOLDER-001-watermark",
       "type": "ShockComponent",
-      "content": { "text": "※ 演示图片 请替换" }
+      "position": { "x": 180, "y": 200, "w": 400, "h": 80 },
+      "content": { "text": "※ 演示图片 请替换" },
+      "customStyle": {
+        "background": "rgba(15,23,42,0.55)",
+        "color": "#FFFFFF",
+        "fontSize": "28px",
+        "fontWeight": "700",
+        "padding": "14px 28px",
+        "borderRadius": "999px",
+        "border": "none",
+        "shadow": "0 4px 16px rgba(0,0,0,0.25)",
+        "letterSpacing": "2px"
+      }
     }
   ]
 }

@@ -26,16 +26,23 @@
 
 ### 第 1 步：运行合并脚本
 
+**推荐：命令行调用**
+
 ```bash
 node scripts/merge-regions.js {workdir}/{skillProjectId}
 ```
 
-或：
+**或：代码中 require 引入**
 
 ```js
 const { mergeRegions } = require('./scripts/merge-regions');
 const project = mergeRegions(path.join(workdirRoot, skillProjectId));
 ```
+
+> ⚠️ **注意**：`require` 路径必须是实际存在的 `.js` 文件路径。如果从 Skill 安装目录引入，路径为：
+> ```js
+> const { mergeRegions } = require('c:/Users/pujy/.trae-cn/skills/canvasvideo/scripts/merge-regions');
+> ```
 
 ### 第 2 步：验证合并结果
 

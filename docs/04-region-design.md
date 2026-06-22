@@ -89,7 +89,9 @@
 
 **原则**：单个区域组件总数 ≤ 5 个
 
-**占位图必须用 Aggregate 包装**：当某个组件是 `[AI 自动生成 - 占位]` 的 ImageComponent 时，**必须**写成 AggregateComponent (children: [ImageComponent (Picsum URL) + ShockComponent (※ 演示图片 请替换 胶囊水印)])，详见 `templates/placeholders/url-factory.md`。
+**占位图必须用 Aggregate 包装**：当某个组件是 `[AI 自动生成 - 占位]` 的 ImageComponent 时，**必须**写成 AggregateComponent，children 包含 ImageComponent + ShockComponent（水印）。
+
+> ⚠️ **注意**：AggregateComponent 的子组件**必须**包含完整字段（id、type、position、content、customStyle），详见 `rules/06-components.md` §R6。
 
 ### 第 5 步：设计时间轴
 

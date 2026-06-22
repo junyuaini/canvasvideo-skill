@@ -524,20 +524,46 @@ if (require.main === module) {
       if (res.warnings.length) {
         res.warnings.forEach(w => console.warn('⚠️  ' + w));
       }
+
+      // 1. 视频基本信息（最重要）
+      console.log('✅ 视频已生成完成！');
+      console.log('预览链接：' + res.previewUrl);
+      console.log('');
+
+      // 2. 迭代修改引导
+      console.log('🖼️ 替换占位图：');
+      console.log('   1. 把图片放到项目目录的 assets/images/ 文件夹下');
+      console.log('      （项目目录：' + path.join(workdirRoot, skillProjectId) + '/assets/images/）');
+      console.log('   2. 告诉我："把 P3-004 替换成 my-photo.png"');
+      console.log('');
+      console.log('🛠️ 调整组件样式：');
+      console.log('   1. 播放视频时按 ↑ 键，显示所有组件 ID');
+      console.log('   2. 告诉我调整需求，例如：');
+      console.log('      - "P4-001 字体调大"');
+      console.log('      - "P3-003 改成红色"');
+      console.log('      - "P2-002 位置往下移"');
+      console.log('   3. AI 直接修改 project.json 并重新打包上传');
+      console.log('');
+
+      // 3. 账号信息（首次）
       if (res.isFirstTime) {
-        console.log('\n⚠️ 重要：本次为你创建了 CanvasVideo 账号');
+        console.log('⚠️ 重要：本次为你创建了 CanvasVideo 账号');
         console.log('  userId:    ' + res.user.userId);
         console.log('  userToken: ' + res.user.userToken);
         console.log('📁 凭证已保存到本地：' + path.join(workdirRoot, '.user.json'));
-        console.log('🔒 请妥善保管，丢失无法找回\n');
+        console.log('🔒 请妥善保管，丢失无法找回');
+        console.log('');
       }
-      console.log('✅ 视频已上线：' + res.previewUrl);
+
+      // 4. 基本操作
+      console.log('🎮 快捷键：空格=播放/暂停 · ←→=快进快退 · 双击空格=全景 · ↑↓=显示/隐藏组件 ID');
+      console.log('');
+
+      // 5. 分享引导
       console.log('📤 这条链接可以直接分享给同事、朋友、客户或社群——');
       console.log('   点开即看，无需登录、无需安装任何 App，桌面/手机都能播放。');
       console.log('');
-      console.log('🎮 快捷键：空格=播放/暂停 · ←→=快进快退 · 双击空格=全景 · ↑↓=显示/隐藏组件 ID');
-      console.log('🖼️ 替换占位图：把图片放到 ./assets/images/，然后让 AI "把 P3-004 替换成 my-photo.png"');
-      console.log('🛠️ 调整组件：先按 ↑ 显示 ID，再让 AI "P4-001 再大一点 / P3-003 改成红色"');
+
       process.exit(0);
     })
     .catch(err => {

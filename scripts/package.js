@@ -34,15 +34,25 @@ function checkMissingAssets(workdir) {
     if (Array.isArray(project.components)) {
       project.components.forEach((comp, idx) => {
         if (comp.content && comp.content.image) {
-          const imgPath = path.join(workdir, comp.content.image.replace(/^\.\//, ''));
-          if (!fs.existsSync(imgPath)) {
-            missing.push(`component[${idx}] image: ${comp.content.image}`);
+          const imgPath = comp.content.image;
+          // 跳过外部 URL（如 Picsum）
+          if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+            return;
+          }
+          const localPath = path.join(workdir, imgPath.replace(/^\.\//, ''));
+          if (!fs.existsSync(localPath)) {
+            missing.push(`component[${idx}] image: ${imgPath}`);
           }
         }
         if (comp.content && comp.content.icon) {
-          const iconPath = path.join(workdir, comp.content.icon.replace(/^\.\//, ''));
-          if (!fs.existsSync(iconPath)) {
-            missing.push(`component[${idx}] icon: ${comp.content.icon}`);
+          const iconPath = comp.content.icon;
+          // 跳过外部 URL
+          if (iconPath.startsWith('http://') || iconPath.startsWith('https://')) {
+            return;
+          }
+          const localPath = path.join(workdir, iconPath.replace(/^\.\//, ''));
+          if (!fs.existsSync(localPath)) {
+            missing.push(`component[${idx}] icon: ${iconPath}`);
           }
         }
       });
