@@ -1,0 +1,138 @@
+{
+  "regionId": "P1",
+  "components": [
+    {
+      "id": "P1-001",
+      "type": "TitleComponent",
+      "content": {
+        "text": "AI时代，学习即提问",
+        "level": 1,
+        "align": "center"
+      },
+      "position": {
+        "x": 20,
+        "y": 30,
+        "w": 740,
+        "h": 70
+      },
+      "customStyle": {
+        "level1": {
+          "fontSize": "48px",
+          "fontWeight": "900",
+          "color": "#FFFFFF",
+          "lineHeight": "1.1"
+        }
+      },
+      "start": 0,
+      "end": 5
+    },
+    {
+      "id": "P1-002",
+      "type": "ShockComponent",
+      "content": {
+        "text": "善用工具，持续迭代"
+      },
+      "position": {
+        "x": 120,
+        "y": 120,
+        "w": 540,
+        "h": 80
+      },
+      "customStyle": {
+        "color": "linear-gradient(135deg, #06B6D4 0%, #A855F7 100%)",
+        "textColor": "#FFFFFF",
+        "padding": "16px 32px",
+        "borderRadius": "16px",
+        "fontSize": "36px",
+        "fontWeight": "800",
+        "border": "none",
+        "shadow": "0 4px 16px rgba(6,182,212,0.3)"
+      },
+      "start": 1.5,
+      "end": 5
+    },
+    {
+      "id": "P1-003",
+      "type": "BadgeComponent",
+      "content": {
+        "text": "AI LEARNING"
+      },
+      "position": {
+        "x": 310,
+        "y": 220,
+        "w": 160,
+        "h": 40
+      },
+      "customStyle": {
+        "color": "#F59E0B",
+        "textColor": "#0B0719",
+        "padding": "10px 24px",
+        "borderRadius": "999px",
+        "fontSize": "18px",
+        "fontWeight": "800",
+        "shadow": "0 4px 12px rgba(245,158,11,0.4)"
+      },
+      "start": 3,
+      "end": 5
+    },
+    {
+      "id": "P1-004",
+      "type": "ImageComponent",
+      "content": {
+        "image": "assets/placeholders/dark/tech.svg",
+        "fit": "cover",
+        "borderRadius": 12
+      },
+      "position": {
+        "x": 20,
+        "y": 280,
+        "w": 740,
+        "h": 250
+      },
+      "customStyle": {
+        "borderRadius": 12,
+        "shadow": "0 4px 12px rgba(0,0,0,0.3)",
+        "captionColor": "#FFFFFF",
+        "captionFontSize": "14px"
+      },
+      "start": 4,
+      "end": 5
+    },
+    {
+      "id": "P1-005",
+      "type": "TextComponent",
+      "content": {
+        "text": "专业人士必读",
+        "style": "paragraph",
+        "align": "center"
+      },
+      "position": {
+        "x": 240,
+        "y": 540,
+        "w": 300,
+        "h": 40
+      },
+      "customStyle": {
+        "paragraph": {
+          "fontSize": "16px",
+          "color": "#9CA3AF",
+          "lineHeight": "1.4"
+        }
+      },
+      "start": 4.5,
+      "end": 5
+    }
+  ],
+  "subtitles": [
+    {
+      "start": 0,
+      "end": 2.5,
+      "text": "AI时代，学习即提问"
+    },
+    {
+      "start": 2.5,
+      "end": 5,
+      "text": "善用工具，持续迭代"
+    }
+  ]
+}

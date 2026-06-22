@@ -2,7 +2,10 @@
   "name": "20260617 AI会取代程序员？我4小时帮老板做了个会员管理系统",
   "description": "20260617 口播介绍视频：AI开发实战案例，展示如何用AI在4小时内为理发店老板开发会员管理系统。已根据 subtitle.srt 重排节奏，覆盖 52.966 秒口播。",
   "theme": "white",
-  "audio": "./assets/20260617/audio.mp3",
+  "audio": {
+    "path": "./assets/20260617/audio.mp3",
+    "loop": false
+  },
   "duration": 52.966,
   "viewport": {
     "width": 780,
@@ -229,53 +232,6 @@
       "start": 51.333,
       "end": 52.966,
       "text": "自查清单案例模板发你"
-    }
-  ],
-  "chapters": [
-    {
-      "start": 0,
-      "name": "开场钩子",
-      "end": 3.633
-    },
-    {
-      "start": 3.633,
-      "name": "场景引入",
-      "end": 8.833
-    },
-    {
-      "start": 8.833,
-      "name": "痛点与承诺",
-      "end": 13.766
-    },
-    {
-      "start": 13.766,
-      "name": "交付与需求",
-      "end": 21.2
-    },
-    {
-      "start": 21.2,
-      "name": "设计文档",
-      "end": 31.4
-    },
-    {
-      "start": 31.4,
-      "name": "自查与测试",
-      "end": 40.8
-    },
-    {
-      "start": 40.8,
-      "name": "成果展示",
-      "end": 44.633
-    },
-    {
-      "start": 44.633,
-      "name": "金句收尾",
-      "end": 48.866
-    },
-    {
-      "start": 48.866,
-      "name": "CTA",
-      "end": 52.966
     }
   ],
   "components": [
