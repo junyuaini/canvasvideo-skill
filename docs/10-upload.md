@@ -44,10 +44,23 @@ if (result.isFirstTime) {
   console.log(`⚠️ 账号已创建`);
   console.log(`userToken: ${result.userToken}`);
   console.log(`请保存到: {workdir}/.user.json`);
-} else {
-  // 非首次：仅输出链接
-  console.log(`预览链接: ${result.previewUrl}`);
 }
+
+console.log(`预览链接: ${result.previewUrl}`);
+```
+
+### 第 3 步：输出操作说明
+
+向用户展示视频的使用说明：
+
+```markdown
+✅ 视频已上线：{previewUrl}
+📤 这条链接可以直接分享给同事、朋友、客户或社群——
+   点开即看，无需登录、无需安装任何 App，桌面/手机都能播放。
+
+🎮 快捷键：空格=播放/暂停 · ←→=快进快退 · 双击空格=全景 · ↑↓=显示/隐藏组件 ID
+🖼️ 替换占位图：把图片放到 ./assets/images/，然后让 AI "把 P3-004 替换成 my-photo.png"
+🛠️ 调整组件：先按 ↑ 显示 ID，再让 AI "P4-001 再大一点 / P3-003 改成红色"
 ```
 
 ---
