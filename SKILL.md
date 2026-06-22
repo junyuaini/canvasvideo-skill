@@ -162,17 +162,18 @@ canvasvideo-skill/
 │   ├── 07-assets.md
 │   ├── 08-validate.md
 │   ├── 09-package.md
-│   ├── 10-upload.md
-│   └── references/             # 引用规则
-│       ├── api-rules.md
-│       ├── mode-rules.md
-│       ├── layout-rules.md
-│       ├── timing-rules.md
-│       ├── selfcheck-rules.md
-│       ├── principles.md
-│       ├── themes-catalog.md
-│       ├── components-catalog.md
-│       └── visual-richness-rules.md
+│   └── 10-upload.md
+├── rules/                      # 约束规则（AI 设计时查阅）
+│   ├── RULES.md                # 规则总清单
+│   ├── 01-principles.md
+│   ├── 02-mode.md
+│   ├── 03-layout.md
+│   ├── 04-timing.md
+│   ├── 05-richness.md
+│   ├── 06-components.md
+│   ├── 07-theme.md
+│   ├── 08-api.md
+│   └── 09-selfcheck.md
 ├── scripts/                    # 脚本工具
 │   ├── init.js
 │   ├── scaffold.js

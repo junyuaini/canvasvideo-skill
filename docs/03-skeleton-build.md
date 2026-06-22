@@ -16,7 +16,7 @@
 | 来源 | 说明 |
 |------|------|
 | 上一步产出 | `design-skeleton.md` |
-| 引用规则 | `references/layout-rules.md`、`references/mode-rules.md` |
+| 引用规则 | `rules/03-layout.md`、`rules/02-mode.md` |
 
 ---
 

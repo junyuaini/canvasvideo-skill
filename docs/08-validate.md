@@ -16,7 +16,7 @@
 | 来源 | 说明 |
 |------|------|
 | project.json | 完整配置 |
-| 引用规则 | `references/selfcheck-rules.md` |
+| 引用规则 | `rules/09-selfcheck.md` |
 
 ---
 

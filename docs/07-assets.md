@@ -16,7 +16,7 @@
 | 来源 | 说明 |
 |------|------|
 | project.json | 获取 theme、audio |
-| 引用规则 | `references/mode-rules.md` §4 |
+| 引用规则 | `rules/02-mode.md` §R4 |
 
 ---
 

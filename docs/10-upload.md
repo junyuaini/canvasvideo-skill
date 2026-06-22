@@ -17,7 +17,7 @@
 |------|------|
 | output.zip | 打包文件 |
 | 脚本 | `scripts/upload-video.js` |
-| 引用规则 | `references/api-rules.md` §6 |
+| 引用规则 | `rules/08-api.md` §R3 |
 
 ---
 
