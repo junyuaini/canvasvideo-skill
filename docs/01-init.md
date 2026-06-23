@@ -179,6 +179,8 @@ require('./scripts/state').saveProjectState(workdirRoot, state);
 
 ## 自检
 
+> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+
 - [E] 模式已确定（创作/口播）
 - [E] 必问信息已获取
 - [E] 工作目录已创建

@@ -66,6 +66,8 @@ fs.writeFileSync(
 
 ## 自检
 
+> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+
 - [E] 占位素材已复制
 - [E] BGM 文件已复制（BGM 模式）
 - [E] audio.path 指向正确的文件

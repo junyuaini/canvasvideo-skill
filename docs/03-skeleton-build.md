@@ -91,6 +91,8 @@ if (!fs.existsSync(regionsDir)) {
 
 ## 自检
 
+> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+
 - [E] name 不为空
 - [E] duration > 0
 - [E] theme 是 black 或 white

@@ -95,6 +95,8 @@ console.log(`预览链接: ${result.previewUrl}`);
 
 ## 自检
 
+> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+
 - [E] 上传成功
 - [E] 返回 previewUrl
 - [I] 账号已保存（首次）

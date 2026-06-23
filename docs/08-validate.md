@@ -57,6 +57,8 @@ if (missing.length > 0) {
 
 ## 自检
 
+> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+
 - [E] project.json 校验通过
 - [E] 所有资源文件存在
 - [E] 无报错信息

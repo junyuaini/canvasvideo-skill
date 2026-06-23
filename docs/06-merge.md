@@ -99,13 +99,15 @@ fs.writeFileSync(
 
 ## 自检
 
+> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+
 - [E] project.json 是合法 JSON
 - [E] 包含所有全局字段（name, theme, duration, viewport, canvas, regions, settings, audio, components）
 - [E] components 数组不为空
 - [E] 所有组件 ID 唯一
+- [W] 素材清单实现率 = 100%
 - [I] 组件按 start 排序
 - [I] 字幕按 start 排序
-- [W] 素材清单实现率 = 100%
 - [I] 视觉丰富度 6 门槛通过
 
 ---
