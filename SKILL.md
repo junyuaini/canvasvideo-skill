@@ -23,36 +23,58 @@ sequenceDiagram
     AI->>用户: 等待确认骨架
     用户-->>AI: 确认
     AI->>AI: 步骤3：生成骨架JSON
-
-    loop 逐区域（自动执行）
-        AI->>AI: 步骤4：区域设计
-        AI->>AI: 步骤5：生成区域JSON
+    AI->>AI: 检查 skeleton.json 是否存在
+    alt 不存在
+        AI->>AI: 回到步骤3重新生成
+    else 存在
+        loop 逐区域（必须执行）
+            AI->>AI: 步骤4：区域设计（基于 skeleton.json）
+            AI->>AI: 步骤5：生成区域JSON
+        end
     end
-
-    AI->>AI: 步骤6：合并
+    AI->>AI: 检查 regions/ 是否完整
+    alt 不完整
+        AI->>AI: 回到步骤4-5补全
+    else 完整
+        AI->>AI: 步骤6：合并为 project.json
+    end
     AI->>AI: 步骤7：素材处理
     AI->>AI: 步骤8：校验
     AI->>AI: 步骤9：打包
-    AI->>AI: 步骤10：上传
+    AI->>AI: 步骤10：上传（最终步骤）
     AI->>用户: 返回预览链接
 ```
 
 ---
 
+## 强制顺序
+
+必须按以下顺序执行，**严禁跳过或颠倒**：
+
+```
+步骤1 → 步骤2 → 步骤3 → [步骤4 → 步骤5]循环 → 步骤6 → 步骤7 → 步骤8 → 步骤9 → 步骤10
+```
+
+关键依赖（阻断规则）：
+- 没有 `skeleton.json` → **不能做**区域设计（步骤4）
+- 没有 `design-P{n}.md` → **不能生成**`regions/P{n}.json`（步骤5）
+- `regions/` 不完整 → **不能合并**（步骤6）
+- 没有 `project.json` → **不能上传**（步骤10）
+
 ## 步骤清单
 
-| 步骤 | 操作 | 文档 |
-|------|------|------|
-| 1 | 初始化工作目录 | [01-init.md](docs/01-init.md) |
-| 2 | 骨架设计（创作/口播） | [02-skeleton-design-creative.md](docs/02-skeleton-design-creative.md) / [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) |
-| 3 | 生成 skeleton.json | [03-skeleton-build.md](docs/03-skeleton-build.md) |
-| 4 | 区域设计（创作/口播） | [04-region-design-creative.md](docs/04-region-design-creative.md) / [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) |
-| 5 | 生成区域 JSON | [05-region-build.md](docs/05-region-build.md) |
-| 6 | 合并为 project.json | [06-merge.md](docs/06-merge.md) |
-| 7 | 素材处理 | [07-assets.md](docs/07-assets.md) |
-| 8 | 校验 | [08-validate.md](docs/08-validate.md) |
-| 9 | 打包 | [09-package.md](docs/09-package.md) |
-| 10 | 上传 | [10-upload.md](docs/10-upload.md) |
+| 步骤 | 操作 | 产出物 | 文档 |
+|------|------|--------|------|
+| 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) |
+| 2 | 骨架设计（创作/口播） | `design-skeleton-*.md` | [02-skeleton-design-creative.md](docs/02-skeleton-design-creative.md) / [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) |
+| 3 | 生成骨架JSON（必须） | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) |
+| 4 | 区域设计（基于 skeleton） | `design-P1.md`, `P2.md`... | [04-region-design-creative.md](docs/04-region-design-creative.md) / [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) |
+| 5 | 生成区域JSON（必须） | `regions/P1.json`, `P2.json`... | [05-region-build.md](docs/05-region-build.md) |
+| 6 | 合并为 project.json | `project.json` | [06-merge.md](docs/06-merge.md) |
+| 7 | 素材处理 | 资源文件 | [07-assets.md](docs/07-assets.md) |
+| 8 | 校验 | 校验报告 | [08-validate.md](docs/08-validate.md) |
+| 9 | 打包 | `output.zip` | [09-package.md](docs/09-package.md) |
+| 10 | 上传（最终步骤） | 预览链接 | [10-upload.md](docs/10-upload.md) |
 
 ---
 
