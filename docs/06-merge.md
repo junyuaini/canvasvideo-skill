@@ -60,7 +60,7 @@ const project = mergeRegions(path.join(workdirRoot, skillProjectId));
 | design.md 状态 | project.json 写法 |
 |---|---|
 | `[已具备]` | `"image": "./assets/images/{file}"`（真实路径） |
-| `[AI 自动生成 - 占位]` | Picsum URL + AggregateComponent 叠水印（详见 `templates/placeholders/url-factory.md`） |
+| `[AI 自动生成 - 占位]` | Picsum URL + AggregateComponent 叠水印（详见 `templates/placeholders/README.md`） |
 | `[待用户提供]` | 也用占位图，备注列写"用户提供后替换" |
 
 **素材清单实现率必须 = 100%**。
