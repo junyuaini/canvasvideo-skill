@@ -37,9 +37,47 @@ const designContent = fs.readFileSync(designPath, 'utf-8');
 从设计文档提取：
 - 项目元信息（name, theme, duration）
 - 区域划分（regions）
-- 视觉策略（viewport, canvas, audio）
+- 视觉策略（viewport, canvas）
 
-### 第 3 步：生成 skeleton.json
+### 第 3 步：配置 audio
+
+根据模式配置 audio 字段：
+
+```jsonc
+// 创作模式（BGM）
+"audio": {
+  "path": "./assets/placeholders/bgm/{风格}.mp3",
+  "loop": true,
+  "fadeIn": 1,
+  "fadeOut": 2
+}
+
+// 口播模式（配音）
+"audio": {
+  "path": "./assets/voice.mp3"
+}
+```
+
+| 场景 | audio写法 | subtitles |
+|------|----------|-----------|
+| 创作模式（BGM）| 对象，含 `loop: true` | ❌ 严禁有 |
+| 口播模式（配音）| 字符串或对象无loop | ✅ 必须有 |
+
+**BGM 风格匹配（创作模式）**：
+
+| 视频主题/关键词 | 选用 BGM |
+|---|---|
+| AI / 编程 / 算法 / 数据 / 科技 | `tech-pulse` |
+| 咖啡 / 餐饮 / 生活方式 / 温馨 | `warm-cafe` |
+| 创业 / 成长 / 励志 / 教育 | `uplifting` |
+| 企业 / B2B / 演示 / 商务 | `corporate` |
+| 教程 / 科普 / Vlog / 轻松 | `light-pop` |
+| 旅行 / 纪录片 / 大场面 | `cinematic` |
+| 不明确 | `corporate`（默认） |
+
+**用户主动拒绝BGM**：不写audio字段，视频静音播出。
+
+### 第 4 步：生成 skeleton.json
 
 ```js
 const skeleton = {
@@ -69,7 +107,7 @@ fs.writeFileSync(
 );
 ```
 
-### 第 4 步：创建 regions 目录
+### 第 5 步：创建 regions 目录
 
 ```js
 const regionsDir = path.join(workdirRoot, skillProjectId, 'regions');

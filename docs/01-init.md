@@ -124,28 +124,6 @@ state.bgm = userBgm;
 require('./scripts/state').saveProjectState(workdirRoot, state);
 ```
 
-**音频配置**：
-
-```jsonc
-// 创作模式（BGM）
-"audio": {
-  "path": "./assets/placeholders/bgm/{风格}.mp3",
-  "loop": true,
-  "fadeIn": 1,
-  "fadeOut": 2
-}
-
-// 口播模式（配音）
-"audio": {
-  "path": "./assets/voice.mp3"
-}
-```
-
-| 场景 | audio写法 | subtitles |
-|------|----------|-----------|
-| 创作模式（BGM）| 对象，含 `loop: true` | ❌ 严禁有 |
-| 口播模式（配音）| 字符串或对象无loop | ✅ 必须有 |
-
 ---
 
 ## 产出
