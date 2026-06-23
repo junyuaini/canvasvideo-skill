@@ -1,7 +1,7 @@
 # 步骤3：生成骨架JSON
 
-> 前置步骤：[步骤2：骨架设计](02-skeleton-design.md)
-> 下一步：[步骤4：区域设计](04-region-design.md)
+> 前置步骤：[步骤2：骨架设计](02-skeleton-design-creative.md)
+> 下一步：[步骤4：区域设计](04-region-design-creative.md)
 
 ---
 
@@ -16,7 +16,6 @@
 | 来源 | 说明 |
 |------|------|
 | 上一步产出 | `design-skeleton-creative.md` 或 `design-skeleton-dubbing.md` |
-| 引用规则 | `rules/03-layout.md`、`rules/02-mode.md` |
 
 ---
 
