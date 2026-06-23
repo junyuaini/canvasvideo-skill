@@ -1,11 +1,11 @@
 ---
 name: "canvasvideo"
-description: "生成画布视频（CanvasVideo）—— 基于 H5 Canvas 的动画视频制作工具。支持两种模式：1）创作模式：输入主题/文案，AI 自动生成画面、组件动画、BGM 配乐，导出可分享的视频链接；2）口播模式：上传音频（MP3）+ 字幕（SRT），AI 按音频节奏自动排版画面，生成配音视频。输出为高清 H5 视频，支持播放/暂停/快进/全景浏览，可导出 MP4。适用于产品宣传、知识科普、口播短视频、数据可视化、品牌发布等场景。"
+description: "生成画布视频（CanvasVideo）—— 基于 H5 Canvas 的动画视频制作工具。支持两种模式：1）创作模式：输入主题/文案，AI 自动生成画面、组件动画、BGM 配乐，导出可分享的视频链接；2）口播模式：上传音频（MP3）+ 字幕（SRT），AI 按音频节奏自动排版画面，生成配音视频。输出为高清 H5 视频，支持播放/暂停/快进/全景浏览，可导出 MP4。适用于产品宣传，知识科普，口播短视频，数据可视化，品牌发布等场景。"
 ---
 
 # CanvasVideo Skill
 
-> 本 Skill 用于生成画布视频（H5 视频），支持创作模式和口播模式。
+> 本 Skill 用于生成画布视频（H5 视频)，支持创作模式和口播模式。
 > AI 按步骤执行，每步完成后等待用户确认，再进入下一步。
 
 ---
@@ -27,7 +27,6 @@ sequenceDiagram
     loop 逐区域（自动执行）
         AI->>AI: 步骤4：区域设计
         AI->>AI: 步骤5：生成区域JSON
-        AI->>AI: 步骤5.5：校验区域JSON
     end
 
     AI->>AI: 步骤6：合并
@@ -45,9 +44,9 @@ sequenceDiagram
 | 步骤 | 操作 | 文档 |
 |------|------|------|
 | 1 | 初始化工作目录 | [01-init.md](docs/01-init.md) |
-| 2 | 骨架设计 | [02-skeleton-design.md](docs/02-skeleton-design.md) |
+| 2 | 骨架设计（创作/口播） | [02-skeleton-design-creative.md](docs/02-skeleton-design-creative.md) / [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) |
 | 3 | 生成 skeleton.json | [03-skeleton-build.md](docs/03-skeleton-build.md) |
-| 4 | 区域设计 | [04-region-design.md](docs/04-region-design.md) |
+| 4 | 区域设计（创作/口播） | [04-region-design-creative.md](docs/04-region-design-creative.md) / [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) |
 | 5 | 生成区域 JSON | [05-region-build.md](docs/05-region-build.md) |
 | 6 | 合并为 project.json | [06-merge.md](docs/06-merge.md) |
 | 7 | 素材处理 | [07-assets.md](docs/07-assets.md) |
@@ -130,7 +129,7 @@ const skillProjectId = state.skillProjectId;
 
 // 3. 按步骤执行
 // 步骤1：初始化（见 docs/01-init.md）
-// 步骤2：骨架设计（见 docs/02-skeleton-design.md）
+// 步骤2：骨架设计（见 docs/02-skeleton-design-creative.md 或 02-skeleton-design-dubbing.md）
 // ... 以此类推
 ```
 
@@ -155,9 +154,11 @@ canvasvideo-skill/
 ├── SKILL.md                    # 本文件（总导航）
 ├── docs/                       # 执行文档（AI 按步骤阅读）
 │   ├── 01-init.md
-│   ├── 02-skeleton-design.md
+│   ├── 02-skeleton-design-creative.md
+│   ├── 02-skeleton-design-dubbing.md
 │   ├── 03-skeleton-build.md
-│   ├── 04-region-design.md
+│   ├── 04-region-design-creative.md
+│   ├── 04-region-design-dubbing.md
 │   ├── 05-region-build.md
 │   ├── 06-merge.md
 │   ├── 07-assets.md
@@ -167,12 +168,7 @@ canvasvideo-skill/
 ├── rules/                      # 约束规则（AI 设计时查阅）
 │   ├── RULES.md                # 规则总清单
 │   ├── 01-principles.md
-│   ├── 02-mode.md
-│   ├── 03-layout.md
-│   ├── 04-timing.md
-│   ├── 05-richness.md
 │   ├── 06-components.md
-│   ├── 07-theme.md
 │   ├── 08-api.md
 │   └── 09-selfcheck.md
 ├── scripts/                    # 脚本工具
@@ -189,8 +185,8 @@ canvasvideo-skill/
 │   ├── artifacts/              # 过程模板
 │   │   ├── design-skeleton-creative.md
 │   │   ├── design-skeleton-dubbing.md
-│   │   └── design-region.md
-│   ├── themes/                 # 主题配置
+│   │   ├── design-region-creative.md
+│   │   └── design-region-dubbing.md
 │   ├── bgm/                    # BGM 目录
 │   └── projects/               # 项目示例
 ├── package.json

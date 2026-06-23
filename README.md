@@ -1,6 +1,6 @@
 # CanvasVideo Skill
 
-> 通过自然语言一键生成可分享的画布视频（H5）。
+> 通过自然语言一键生成可分享的画布视频（H5)。
 > 适用于 AI Agent / Trae 等支持 Skill 协议的工具，无需手写代码。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -76,11 +76,13 @@ canvasvideo-skill/
 ├── LICENSE                    # MIT
 ├── .gitignore
 │
-├── docs/                      # � 执行步骤（10 步流程）
+├── docs/                      # 📋 执行步骤（10 步流程）
 │   ├── 01-init.md            # 步骤1：初始化 + 模式判定
-│   ├── 02-skeleton-design.md  # 步骤2：骨架设计
+│   ├── 02-skeleton-design-creative.md  # 步骤2：骨架设计（创作模式）
+│   ├── 02-skeleton-design-dubbing.md  # 步骤2：骨架设计（口播模式）
 │   ├── 03-skeleton-build.md  # 步骤3：骨架实现
-│   ├── 04-region-design.md   # 步骤4：区域设计
+│   ├── 04-region-design-creative.md   # 步骤4：区域设计（创作模式）
+│   ├── 04-region-design-dubbing.md    # 步骤4：区域设计（口播模式）
 │   ├── 05-region-build.md    # 步骤5：区域实现
 │   ├── 06-merge.md            # 步骤6：合并
 │   ├── 07-assets.md           # 步骤7：素材处理
@@ -91,38 +93,34 @@ canvasvideo-skill/
 ├── rules/                     # 📚 规则原典（hard rule 单一来源）
 │   ├── RULES.md              # 规则总清单
 │   ├── 01-principles.md      # 基本原则
-│   ├── 02-mode.md            # 创作/口播模式 + 音频用法 + 字幕共生 + 默认 BGM
-│   ├── 03-layout.md          # viewport/canvas/regions 公式 + 组件 Y/尺寸 + 对比度
-│   ├── 04-timing.md          # 节奏 4 条门槛 + settings 三参数
-│   ├── 05-richness.md        # 丰富度 6 条门槛 + 评分
-│   ├── 06-components.md      # 10 个组件选型决策树（字段走云端 API）
-│   ├── 07-theme.md           # 主题配色：white / black + 选型 + 沟通话术
+│   ├── 06-components.md     # 10 种组件 + 40 个变种 + API 调用规范
 │   ├── 08-api.md             # 服务端 API + 用户体系 + 工作目录路径
-│   └── 09-selfcheck.md       # 自检规则
+│   └── 09-selfcheck.md       # 本地自检规则（ID 格式 + 重复）
 │
 ├── templates/                 # 🎨 模板（AI 生成时参考/复制）
 │   ├── artifacts/             # 设计文档模板
-│   │   ├── design-skeleton-creative.md  # 骨架设计模板（创作模式）
-│   │   ├── design-skeleton-dubbing.md   # 骨架设计模板（口播模式）
-│   │   └── design-region.md    # 区域设计模板
+│   │   ├── design-skeleton-creative.md
+│   │   ├── design-skeleton-dubbing.md
+│   │   ├── design-region-creative.md
+│   │   └── design-region-dubbing.md
 │   ├── projects/              # project.json 样板库
-│   │   ├── README.md          # 样板选型指南
+│   │   ├── README.md
 │   │   ├── 通用视频.json
 │   │   ├── 示例-产品演示型-2分钟口播.json
 │   │   ├── 示例-案例分享型-1分钟口播.json
-│   │   └── 分合示例/          # skeleton + regions 分离示例
+│   │   └── 分合示例/
 │   ├── placeholders/          # 占位图资源
-│   │   ├── README.md          # 占位图速查（Picsum + Aggregate 水印）
+│   │   ├── README.md
 │   │   ├── light/             # 极简白主题 SVG 兜底图
 │   │   └── dark/              # 沉浸黑主题 SVG 兜底图
 │   └── bgm/                   # 内置 BGM
-│       ├── README.md         # BGM 风格匹配速查
-│       └── *.mp3             # tech-pulse / warm-cafe / uplifting / corporate / light-pop / cinematic
+│       ├── README.md
+│       └── *.mp3
 │
 └── scripts/                   # 🛠️ Node.js 工具脚本
-    ├── scaffold.js            # 创建工作目录 + 生成 design.md
-    ├── validate.js           # 本地校验入口（调用 selfcheck.js）
-    ├── selfcheck.js          # 节奏/布局/丰富度自检
+    ├── scaffold.js            # 创建工作目录
+    ├── validate.js           # 本地校验入口
+    ├── selfcheck.js          # 本地自检（ID 格式 + 重复）
     ├── merge-regions.js      # 合并 skeleton + regions → project.json
     ├── query-api.js          # 封装后端 API 调用（batch spec / validate / health）
     ├── package.js            # 打包 zip 准备上传
@@ -158,7 +156,7 @@ canvasvideo-skill/
 ┌────────────────────────────────────────────────────────────┐
 │ 数据层（API + spec.json）                                      │
 │ 云端 API: /cv/api/component/spec/batch                      │
-│ 组件字段、默认值、写死项                                          │
+│ 组件字段、默认值，写死项                                          │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -182,17 +180,18 @@ AI 第一次给你做视频时大致会这样走：
 [读 SKILL.md] ── 知道整体规则、强制门槛、API 端点
    │
    ▼
-[步骤 1] 初始化 + 模式判定（推断 + 确认）
-   │  ├─ 查 rules/02-mode.md（选创作/口播）
-   │  └─ 查 templates/projects/README.md（选样板）
+[步骤 1] 初始化 + 模式判定
    │
    ▼
-[步骤 2-3] 骨架设计 + 实现
-   │  └─ 查 rules/03-layout.md、rules/07-theme.md
+[步骤 2] 骨架设计
+   │  └─ 查 docs/02-skeleton-design-*.md
+   │
+   ▼
+[步骤 3] 生成 skeleton.json
    │
    ▼
 [步骤 4-5] 区域设计 + 实现
-   │  └─ 查 rules/06-components.md（选型决策树）
+   │  └─ 查 docs/04-region-design-*.md、rules/06-components.md
    │
    ▼
 [步骤 6] 合并
@@ -205,7 +204,7 @@ AI 第一次给你做视频时大致会这样走：
    │
    ▼
 [步骤 8] 校验
-   │  └─ scripts/selfcheck.js
+   │  └─ scripts/validate.js → scripts/selfcheck.js
    │
    ▼
 [步骤 9-10] 打包 + 上传
@@ -227,7 +226,7 @@ AI 第一次给你做视频时大致会这样走：
 | **AI 设计知识库** | `rules/*.md` | AI（设计阶段查阅） |
 | **AI 生成模板** | `templates/projects/*.json` | AI（作样板复制改写） |
 | **AI 资源库** | `templates/placeholders/`、`templates/bgm/` | AI（写 project.json 时直接引用） |
-| **结构校验** | 云端 `/api/projects/validate` | upload-video.js Step 0 自动调用 |
+| **结构校验** | 云端 `/api/projects/validate` | upload-video.js 自动调用 |
 | **执行脚本** | `scripts/*.js` | AI（工作流中调用） |
 | **局部速查** | `templates/projects/README.md`、`templates/placeholders/README.md`、`templates/bgm/README.md` | AI（局部速查） |
 
@@ -235,18 +234,19 @@ AI 第一次给你做视频时大致会这样走：
 
 ## 字段规范来源（重要）
 
-`SKILL.md` 不再罗列每个组件的 customStyle 字段（那部分迁移到了云端 API）。
+`rules/06-components.md` 不再罗列每个组件的 customStyle 字段详情（那部分在云端 API）。
 
 **AI 在生成 customStyle 前必须调云端 API**：
 
-```http
-POST /cv/api/component/spec/batch
-Content-Type: application/json
-
-{ "components": [{ "type": "GraphicComponent", "variant": "comparison" }] }
+```js
+const { queryComponentSpecBatch } = require('./scripts/query-api');
+const typeVariants = [
+  { type: 'TitleComponent', variant: 'level1' },
+  { type: 'CardComponent', variant: 'image-text' }
+];
+const { specs } = await queryComponentSpecBatch(typeVariants);
+// specs['TitleComponent.level1'] → 该组件的完整字段定义
 ```
-
-返回 `content / color / typography / layout / effect / hardcoded` 六类字段+默认值，单次最多 20 个。
 
 数据源：`video-maker-system/public/configs/component-spec.json`（不在 Skill 仓库里，在主仓库里）。
 
