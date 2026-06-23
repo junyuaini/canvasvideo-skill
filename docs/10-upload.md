@@ -95,9 +95,9 @@ console.log(`预览链接: ${result.previewUrl}`);
 
 ## 自检
 
-- [ ] 上传成功
-- [ ] 返回 previewUrl
-- [ ] 账号已保存（首次）
+- [E] 上传成功
+- [E] 返回 previewUrl
+- [I] 账号已保存（首次）
 
 ---
 

@@ -211,15 +211,15 @@ validate(regionJson, skeleton);
 
 ## 自检
 
-- [ ] regionName 与文件名一致
-- [ ] 组件总数 ≤ 5 个
-- [ ] 每个组件有完整的字段（id, type, content, position, customStyle, start, end）
-- [ ] `id` 格式正确（如 P1-001）
-- [ ] `customStyle` 已按 API 规范填写
-- [ ] 时间轴无重叠（同一区域组件）
-- [ ] 组件时间在区域时间范围内
-- [ ] 字幕时间与组件内容匹配（仅配音模式）
-- [ ] 图片路径已标注（如有 ImageComponent）
+- [E] regionName 与文件名一致
+- [I] 组件总数 ≤ 5 个
+- [E] 每个组件有完整的字段（id, type, content, position, customStyle, start, end）
+- [E] `id` 格式正确（如 P1-001）
+- [W] `customStyle` 已按 API 规范填写
+- [E] 时间轴无重叠（同一区域组件）
+- [E] 组件时间在区域时间范围内
+- [W] 字幕时间与组件内容匹配（仅配音模式）
+- [I] 图片路径已标注（如有 ImageComponent）
 
 ---
 

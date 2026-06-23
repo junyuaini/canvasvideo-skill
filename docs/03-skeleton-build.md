@@ -91,12 +91,12 @@ if (!fs.existsSync(regionsDir)) {
 
 ## 自检
 
-- [ ] name 不为空
-- [ ] duration > 0
-- [ ] theme 是 black 或 white
-- [ ] regions 数组不为空
-- [ ] audio 格式正确（对象格式）
-- [ ] canvas 尺寸能容纳所有区域
+- [E] name 不为空
+- [E] duration > 0
+- [E] theme 是 black 或 white
+- [E] regions 数组不为空
+- [W] audio 格式正确（对象格式）
+- [W] canvas 尺寸能容纳所有区域
 
 ---
 

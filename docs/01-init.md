@@ -179,12 +179,12 @@ require('./scripts/state').saveProjectState(workdirRoot, state);
 
 ## 自检
 
-- [ ] 模式已确定（创作/口播）
-- [ ] 必问信息已获取
-- [ ] 工作目录已创建
-- [ ] skillProjectId 已生成
-- [ ] 音频配置正确（BGM配loop，配音不配loop）
-- [ ] 字幕配置正确（口播必须有，创作必须无）
+- [E] 模式已确定（创作/口播）
+- [E] 必问信息已获取
+- [E] 工作目录已创建
+- [E] skillProjectId 已生成
+- [E] 音频配置正确（BGM配loop，配音不配loop）
+- [E] 字幕配置正确（口播必须有，创作必须无）
 
 ---
 

@@ -57,9 +57,9 @@ if (missing.length > 0) {
 
 ## 自检
 
-- [ ] project.json 校验通过
-- [ ] 所有资源文件存在
-- [ ] 无报错信息
+- [E] project.json 校验通过
+- [E] 所有资源文件存在
+- [E] 无报错信息
 
 ---
 

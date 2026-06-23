@@ -99,14 +99,14 @@ fs.writeFileSync(
 
 ## 自检
 
-- [ ] project.json 是合法 JSON
-- [ ] 包含所有全局字段（name, theme, duration, viewport, canvas, regions, settings, audio, components）
-- [ ] components 数组不为空
-- [ ] 所有组件 ID 唯一
-- [ ] 组件按 start 排序
-- [ ] 字幕按 start 排序
-- [ ] 素材清单实现率 = 100%
-- [ ] 视觉丰富度 6 门槛通过
+- [E] project.json 是合法 JSON
+- [E] 包含所有全局字段（name, theme, duration, viewport, canvas, regions, settings, audio, components）
+- [E] components 数组不为空
+- [E] 所有组件 ID 唯一
+- [I] 组件按 start 排序
+- [I] 字幕按 start 排序
+- [W] 素材清单实现率 = 100%
+- [I] 视觉丰富度 6 门槛通过
 
 ---
 
