@@ -130,7 +130,7 @@ const { specs } = await queryComponentSpecBatch(types);
 
 ---
 
-## R4 组件选型速查
+## R3 组件选型速查
 
 | 场景 | 推荐组件 | 说明 |
 |------|---------|------|
@@ -148,7 +148,7 @@ const { specs } = await queryComponentSpecBatch(types);
 
 ---
 
-## R5 布局 → 组件组合建议
+## R4 布局 → 组件组合建议
 
 | 布局 | 外层组件 | 内部子组件组合 |
 |------|---------|--------------|
