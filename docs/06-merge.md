@@ -18,7 +18,7 @@
 | 骨架配置 | `skeleton.json` |
 | 区域配置 | `regions/P{n}.json` |
 | 脚本 | `scripts/merge-regions.js` |
-| 引用规则 | `rules/05-richness.md`、`rules/09-selfcheck.md` |
+| 引用规则 | `rules/09-selfcheck.md` |
 
 ---
 
@@ -63,22 +63,9 @@ const project = mergeRegions(path.join(workdirRoot, skillProjectId));
 | `[AI 自动生成 - 占位]` | Picsum URL + AggregateComponent 叠水印（详见 `templates/placeholders/url-factory.md`） |
 | `[待用户提供]` | 也用占位图，备注列写"用户提供后替换" |
 
-**素材清单实现率必须 = 100%**（详见 `rules/05-richness.md` §R1 门槛 4）。
+**素材清单实现率必须 = 100%**。
 
-### 第 4 步：视觉丰富度自检
-
-按 `rules/05-richness.md` 检查：
-
-| 门槛 | 检查项 |
-|------|--------|
-| 门槛 1 | 组件类型覆盖率 ≥ 60%（使用种类 / 10 ≥ 0.6） |
-| 门槛 2 | 同一类型组件连续使用 ≤ 3 个 |
-| 门槛 3 | 每个区域至少 1 个"非纯文字组件" |
-| 门槛 4 | 素材清单实现率 = 100% |
-| 门槛 5 | GraphicComponent 至少 3 种 diagram 类型（视频 ≥ 60s） |
-| 门槛 6 | 同区域同类组件配色差异化 |
-
-### 第 5 步：保存 project.json
+### 第 4 步：保存 project.json
 
 ```js
 fs.writeFileSync(
