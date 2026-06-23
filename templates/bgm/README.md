@@ -15,7 +15,7 @@
 
 ## 用法
 
-LLM 按 `rules/02-mode.md` §R5 自动选源匹配，写入 project.json。
+BGM 在初始化时选定，风格匹配写入 project.json。
 
 ## 替换
 

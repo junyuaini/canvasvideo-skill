@@ -227,5 +227,5 @@ validate(regionJson, skeleton);
 
 ## 下一步
 
-- 还有区域？→ 返回 [步骤4：区域设计](04-region-design.md)
+- 还有区域？→ 返回 [步骤4：区域设计](04-region-design-creative.md)
 - 全部完成？→ 进入 [步骤6：合并](06-merge.md)

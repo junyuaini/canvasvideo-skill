@@ -104,4 +104,4 @@ if (!fs.existsSync(regionsDir)) {
 
 ## 下一步
 
-进入 [步骤4：区域设计](04-region-design.md)
+进入 [步骤4：区域设计](04-region-design-creative.md)

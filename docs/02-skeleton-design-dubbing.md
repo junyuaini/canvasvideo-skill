@@ -18,7 +18,7 @@
 | 来源 | 说明 |
 |------|------|
 | 用户输入 | 音频文件(.mp3/.wav/.m4a) + SRT字幕文件 |
-| 引用规则 | `rules/03-layout.md`、`rules/02-mode.md`、`rules/04-timing.md` |
+| 引用规则 | — |
 
 ---
 
