@@ -131,5 +131,3 @@ require('./scripts/state').saveProjectState(workdirRoot, state);
 - [E] 必填信息已获取（content 或 audio+subtitle）
 - [E] 工作目录已创建
 - [E] skillProjectId 已生成
-- [E] 音频配置正确（BGM配loop，口播不配loop）
-- [E] 字幕配置正确（口播必须有，创作必须无）
