@@ -10,9 +10,15 @@
 
 ```js
 const { queryComponentSpecBatch } = require('./scripts/query-api');
-const types = ['TitleComponent', 'ShockComponent', 'ImageComponent'];
-const { specs } = await queryComponentSpecBatch(types);
-// specs.TitleComponent → 该组件的完整字段定义
+
+// 传入 { type, variant } 列表，variant 必填
+const typeVariants = [
+  { type: 'TitleComponent', variant: 'level1' },
+  { type: 'CardComponent', variant: 'image-text' },
+  { type: 'GraphicComponent', variant: 'flow' }
+];
+const { specs } = await queryComponentSpecBatch(typeVariants);
+// specs['TitleComponent.level1'] → 该组件的完整字段定义
 ```
 
 **严禁**：
