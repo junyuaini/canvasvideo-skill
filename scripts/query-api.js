@@ -1,19 +1,19 @@
 /**
- * CanvasVideo Skill — 后端 API 查询脚本（v1.0）
+ * CanvasVideo Skill — 后端 API 查询脚本（v1.1）
  *
  * 封装所有后端 API 调用，LLM 直接调脚本，禁止自己敲 curl。
  *
  * 用法（CLI）：
- *   node query-api.js spec-batch <types.json>              # 批量查组件字段
+ *   node query-api.js spec-batch <typeVariants.json路径>  # 批量查组件字段（需传入 type+variant）
  *   node query-api.js spec <type> <variant>                # 单查组件字段
  *   node query-api.js validate <project.json路径>          # 预校验 project.json
  *   node query-api.js health                               # 健康检查
  *
  * 程序化导出：
- *   - queryComponentSpecBatch(types)  → 批量查组件字段
- *   - queryComponentSpec(type, variant) → 单查组件字段
- *   - validateProjectJson(projectOrPath) → 预校验 project.json
- *   - healthCheck()                    → 健康检查
+ *   - queryComponentSpecBatch(typeVariants)  → 批量查组件字段（传入 [{type, variant}, ...]）
+ *   - queryComponentSpec(type, variant)       → 单查组件字段
+ *   - validateProjectJson(projectOrPath)      → 预校验 project.json
+ *   - healthCheck()                           → 健康检查
  */
 const fs = require('fs');
 const path = require('path');
@@ -103,33 +103,21 @@ function buildRequestOptions(baseUrl, apiPath, body, extraHeaders, method = 'POS
 
 /**
  * 批量查询组件字段规范
- * @param {string[]} types - 组件类型列表，如 ['TitleComponent', 'ImageComponent']
+ * @param {Array<{type: string, variant: string}>} typeVariants - 组件类型+变种列表
+ *   示例: [{ type: 'TitleComponent', variant: 'level1' }, { type: 'CardComponent', variant: 'image-text' }]
  * @param {string} [serverUrl]
  * @returns {Promise<Object>} - { success, data: { components: { Type.variant: {...} } } }
  */
-async function queryComponentSpecBatch(types, serverUrl) {
-  if (!Array.isArray(types) || types.length === 0) {
-    throw new Error('types 必须是非空数组');
+async function queryComponentSpecBatch(typeVariants, serverUrl) {
+  if (!Array.isArray(typeVariants) || typeVariants.length === 0) {
+    throw new Error('typeVariants 必须是非空数组');
   }
-  if (types.length > 20) {
+  if (typeVariants.length > 20) {
     throw new Error('批量查询最多 20 个组件');
   }
 
-  // 服务端期望格式: { components: [{ type, variant }, ...] }
-  // component-spec.json 的 key 是 "Type.variant" 格式，需要给每个 type 配默认 variant
-  const defaultVariants = {
-    'TitleComponent': 'level1',
-    'TextComponent': 'paragraph',
-    'ImageComponent': 'default',
-    'CardComponent': 'overlay',
-    'QuoteComponent': 'default',
-    'BadgeComponent': 'default',
-    'CornerComponent': 'default',
-    'ShockComponent': 'default',
-    'GraphicComponent': 'flow',
-    'AggregateComponent': 'default',
-  };
-  const components = types.map(t => ({ type: t, variant: defaultVariants[t] || 'default' }));
+  // 调用者必须传入 { type, variant }，不再使用默认 variant
+  const components = typeVariants.map(tv => ({ type: tv.type, variant: tv.variant }));
   const body = Buffer.from(JSON.stringify({ components }));
   const options = buildRequestOptions(serverUrl, '/api/component/spec/batch', body, {
     'Content-Type': 'application/json',
@@ -244,12 +232,12 @@ async function healthCheck(serverUrl) {
 
 function printUsage() {
   console.log('用法：');
-  console.log('  node query-api.js spec-batch <types.json路径>     批量查组件字段');
-  console.log('  node query-api.js spec <type> <variant>           单查组件字段');
-  console.log('  node query-api.js validate <project.json路径>     预校验 project.json');
-  console.log('  node query-api.js health                          健康检查');
+  console.log('  node query-api.js spec-batch <typeVariants.json路径>  批量查组件字段（需传入 type+variant）');
+  console.log('  node query-api.js spec <type> <variant>              单查组件字段');
+  console.log('  node query-api.js validate <project.json路径>       预校验 project.json');
+  console.log('  node query-api.js health                              健康检查');
   console.log('');
-  console.log('types.json 格式：["TitleComponent", "ImageComponent", "GraphicComponent"]');
+  console.log('typeVariants.json 格式：[{ "type": "TitleComponent", "variant": "level1" }, ...]');
 }
 
 if (require.main === module) {
@@ -265,14 +253,14 @@ if (require.main === module) {
     try {
       switch (command) {
         case 'spec-batch': {
-          const typesPath = argv[1];
-          if (!typesPath) {
-            console.error('❌ 缺少 types.json 路径');
+          const typeVariantsPath = argv[1];
+          if (!typeVariantsPath) {
+            console.error('❌ 缺少 typeVariants.json 路径');
             printUsage();
             process.exit(1);
           }
-          const types = JSON.parse(fs.readFileSync(typesPath, 'utf-8'));
-          const result = await queryComponentSpecBatch(types);
+          const typeVariants = JSON.parse(fs.readFileSync(typeVariantsPath, 'utf-8'));
+          const result = await queryComponentSpecBatch(typeVariants);
           console.log(JSON.stringify(result, null, 2));
           break;
         }
