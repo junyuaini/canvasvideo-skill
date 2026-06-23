@@ -32,8 +32,11 @@
 
 ## 组件清单（按出场顺序）
 
-1. 类型：__ 内容：__ 位置：__ 大小：__ 颜色：__ 延迟：__秒
-2. 类型：__ 内容：__ 位置：__ 大小：__ 颜色：__ 延迟：__秒
+> 每个组件必须明确 `start`（出现时间）和 `end`（消失时间）。
+> 时间基于区域绝对时间（如区域为 0s-4s，则 start/end 必须在 0-4 范围内）。
+
+1. 类型：__ 内容：__ 位置：__ 大小：__ 颜色：__ start：__s end：__s
+2. 类型：__ 内容：__ 位置：__ 大小：__ 颜色：__ start：__s end：__s
 ...
 
 ---
@@ -91,17 +94,19 @@
 
 **组件清单**
 
-1. AggregateComponent（整体） 位置：居中 大小：宽90%高60% 颜色：背景#252540 延迟：0秒
+> 区域总时长 5s（5s-10s），所有组件 start/end 必须在此范围内。
+
+1. AggregateComponent（整体） 位置：居中 大小：宽90%高60% 颜色：背景#252540 start：5.0s end：9.5s
    内部：
-   - ImageComponent（图标heart） 位置：卡片1顶部 大小：40px 颜色：#ff6b6b 延迟：0.3秒
-   - TitleComponent（心动） 位置：卡片1中部 大小：28px 颜色：#ffffff 延迟：0.5秒
-   - TextComponent（是看见你时加速的心跳） 位置：卡片1底部 大小：18px 颜色：#a0a0b0 延迟：0.7秒
-   - ImageComponent（图标handshake） 位置：卡片2顶部 大小：40px 颜色：#00d4ff 延迟：0.9秒
-   - TitleComponent（陪伴） 位置：卡片2中部 大小：28px 颜色：#ffffff 延迟：1.1秒
-   - TextComponent（是平淡日子里无声的守护） 位置：卡片2底部 大小：18px 颜色：#a0a0b0 延迟：1.3秒
-   - ImageComponent（图标infinity） 位置：卡片3顶部 大小：40px 颜色：#f9ca24 延迟：1.5秒
-   - TitleComponent（永恒） 位置：卡片3中部 大小：28px 颜色：#ffffff 延迟：1.7秒
-   - TextComponent（是时光尽头依然的选择） 位置：卡片3底部 大小：18px 颜色：#a0a0b0 延迟：1.9秒
+   - ImageComponent（图标heart） 位置：卡片1顶部 大小：40px 颜色：#ff6b6b start：5.3s end：9.5s
+   - TitleComponent（心动） 位置：卡片1中部 大小：28px 颜色：#ffffff start：5.5s end：9.0s
+   - TextComponent（是看见你时加速的心跳） 位置：卡片1底部 大小：18px 颜色：#a0a0b0 start：5.7s end：8.5s
+   - ImageComponent（图标handshake） 位置：卡片2顶部 大小：40px 颜色：#00d4ff start：5.9s end：9.5s
+   - TitleComponent（陪伴） 位置：卡片2中部 大小：28px 颜色：#ffffff start：6.1s end：9.0s
+   - TextComponent（是平淡日子里无声的守护） 位置：卡片2底部 大小：18px 颜色：#a0a0b0 start：6.3s end：8.5s
+   - ImageComponent（图标infinity） 位置：卡片3顶部 大小：40px 颜色：#f9ca24 start：6.5s end：9.5s
+   - TitleComponent（永恒） 位置：卡片3中部 大小：28px 颜色：#ffffff start：6.7s end：9.0s
+   - TextComponent（是时光尽头依然的选择） 位置：卡片3底部 大小：18px 颜色：#a0a0b0 start：6.9s end：8.5s
 
 **配色方案**
 
