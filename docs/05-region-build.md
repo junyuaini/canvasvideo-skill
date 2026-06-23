@@ -54,7 +54,7 @@ const { specs } = await queryComponentSpecBatch(types);
 
 | 字段 | 来源 | 示例 |
 |------|------|------|
-| `id` | 组件清单 | "P1-001" |
+| `id` | 组件清单 | "P1-001" （格式：P{区域号}-{三位数字}，如 P1-001、P3-005） |
 | `type` | 组件清单 | "TitleComponent" |
 | `content` | 组件清单 | `{ "text": "...", "level": 1 }` |
 | `position` | 组件清单 | `{ "x": 20, "y": 30, "w": 740, "h": 70 }` |
