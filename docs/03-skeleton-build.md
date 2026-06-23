@@ -19,6 +19,17 @@
 
 ---
 
+## 前置检查
+
+生成 skeleton.json 前，必须确认：
+
+- [ ] `design-skeleton-creative.md`（或 `design-skeleton-dubbing.md`）已存在且内容完整
+- [ ] 用户已确认骨架设计（步骤2的产出）
+
+**严禁**：未确认就生成 skeleton.json
+
+---
+
 ## 操作
 
 ### 第 1 步：读取设计文档
