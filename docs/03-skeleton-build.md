@@ -97,7 +97,7 @@ if (!fs.existsSync(regionsDir)) {
 - [E] duration > 0
 - [E] theme 是 black 或 white
 - [E] regions 数组不为空
-- [W] audio 格式正确（对象格式）
+- [E] audio 格式正确（对象格式）
 - [W] canvas 尺寸能容纳所有区域
 
 ---

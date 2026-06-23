@@ -108,7 +108,6 @@ fs.writeFileSync(
 - [W] 素材清单实现率 = 100%
 - [I] 组件按 start 排序
 - [I] 字幕按 start 排序
-- [I] 视觉丰富度 6 门槛通过
 
 ---
 

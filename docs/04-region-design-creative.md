@@ -421,7 +421,6 @@ fs.writeFileSync(
 
 > [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-- [E] 组件时间无重叠冲突
 - [E] 组件 start ≥ 区域 start，end ≤ 区域 end
 - [W] 有唯一视觉锚点（过渡区域除外）
 - [W] 文字对比度符合 WCAG AA（≥ 4.5:1）
