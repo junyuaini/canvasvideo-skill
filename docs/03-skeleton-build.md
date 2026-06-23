@@ -38,6 +38,7 @@ const designContent = fs.readFileSync(designPath, 'utf-8');
 - 项目元信息（name, theme, duration）
 - 区域划分（regions）
 - 视觉策略（viewport, canvas）
+- 音频配置（audio，从 state 或 design-skeleton 读取）
 
 ### 第 3 步：配置 audio
 

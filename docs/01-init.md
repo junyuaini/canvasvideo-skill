@@ -108,7 +108,16 @@ state.audience = userAudience;
 state.theme = userTheme;
 state.aspect = userAspect;
 state.style = userStyle;
-state.bgm = userBgm;
+state.bgm = userBgm; // true/false
+
+// 音频信息（供后续步骤使用）
+if (state.mode === 'voiceover') {
+  state.audioPath = userAudioPath;      // 口播音频路径
+  state.subtitlePath = userSubtitlePath; // SRT路径
+} else if (state.bgm) {
+  state.bgmStyle = matchedBgmStyle;     // 如 'tech-pulse'
+}
+
 require('./scripts/state').saveProjectState(workdirRoot, state);
 ```
 

@@ -14,7 +14,9 @@
 | 风格 | warm / tech / business / art |
 | 背景 | black / white |
 | 情绪曲线模板 | 起伏型 / 渐进型 / 悬念型 / 对比型 / 波浪型 |
-| BGM 风格 | （自动匹配） |
+| BGM | 配 / 不配 |
+| BGM 风格 | （自动匹配，如 tech-pulse） |
+| audio | `{ "path": "./assets/placeholders/bgm/{风格}.mp3", "loop": true, "fadeIn": 1, "fadeOut": 2 }` |
 | viewport | 780 × 585 |
 | canvas | 3300 × 700（根据区域数调整） |
 
