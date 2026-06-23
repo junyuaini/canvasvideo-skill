@@ -155,4 +155,17 @@ if (!fs.existsSync(regionsDir)) {
 
 ## 下一步
 
-进入 [步骤4：区域设计](04-region-design-creative.md)
+> ⚠️ **硬规则**：`skeleton.json` 只包含区域的位置信息（`name`/`x`/`y`）。
+> 每个区域还需要单独执行 **步骤4（区域设计）** 和 **步骤5（生成区域JSON）**。
+> 有多少个区域，就执行多少次步骤4-5。
+>
+> **严禁**：
+> - ❌ 跳过区域设计，直接生成完整 components
+> - ❌ 在 skeleton.json 中写入 components 或 subtitles
+> - ❌ 合并多个区域到一个 design-P{n}.md
+
+进入步骤4-5循环：
+- 区域1 → [步骤4：区域设计](04-region-design-creative.md) → 步骤5：生成区域JSON
+- 区域2 → [步骤4：区域设计](04-region-design-creative.md) → 步骤5：生成区域JSON
+- ...（直到所有区域完成）
+- 全部完成后 → [步骤6：合并](06-merge.md)

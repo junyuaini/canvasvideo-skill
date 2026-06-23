@@ -13,12 +13,15 @@
 
 ## 输入
 
-| 来源 | 说明 |
-|------|------|
-| 骨架配置 | `skeleton.json` |
-| 区域配置 | `regions/P{n}.json` |
-| 脚本 | `scripts/merge-regions.js` |
-| 引用规则 | `rules/09-selfcheck.md` |
+| 来源 | 说明 | 检查项 |
+|------|------|--------|
+| 骨架配置 | `skeleton.json` | 必须存在 |
+| 区域配置 | `regions/P{n}.json` | 必须存在，且数量与 `skeleton.json` 中的 `regions` 数组长度一致 |
+| 脚本 | `scripts/merge-regions.js` | — |
+| 引用规则 | `rules/09-selfcheck.md` | — |
+
+> ⚠️ **硬规则**：合并前必须检查 `regions/` 目录下的 JSON 文件数量是否等于 `skeleton.json` 中 `regions` 数组的长度。
+> 如果不一致，必须回到步骤4-5补全缺失的区域。
 
 ---
 
