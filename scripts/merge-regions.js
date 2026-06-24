@@ -134,18 +134,26 @@ function mergeRegions(workdir) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdir = process.argv[2];
-  const outputPath = process.argv[3] || path.join(workdir, 'project.json');
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const skillProjectId = process.argv[2];
+  const outputPath = process.argv[3];
   
-  if (!workdir) {
-    console.error('用法: node merge-regions.js <workdir路径> [输出路径]');
+  if (!skillProjectId) {
+    console.error('用法: node merge-regions.js <skillProjectId> [输出路径]');
+    console.error('');
+    console.error('示例:');
+    console.error('  node merge-regions.js cv_abc123');
+    console.error('  node merge-regions.js cv_abc123 ./output/project.json');
     process.exit(1);
   }
   
+  const workdir = path.join(workdirRoot, skillProjectId);
+  const finalOutputPath = outputPath || path.join(workdir, 'project.json');
+  
   try {
     const project = mergeRegions(workdir);
-    fs.writeFileSync(outputPath, JSON.stringify(project, null, 2));
-    console.log(`合并完成: ${outputPath}`);
+    fs.writeFileSync(finalOutputPath, JSON.stringify(project, null, 2));
+    console.log(`合并完成: ${finalOutputPath}`);
     console.log(`  区域数: ${project.regions.length}`);
     console.log(`  组件数: ${project.components.length}`);
     console.log(`  字幕数: ${project.subtitles.length}`);

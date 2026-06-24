@@ -228,19 +228,23 @@ function generateSkeleton(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = process.argv[2];
-  const skillProjectId = process.argv[3];
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const skillProjectId = process.argv[3]; // argv[2] now is mode (unused here), argv[3] is skillProjectId
 
-  if (!workdirRoot || !skillProjectId) {
-    console.error('用法: node generate-skeleton.js <workdir> <skillProjectId>');
+  // 兼容旧调用：node generate-skeleton.js <skillProjectId>
+  const projId = process.argv[2]?.startsWith('-') ? process.argv[3] : process.argv[2];
+  const effectiveProjectId = projId || skillProjectId;
+
+  if (!effectiveProjectId) {
+    console.error('用法: node generate-skeleton.js <skillProjectId>');
     console.error('');
     console.error('示例:');
-    console.error('  node generate-skeleton.js ./canvasvideo-workdir cv_abc123');
+    console.error('  node generate-skeleton.js cv_abc123');
     process.exit(1);
   }
 
   try {
-    generateSkeleton(workdirRoot, skillProjectId);
+    generateSkeleton(workdirRoot, effectiveProjectId);
     process.exit(0);
   } catch (err) {
     console.error('生成失败:', err.message);

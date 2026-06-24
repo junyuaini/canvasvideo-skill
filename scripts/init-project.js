@@ -6,7 +6,7 @@
  *  - 初始化项目状态
  *  - 保存用户配置
  * 
- * 用法：node init-project.js <workdir> <mode> [options]
+ * 用法：node init-project.js <mode> [options]
  *   mode: creative | dubbing
  * 
  * 配置方式（二选一）：
@@ -15,13 +15,13 @@
  * 
  * 示例：
  *   # 方式1：配置文件（推荐）
- *   node init-project.js ./canvasvideo-workdir creative --config=project-config.json
+ *   node init-project.js creative --config=project-config.json
  * 
  *   # 方式2：JSON 字符串（兼容旧方式）
- *   node init-project.js ./canvasvideo-workdir creative '{"content":"AI学习","duration":15}'
+ *   node init-project.js creative '{"content":"AI学习","duration":15}'
  * 
  *   # 口播模式
- *   node init-project.js ./canvasvideo-workdir dubbing --config=dubbing-config.json
+ *   node init-project.js dubbing --config=dubbing-config.json
  */
 const fs = require('fs');
 const path = require('path');
@@ -34,14 +34,17 @@ const { loadOrCreateProject, saveProjectState } = require('./state');
  * @returns {Object} { workdirRoot, mode, configSource, configValue }
  */
 function parseArgs(argv) {
+  // workdir 固定为脚本所在目录的 canvasvideo-workdir
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  
   const args = {
-    workdirRoot: argv[2],
-    mode: argv[3],
+    workdirRoot,  // 固定路径，不再从命令行读取
+    mode: argv[2], // argv[2] is mode
     configFile: null,
     configJson: null
   };
 
-  for (let i = 4; i < argv.length; i++) {
+  for (let i = 3; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--config=')) {
       args.configFile = arg.slice('--config='.length);
@@ -137,8 +140,8 @@ function initProject(workdirRoot, mode, config = {}) {
 if (require.main === module) {
   const args = parseArgs(process.argv);
   
-  if (!args.workdirRoot || !args.mode) {
-    console.error('用法: node init-project.js <workdir> <mode> [options]');
+  if (!args.mode) {
+    console.error('用法: node init-project.js <mode> [options]');
     console.error('');
     console.error('mode: creative | dubbing');
     console.error('');
@@ -147,8 +150,8 @@ if (require.main === module) {
     console.error('  2. JSON 字符串: \'{...}\'');
     console.error('');
     console.error('示例:');
-    console.error('  node init-project.js ./canvasvideo-workdir creative --config=project-config.json');
-    console.error('  node init-project.js ./canvasvideo-workdir dubbing --config=dubbing-config.json');
+    console.error('  node init-project.js creative --config=project-config.json');
+    console.error('  node init-project.js dubbing --config=dubbing-config.json');
     process.exit(1);
   }
   

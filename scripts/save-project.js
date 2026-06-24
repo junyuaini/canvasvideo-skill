@@ -3,20 +3,24 @@
  *
  * 功能：将修改后的 project.json 保存到工作目录
  *
- * 用法：node save-project.js <workdir> <skillProjectId>
+ * 用法：node save-project.js [skillProjectId]
+ *
+ * 项目ID来源：从 .canvasvideo/state.json 读取（如果未传入参数）
  *
  * 示例：
- *   node save-project.js ./canvasvideo-workdir cv_abc123
+ *   node save-project.js cv_abc123
  */
 const fs = require('fs');
 const path = require('path');
+const { getCurrentProjectId } = require('./state');
+const { ensureProjectWorkdir } = require('./scaffold');
 
 function saveProject(workdirRoot, skillProjectId) {
-  if (!workdirRoot || !skillProjectId) {
-    throw new Error('参数错误：workdir 和 skillProjectId 都是必填项');
+  if (!skillProjectId) {
+    throw new Error('参数错误：skillProjectId 是必填项');
   }
 
-  const workdir = path.join(workdirRoot, skillProjectId);
+  const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
   const projectPath = path.join(workdir, 'project.json');
 
   if (!fs.existsSync(projectPath)) {
@@ -34,14 +38,14 @@ function saveProject(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = process.argv[2];
-  const skillProjectId = process.argv[3];
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const skillProjectId = process.argv[2] || getCurrentProjectId(workdirRoot);
 
-  if (!workdirRoot || !skillProjectId) {
-    console.error('用法: node save-project.js <workdir> <skillProjectId>');
+  if (!skillProjectId) {
+    console.error('用法: node save-project.js [skillProjectId]');
     console.error('');
     console.error('示例:');
-    console.error('  node save-project.js ./canvasvideo-workdir cv_abc123');
+    console.error('  node save-project.js cv_abc123');
     process.exit(1);
   }
 

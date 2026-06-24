@@ -1,6 +1,10 @@
 /**
  * 打包 project.json 与 assets 为 zip
- * 用法：node package.js <workdir路径> <输出zip路径>
+ * 用法：node package.js <skillProjectId> [输出zip路径]
+ * 
+ * 示例：
+ *   node package.js cv_abc123
+ *   node package.js cv_abc123 ./output/video.zip
  */
 const fs = require('fs');
 const path = require('path');
@@ -109,16 +113,24 @@ function package(workdir, outputZip) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdir = process.argv[2];
-  const outputZip = process.argv[3] || path.join(workdir, 'output.zip');
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const skillProjectId = process.argv[2];
+  const outputZip = process.argv[3];
   
-  if (!workdir) {
-    console.error('用法: node package.js <workdir路径> [输出zip路径]');
+  if (!skillProjectId) {
+    console.error('用法: node package.js <skillProjectId> [输出zip路径]');
+    console.error('');
+    console.error('示例:');
+    console.error('  node package.js cv_abc123');
+    console.error('  node package.js cv_abc123 ./output/video.zip');
     process.exit(1);
   }
   
+  const workdir = path.join(workdirRoot, skillProjectId);
+  const finalOutputZip = outputZip || path.join(workdir, `${skillProjectId}.zip`);
+  
   try {
-    package(workdir, outputZip);
+    package(workdir, finalOutputZip);
     process.exit(0);
   } catch (err) {
     console.error('打包失败:', err.message);

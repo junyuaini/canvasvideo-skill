@@ -5,12 +5,18 @@
  *  - 检查区域组件时间是否在区域时间范围内
  *  - 检查区域组件时间是否重叠
  * 
- * 用法：node validate-region.js <skeleton.json路径> <region.json路径>
- *   或：const { validateRegion } = require('./validate-region');
- *        validateRegion(skeleton, regionData, regionName);
+ * 用法：node validate-region.js <skillProjectId> <regionName>
+ *
+ * 示例：
+ *   node validate-region.js cv_abc123 P1
+ *   node validate-region.js cv_abc123 P2
+ * 
+ * 工作目录：{skill根目录}/canvasvideo-workdir/{skillProjectId}/
  */
 const fs = require('fs');
 const path = require('path');
+
+const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
 
 /**
  * 计算区域开始时间
@@ -102,18 +108,34 @@ function validateRegion(skeleton, regionData, regionName) {
 
 // CLI 模式
 if (require.main === module) {
-  const skeletonPath = process.argv[2];
-  const regionPath = process.argv[3];
+  const skillProjectId = process.argv[2];
+  const regionName = process.argv[3]; // e.g., "P1"
   
-  if (!skeletonPath || !regionPath) {
-    console.error('用法: node validate-region.js <skeleton.json路径> <region.json路径>');
+  if (!skillProjectId || !regionName) {
+    console.error('用法: node validate-region.js <skillProjectId> <regionName>');
+    console.error('');
+    console.error('示例:');
+    console.error('  node validate-region.js cv_abc123 P1');
+    console.error('  node validate-region.js cv_abc123 P2');
+    process.exit(1);
+  }
+  
+  const workdir = path.join(workdirRoot, skillProjectId);
+  const skeletonPath = path.join(workdir, 'skeleton.json');
+  const regionPath = path.join(workdir, 'regions', `${regionName}.json`);
+  
+  if (!fs.existsSync(skeletonPath)) {
+    console.error(`错误: skeleton.json 不存在: ${skeletonPath}`);
+    process.exit(1);
+  }
+  if (!fs.existsSync(regionPath)) {
+    console.error(`错误: 区域文件不存在: ${regionPath}`);
     process.exit(1);
   }
   
   try {
     const skeleton = JSON.parse(fs.readFileSync(skeletonPath, 'utf-8'));
     const regionData = JSON.parse(fs.readFileSync(regionPath, 'utf-8'));
-    const regionName = regionData.regionName || path.basename(regionPath, '.json');
     
     const result = validateRegion(skeleton, regionData, regionName);
     

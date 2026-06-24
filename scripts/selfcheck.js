@@ -6,6 +6,11 @@
  *   2. ID 重复：全局唯一
  *
  * 真正的格式硬校验由云端 /api/projects/validate 在上传前完成。
+ *
+ * 用法：node selfcheck.js <project.json路径>
+ *
+ * 示例：
+ *   node selfcheck.js ./canvasvideo-workdir/cv_abc123/project.json
  */
 
 /**

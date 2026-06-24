@@ -3,16 +3,17 @@
  * 
  * 功能：自动创建项目工作目录结构
  * 
- * 用法：node setup-workdir.js <workdir> <skillProjectId>
+ * 用法：node setup-workdir.js [skillProjectId]
  * 
  * 示例：
- *   node setup-workdir.js ./canvasvideo-workdir cv_abc123
+ *   node setup-workdir.js cv_abc123
  */
+const path = require('path');
 const { ensureProjectWorkdir } = require('./scaffold');
 
 function setupWorkdir(workdirRoot, skillProjectId) {
-  if (!workdirRoot || !skillProjectId) {
-    throw new Error('参数错误：workdir 和 skillProjectId 都是必填项');
+  if (!skillProjectId) {
+    throw new Error('参数错误：skillProjectId 是必填项');
   }
   
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
@@ -26,14 +27,14 @@ function setupWorkdir(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = process.argv[2];
-  const skillProjectId = process.argv[3];
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const skillProjectId = process.argv[2];
   
-  if (!workdirRoot || !skillProjectId) {
-    console.error('用法: node setup-workdir.js <workdir> <skillProjectId>');
+  if (!skillProjectId) {
+    console.error('用法: node setup-workdir.js [skillProjectId]');
     console.error('');
     console.error('示例:');
-    console.error('  node setup-workdir.js ./canvasvideo-workdir cv_abc123');
+    console.error('  node setup-workdir.js cv_abc123');
     process.exit(1);
   }
   

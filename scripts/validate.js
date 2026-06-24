@@ -16,7 +16,12 @@
  *
  * 真正阻止上传的硬错（schema/customStyle 字段缺失）由 upload-video.js 的云端 precheck 兜底。
  *
- * 用法：node validate.js <project.json路径>
+ * 用法：node validate.js <skillProjectId>
+ *
+ * 示例：
+ *   node validate.js cv_abc123
+ *
+ * 工作目录：{skill根目录}/canvasvideo-workdir/{skillProjectId}/
  */
 const fs = require('fs');
 const path = require('path');
@@ -118,14 +123,24 @@ function validate(projectOrPath, workdir) {
 
 // CLI 模式
 if (require.main === module) {
-  const projectPath = process.argv[2];
-  if (!projectPath) {
-    console.error('用法: node validate.js <project.json路径>');
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const skillProjectId = process.argv[2];
+  
+  if (!skillProjectId) {
+    console.error('用法: node validate.js <skillProjectId>');
+    console.error('');
+    console.error('示例:');
+    console.error('  node validate.js cv_abc123');
     process.exit(1);
   }
-
-  // 推断工作目录
-  const workdir = path.dirname(projectPath);
+  
+  const workdir = path.join(workdirRoot, skillProjectId);
+  const projectPath = path.join(workdir, 'project.json');
+  
+  if (!fs.existsSync(projectPath)) {
+    console.error(`错误: project.json 不存在: ${projectPath}`);
+    process.exit(1);
+  }
 
   try {
     const result = validate(projectPath, workdir);

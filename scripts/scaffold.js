@@ -35,10 +35,13 @@ function themeToPlaceholderDir(theme) {
 
 /**
  * 确保工作根目录存在（canvasvideo-workdir/ 自身）
+ * @param {string} workdirRoot - 相对或绝对路径
+ * @returns {string} 绝对路径
  */
 function ensureWorkdirRoot(workdirRoot) {
-  fs.mkdirSync(workdirRoot, { recursive: true });
-  return workdirRoot;
+  const absolutePath = path.resolve(workdirRoot);
+  fs.mkdirSync(absolutePath, { recursive: true });
+  return absolutePath;
 }
 
 /**
@@ -52,8 +55,8 @@ function ensureWorkdirRoot(workdirRoot) {
  * @returns {string} 项目工作目录绝对路径
  */
 function ensureProjectWorkdir(workdirRoot, skillProjectId) {
-  ensureWorkdirRoot(workdirRoot);
-  const workdir = path.join(workdirRoot, skillProjectId);
+  const absRoot = ensureWorkdirRoot(workdirRoot);
+  const workdir = path.join(absRoot, skillProjectId);
   const assetsDir = path.join(workdir, 'assets');
   fs.mkdirSync(assetsDir, { recursive: true });
   fs.mkdirSync(path.join(assetsDir, 'images'), { recursive: true });

@@ -6,27 +6,30 @@
  *  - 复制 BGM 到工作目录
  *  - 支持同时执行或单独执行
  *
- * 用法：node setup-assets.js <workdir> <skillProjectId> [options]
+ * 用法：node setup-assets.js <skillProjectId> [options]
  *   options:
  *     --theme=<white|black>    主题色（默认 white）
  *     --bgm=<style>            BGM 风格（如 tech-pulse，不传则不复制 BGM）
  *
  * 示例：
- *   node setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=white --bgm=tech-pulse
- *   node setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=black
- *   node setup-assets.js ./canvasvideo-workdir cv_abc123
+ *   node setup-assets.js cv_abc123 --theme=white --bgm=tech-pulse
+ *   node setup-assets.js cv_abc123 --theme=black
+ *   node setup-assets.js cv_abc123
  */
+const path = require('path');
 const { ensurePlaceholders, ensureBgm } = require('./scaffold');
 
 function parseArgs(argv) {
+  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  
   const args = {
-    workdirRoot: argv[2],
-    skillProjectId: argv[3],
+    workdirRoot,  // 固定路径
+    skillProjectId: argv[2],
     theme: 'white',
     bgm: null
   };
 
-  for (let i = 4; i < argv.length; i++) {
+  for (let i = 3; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--theme=')) {
       args.theme = arg.slice('--theme='.length);
@@ -39,8 +42,8 @@ function parseArgs(argv) {
 }
 
 function setupAssets(workdirRoot, skillProjectId, options = {}) {
-  if (!workdirRoot || !skillProjectId) {
-    throw new Error('参数错误：workdir 和 skillProjectId 都是必填项');
+  if (!skillProjectId) {
+    throw new Error('参数错误：skillProjectId 是必填项');
   }
 
   const theme = options.theme || 'white';
@@ -67,16 +70,16 @@ function setupAssets(workdirRoot, skillProjectId, options = {}) {
 if (require.main === module) {
   const args = parseArgs(process.argv);
 
-  if (!args.workdirRoot || !args.skillProjectId) {
-    console.error('用法: node setup-assets.js <workdir> <skillProjectId> [options]');
+  if (!args.skillProjectId) {
+    console.error('用法: node setup-assets.js <skillProjectId> [options]');
     console.error('');
     console.error('选项:');
     console.error('  --theme=<white|black>    主题色（默认 white）');
     console.error('  --bgm=<style>            BGM 风格（如 tech-pulse）');
     console.error('');
     console.error('示例:');
-    console.error('  node setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=white --bgm=tech-pulse');
-    console.error('  node setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=black');
+    console.error('  node setup-assets.js cv_abc123 --theme=white --bgm=tech-pulse');
+    console.error('  node setup-assets.js cv_abc123 --theme=black');
     process.exit(1);
   }
 
