@@ -40,13 +40,21 @@ function validateRegionSource(workdir, regionData, regionFileName) {
   if (!regionData.source_design_doc || regionData.source_design_doc.trim() === '') {
     throw new Error(`[E] ${regionFileName} 缺少 source_design_doc 字段，必须记录区域设计文档来源`);
   }
-  
+
+  // 检查 source_design_doc 是否指向正确的区域设计文档
+  const regionName = regionData.regionName || path.basename(regionFileName, '.json');
+  const expectedDocName = `design-${regionName}.md`;
+  const actualDocName = path.basename(regionData.source_design_doc);
+  if (actualDocName !== expectedDocName) {
+    throw new Error(`[E] ${regionFileName} 的 source_design_doc 指向错误文档: ${regionData.source_design_doc}，应为 ./${expectedDocName}（区域设计文档），请确认步骤4已完成`);
+  }
+
   // 检查区域设计文档文件是否存在
   const designDocPath = path.join(workdir, regionData.source_design_doc);
   if (!fs.existsSync(designDocPath)) {
     throw new Error(`[E] 区域设计文档不存在: ${regionData.source_design_doc}（来自 ${regionFileName}），请确认步骤4已完成`);
   }
-  
+
   console.log(`[✓] ${regionFileName} 设计文档来源验证通过: ${regionData.source_design_doc}`);
 }
 

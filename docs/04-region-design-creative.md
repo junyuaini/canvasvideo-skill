@@ -436,15 +436,14 @@
 
 ### 步骤8：保存文件
 
-```js
-const fs = require('fs');
-const path = require('path');
+运行保存脚本：
 
-fs.writeFileSync(
-  path.join(workdirRoot, skillProjectId, `design-${regionName}.md`),
-  designContent
-);
+```bash
+node scripts/save-project.js {skillProjectId} design-P{n}.md "{设计文档内容}"
 ```
+
+或直接使用文件系统保存到：
+`{workdir}/{skillProjectId}/design-P{n}.md`
 
 ---
 
