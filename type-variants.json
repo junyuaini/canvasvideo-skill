@@ -1,0 +1,22 @@
+[
+  { "type": "TitleComponent", "variant": "level1" },
+  { "type": "TitleComponent", "variant": "level2" },
+  { "type": "TitleComponent", "variant": "level3" },
+  { "type": "TextComponent", "variant": "lead" },
+  { "type": "TextComponent", "variant": "paragraph" },
+  { "type": "TextComponent", "variant": "list" },
+  { "type": "TextComponent", "variant": "small" },
+  { "type": "BadgeComponent", "variant": "default" },
+  { "type": "ShockComponent", "variant": "default" },
+  { "type": "CardComponent", "variant": "text-only" },
+  { "type": "CardComponent", "variant": "image-title" },
+  { "type": "CardComponent", "variant": "overlay" },
+  { "type": "GraphicComponent", "variant": "flow" },
+  { "type": "GraphicComponent", "variant": "comparison" },
+  { "type": "GraphicComponent", "variant": "bar" },
+  { "type": "GraphicComponent", "variant": "pie" },
+  { "type": "ImageComponent", "variant": "default" },
+  { "type": "QuoteComponent", "variant": "default" },
+  { "type": "CornerComponent", "variant": "default" },
+  { "type": "AggregateComponent", "variant": "auto" }
+]
