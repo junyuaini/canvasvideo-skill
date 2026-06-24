@@ -1,15 +1,14 @@
 {
   "name": "通用视频项目",
-  "description": "最小可用模板，符合创作模式所有硬规则（节奏 4 门槛 + customStyle 必填 + 布局 Y 递增）",
+  "description": "最小可用模板，符合创作模式所有硬规则",
   "theme": "white",
   "duration": 9,
   "viewport": { "width": 780, "height": 585 },
-  "canvas": { "width": 3300, "height": 700 },
   "source_design_doc": "./design-skeleton-creative.md",
   "regions": [
-    { "name": "P1", "x": 120, "y": 50 },
-    { "name": "P2", "x": 900, "y": 50 },
-    { "name": "P3", "x": 1680, "y": 50 }
+    { "name": "P1", "duration": 3 },
+    { "name": "P2", "duration": 3 },
+    { "name": "P3", "duration": 3 }
   ],
   "components": [
     {

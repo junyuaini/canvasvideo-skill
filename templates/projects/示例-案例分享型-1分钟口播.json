@@ -7,10 +7,6 @@
     "width": 780,
     "height": 585
   },
-  "canvas": {
-    "width": 3400,
-    "height": 1300
-  },
   "settings": {
     "autoPlay": false,
     "loop": false,
@@ -27,56 +23,16 @@
   },
   "source_design_doc": "./design-skeleton-dubbing.md",
   "regions": [
-    {
-      "name": "P1",
-      "x": 120,
-      "y": 50
-    },
-    {
-      "name": "P2",
-      "x": 900,
-      "y": 50
-    },
-    {
-      "name": "P3",
-      "x": 1680,
-      "y": 50
-    },
-    {
-      "name": "P4",
-      "x": 2460,
-      "y": 50
-    },
-    {
-      "name": "P5",
-      "x": 3240,
-      "y": 50
-    },
-    {
-      "name": "P6",
-      "x": 120,
-      "y": 650
-    },
-    {
-      "name": "P7",
-      "x": 900,
-      "y": 650
-    },
-    {
-      "name": "P8",
-      "x": 1680,
-      "y": 650
-    },
-    {
-      "name": "P9",
-      "x": 2460,
-      "y": 650
-    },
-    {
-      "name": "P10",
-      "x": 3240,
-      "y": 650
-    }
+    { "name": "P1" },
+    { "name": "P2" },
+    { "name": "P3" },
+    { "name": "P4" },
+    { "name": "P5" },
+    { "name": "P6" },
+    { "name": "P7" },
+    { "name": "P8" },
+    { "name": "P9" },
+    { "name": "P10" }
   ],
   "subtitles": [
     {

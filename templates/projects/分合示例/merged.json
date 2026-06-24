@@ -7,10 +7,6 @@
     "width": 780,
     "height": 585
   },
-  "canvas": {
-    "width": 1020,
-    "height": 685
-  },
   "settings": {
     "autoPlay": false,
     "loop": false,
@@ -24,14 +20,10 @@
   "regions": [
     {
       "name": "P1",
-      "x": 120,
-      "y": 50,
       "source_design_doc": "./design-P1.md"
     },
     {
       "name": "P2",
-      "x": 120,
-      "y": 50,
       "source_design_doc": "./design-P2.md"
     }
   ],

@@ -83,26 +83,22 @@ function extractRegions(content, mode) {
       let name, duration, x, y, subtitleRange;
 
       if (mode === 'dubbing') {
-        // 口播模式列：名称(0) 类型(1) 时间段(2) 时长(3) 包含字幕(4) 核心信息(5) 情绪(6) 位置(7) x(8) y(9)
-        if (cells.length >= 10) {
+        // 口播模式列：名称(0) 类型(1) 时间段(2) 时长(3) 包含字幕(4) 核心信息(5) 情绪(6) 位置(7)
+        if (cells.length >= 8) {
           name = cells[0];
           duration = parseInt(cells[3], 10);
           subtitleRange = cells[4];
-          x = parseInt(cells[8], 10);
-          y = parseInt(cells[9], 10);
         }
       } else {
-        // 创作模式列：名称(0) 类型(1) 时间段(2) 时长(3) 核心信息(4) 情绪(5) 位置(6) x(7) y(8)
-        if (cells.length >= 9) {
+        // 创作模式列：名称(0) 类型(1) 时间段(2) 时长(3) 核心信息(4) 情绪(5) 位置(6)
+        if (cells.length >= 7) {
           name = cells[0];
           duration = parseInt(cells[3], 10);
-          x = parseInt(cells[7], 10);
-          y = parseInt(cells[8], 10);
         }
       }
 
-      if (name && !isNaN(duration) && !isNaN(x) && !isNaN(y)) {
-        const region = { name, x, y, duration };
+      if (name && !isNaN(duration)) {
+        const region = { name, duration };
         if (mode === 'dubbing' && subtitleRange) {
           region.subtitle_range = subtitleRange;
         }
@@ -152,22 +148,11 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   }
 
   // 4. 自动计算 canvas 尺寸
-  let canvasWidth = config.canvas?.width || 2460;
-  let canvasHeight = config.canvas?.height || 700;
-
-  const maxX = Math.max(...regions.map(r => r.x));
-  const maxY = Math.max(...regions.map(r => r.y));
-  const minWidth = maxX + 780 + 120;
-  const minHeight = maxY + 585 + 50;
-
-  if (minWidth > canvasWidth) {
-    console.warn(`[W] canvas 宽度不足，自动调整: ${canvasWidth} → ${minWidth}`);
-    canvasWidth = minWidth;
-  }
-  if (minHeight > canvasHeight) {
-    console.warn(`[W] canvas 高度不足，自动调整: ${canvasHeight} → ${minHeight}`);
-    canvasHeight = minHeight;
-  }
+  // 新规则：canvas 尺寸 = viewport 的 10 倍
+  const viewportWidth = config.viewport?.width || 780;
+  const viewportHeight = config.viewport?.height || 585;
+  const canvasWidth = viewportWidth * 10;
+  const canvasHeight = viewportHeight * 10;
 
   // 5. 组装 skeleton.json
   const skeleton = {
