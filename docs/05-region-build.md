@@ -1,4 +1,4 @@
-# 步骤5：生成区域JSON
+# 步骤5：大模型生成区域JSON
 
 > 前置步骤：[步骤4：区域设计](04-region-design-creative.md)
 > 下一步：[步骤6：合并](06-merge.md) 或继续下一个区域
@@ -7,7 +7,9 @@
 
 ## 目标
 
-从 `design-P{n}.md` 生成 `regions/P{n}.json`。
+**大模型**根据 `design-P{n}.md` 设计文档，手动生成 `regions/P{n}.json`。
+
+> ⚠️ **注意**：此步骤由大模型自行编写代码/逻辑生成 JSON，没有自动化脚本。
 
 ---
 
@@ -32,30 +34,28 @@
 
 ---
 
-## 操作
+## 操作（大模型执行）
 
 ### 第 1 步：读取设计文档
 
-```js
-const designPath = path.join(workdirRoot, skillProjectId, `design-${regionName}.md`);
-const designContent = fs.readFileSync(designPath, 'utf-8');
-```
+读取 `design-P{n}.md` 内容，解析其中的：
+- 区域信息（类型、时间段、时长）
+- 组件清单（类型、内容、位置、颜色、start、end）
+- 配色方案
+- 设计意图
 
 ### 第 2 步：查询组件规范（硬规则）
 
-**必须先调 API**：
+**大模型必须调用 API 获取组件规范**：
 
-```js
-const { queryComponentSpecBatch } = require('./scripts/query-api');
+调用 `queryComponentSpecBatch` 接口，传入需要的组件类型列表：
 
-// 传入 { type, variant } 列表，variant 必填
-const typeVariants = [
+```
+typeVariants = [
   { type: 'TitleComponent', variant: 'level1' },
-  { type: 'CardComponent', variant: 'image-text' },
-  { type: 'GraphicComponent', variant: 'flow' }
-];
-const { specs } = await queryComponentSpecBatch(typeVariants);
-// specs['TitleComponent.level1'] → 该组件的完整字段定义
+  { type: 'TextComponent', variant: 'body' },
+  ...
+]
 ```
 
 > ⚠️ **严禁凭记忆填写 customStyle 字段！** 必须用 API 返回的 key。
@@ -64,7 +64,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ### 第 3 步：生成组件
 
-从设计文档提取组件信息，生成 JSON：
+根据设计文档中的组件清单，结合 API 返回的组件规范，生成组件 JSON。
 
 #### 3.1 基础字段
 
