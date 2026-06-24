@@ -113,7 +113,7 @@ function package(workdir, outputZip) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
   const skillProjectId = process.argv[2];
   const outputZip = process.argv[3];
   

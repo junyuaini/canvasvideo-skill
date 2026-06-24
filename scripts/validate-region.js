@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
 
 /**
  * 计算区域开始时间

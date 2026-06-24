@@ -38,7 +38,7 @@ function saveProject(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
   const skillProjectId = process.argv[2] || getCurrentProjectId(workdirRoot);
 
   if (!skillProjectId) {

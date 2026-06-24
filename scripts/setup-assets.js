@@ -20,7 +20,7 @@ const path = require('path');
 const { ensurePlaceholders, ensureBgm } = require('./scaffold');
 
 function parseArgs(argv) {
-  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
   
   const args = {
     workdirRoot,  // 固定路径

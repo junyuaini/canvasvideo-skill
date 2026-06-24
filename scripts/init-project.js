@@ -34,8 +34,9 @@ const { loadOrCreateProject, saveProjectState } = require('./state');
  * @returns {Object} { workdirRoot, mode, configSource, configValue }
  */
 function parseArgs(argv) {
-  // workdir 固定为脚本所在目录的 canvasvideo-workdir
-  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  // workdir 固定为 Agent 工作目录的 canvasvideo-workdir
+  // 避免写到 Skill 安装目录（可能有权限问题）
+  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
   
   const args = {
     workdirRoot,  // 固定路径，不再从命令行读取

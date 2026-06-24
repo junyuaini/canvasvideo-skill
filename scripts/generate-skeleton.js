@@ -228,7 +228,7 @@ function generateSkeleton(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(__dirname, '..', 'canvasvideo-workdir');
+  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
   const skillProjectId = process.argv[3]; // argv[2] now is mode (unused here), argv[3] is skillProjectId
 
   // 兼容旧调用：node generate-skeleton.js <skillProjectId>
