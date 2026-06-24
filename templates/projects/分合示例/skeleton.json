@@ -27,6 +27,7 @@
     "fadeIn": 1,
     "fadeOut": 2
   },
+  "source_design_doc": "./design-skeleton-creative.md",
   "regions": [
     {
       "name": "P1",

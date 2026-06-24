@@ -29,34 +29,53 @@
 
 ### 第 1 步：运行合并脚本
 
-**推荐：命令行调用**
+合并脚本会自动完成验证、合并和保存操作：
+
+**执行命令：**
 
 ```bash
 node scripts/merge-regions.js {workdir}/{skillProjectId}
 ```
 
-**或：代码中 require 引入**
+**脚本会自动完成：**
 
-```js
-const { mergeRegions } = require('./scripts/merge-regions');
-const project = mergeRegions(path.join(workdirRoot, skillProjectId));
-```
+1. **验证骨架来源** - 检查 skeleton.json 包含 `source_design_doc` 字段，且对应的设计文档文件存在
+2. **验证区域来源** - 检查每个 `regions/P{n}.json` 包含 `source_design_doc` 字段，且对应的 `design-P{n}.md` 文件存在
+3. **合并文件** - 将 skeleton 和所有区域合并为完整的 `project.json`
+4. **保留来源** - 在 project.json 中保留骨架和所有区域的 `source_design_doc` 信息
+5. **保存文件** - 自动生成 `project.json`
 
-> ⚠️ **注意**：`require` 路径必须是实际存在的 `.js` 文件路径。如果从 Skill 安装目录引入，路径为：
-> ```js
-> const { mergeRegions } = require('c:/Users/pujy/.trae-cn/skills/canvasvideo/scripts/merge-regions');
-> ```
+> ⚠️ **硬规则**：**严禁**绕过脚本直接合并。必须使用 `merge-regions.js` 脚本，它会强制执行设计文档来源验证。这是防止跳过设计文档的关键检查点。
 
 ### 第 2 步：验证合并结果
 
-检查：
+检查脚本输出的合并结果：
+
 - 组件总数 = 所有区域组件数之和
 - 字幕总数 = 所有区域字幕数之和
 - 所有组件 ID 唯一
 - 组件按 start 时间排序
 - 字幕按 start 排序
 
-### 第 3 步：素材清单引用
+### 第 3 步：确认来源信息已保留
+
+检查合并生成的 project.json 是否包含设计文档来源信息：
+
+```json
+{
+  "source_design_doc": "./design-skeleton-creative.md",
+  "regions": [
+    {
+      "name": "P1",
+      "x": 120,
+      "y": 50,
+      "source_design_doc": "./design-P1.md"
+    }
+  ]
+}
+```
+
+### 第 4 步：素材清单引用
 
 把 design.md 素材清单中**所有非空状态的素材**，挂到 `ImageComponent.content.image`：
 
@@ -67,15 +86,6 @@ const project = mergeRegions(path.join(workdirRoot, skillProjectId));
 | `[待用户提供]` | 也用占位图，备注列写"用户提供后替换" |
 
 **素材清单实现率必须 = 100%**。
-
-### 第 4 步：保存 project.json
-
-```js
-fs.writeFileSync(
-  path.join(workdirRoot, skillProjectId, 'project.json'),
-  JSON.stringify(project, null, 2)
-);
-```
 
 ---
 
@@ -92,9 +102,10 @@ fs.writeFileSync(
 > [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
 - [E] project.json 是合法 JSON
-- [E] 包含所有全局字段（name, theme, duration, viewport, canvas, regions, settings, audio, components）
+- [E] 包含所有全局字段（name, theme, duration, viewport, canvas, regions, settings, audio, components, source_design_doc）
 - [E] components 数组不为空
 - [E] 所有组件 ID 唯一
+- [E] 每个区域的 source_design_doc 字段存在
 - [W] 素材清单实现率 = 100%
 - [I] 组件按 start 排序
 - [I] 字幕按 start 排序

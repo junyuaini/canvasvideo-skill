@@ -38,29 +38,22 @@
 
 ### 第 1 步：运行上传脚本
 
-```js
-const { uploadWithUser } = require('./scripts/upload-video');
-const result = await uploadWithUser(SERVER_URL, workdirRoot, skillProjectId, zipPath, {
-  projectJsonPath: path.join(workdirRoot, skillProjectId, 'project.json'),
-});
+```bash
+node scripts/upload-video.js {workdir}/{skillProjectId}/output.zip
 ```
 
-### 第 2 步：输出结果
+脚本会自动：
+1. 读取 `{workdir}/.user.json` 获取用户凭证（首次会创建账号）
+2. 上传 zip 文件到服务器
+3. 返回预览链接和账号信息
 
-```js
-if (result.warnings.length) {
-  console.warn('Warnings:', result.warnings);
-}
+### 第 2 步：查看结果
 
-if (result.isFirstTime) {
-  // 首次：输出完整账号信息
-  console.log(`⚠️ 账号已创建`);
-  console.log(`userToken: ${result.userToken}`);
-  console.log(`请保存到: {workdir}/.user.json`);
-}
-
-console.log(`预览链接: ${result.previewUrl}`);
-```
+脚本输出会显示：
+- 上传状态（成功/失败）
+- 预览链接（`previewUrl`）
+- 账号信息（首次创建时显示 `userToken`）
+- 警告信息（如有）
 
 ### 第 3 步：输出操作说明
 

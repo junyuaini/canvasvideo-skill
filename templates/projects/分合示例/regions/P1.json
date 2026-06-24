@@ -1,5 +1,6 @@
 {
   "regionName": "P1",
+  "source_design_doc": "./design-P1.md",
   "subtitles": [
     {
       "start": 0,

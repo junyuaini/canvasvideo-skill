@@ -25,12 +25,14 @@
     {
       "name": "P1",
       "x": 120,
-      "y": 50
+      "y": 50,
+      "source_design_doc": "./design-P1.md"
     },
     {
       "name": "P2",
       "x": 120,
-      "y": 50
+      "y": 50,
+      "source_design_doc": "./design-P2.md"
     }
   ],
   "audio": {
@@ -39,6 +41,7 @@
     "fadeIn": 1,
     "fadeOut": 2
   },
+  "source_design_doc": "./design-skeleton-creative.md",
   "components": [
     {
       "id": "P1-001",

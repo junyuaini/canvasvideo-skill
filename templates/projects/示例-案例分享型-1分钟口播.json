@@ -25,6 +25,7 @@
     "path": "./assets/20260617/audio.mp3",
     "loop": false
   },
+  "source_design_doc": "./design-skeleton-dubbing.md",
   "regions": [
     {
       "name": "P1",

@@ -57,6 +57,7 @@ function ensureProjectWorkdir(workdirRoot, skillProjectId) {
   const assetsDir = path.join(workdir, 'assets');
   fs.mkdirSync(assetsDir, { recursive: true });
   fs.mkdirSync(path.join(assetsDir, 'images'), { recursive: true });
+  fs.mkdirSync(path.join(workdir, 'regions'), { recursive: true });
   return workdir;
 }
 

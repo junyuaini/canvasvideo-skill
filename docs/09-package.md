@@ -41,13 +41,7 @@ const zipPath = package(
 
 ### 第 2 步：检查打包结果
 
-```js
-const fs = require('fs');
-if (!fs.existsSync(zipPath)) {
-  throw new Error('打包失败：zip 文件未生成');
-}
-console.log(`打包完成: ${zipPath}`);
-```
+脚本输出会显示打包结果。检查 `output.zip` 是否已生成。
 
 ---
 

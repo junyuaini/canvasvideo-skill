@@ -92,43 +92,39 @@
 
 ---
 
-### 步骤3：初始化工作目录
+### 步骤3：初始化项目
 
-```js
-const path = require('path');
-const { ensureProjectWorkdir } = require('./scripts/scaffold');
+运行初始化脚本：
 
-const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-const state = require('./scripts/state').loadOrCreateProject(workdirRoot);
-const skillProjectId = state.skillProjectId;
+**方式1：配置文件（推荐，避免引号问题）**
 
-ensureProjectWorkdir(workdirRoot, skillProjectId);
+先创建配置文件：
+
+```bash
+# 创作模式配置示例
+node scripts/init-project.js ./canvasvideo-workdir creative --config=project-config.json
+
+# 口播模式配置示例
+node scripts/init-project.js ./canvasvideo-workdir dubbing --config=dubbing-config.json
 ```
 
----
+**方式2：JSON 字符串（兼容旧方式）**
 
-### 步骤4：保存项目配置
+```bash
+# 创作模式
+node scripts/init-project.js ./canvasvideo-workdir creative '{"content":"视频主题","duration":15,"audience":"大众用户","theme":"white","aspect":"4:3","style":"warm","bgm":true}'
 
-```js
-state.mode = 'creative'; // 或 'voiceover'
-state.content = userContent;
-state.duration = userDuration;
-state.audience = userAudience;
-state.theme = userTheme;
-state.aspect = userAspect;
-state.style = userStyle;
-state.bgm = userBgm; // true/false
-
-// 音频信息（供后续步骤使用）
-if (state.mode === 'voiceover') {
-  state.audioPath = userAudioPath;      // 口播音频路径
-  state.subtitlePath = userSubtitlePath; // SRT路径
-} else if (state.bgm) {
-  state.bgmStyle = matchedBgmStyle;     // 如 'tech-pulse'
-}
-
-require('./scripts/state').saveProjectState(workdirRoot, state);
+# 口播模式
+node scripts/init-project.js ./canvasvideo-workdir dubbing '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
 ```
+
+脚本会自动完成：
+1. 创建工作目录结构
+2. 生成 `skillProjectId`
+3. 保存项目配置到 `state.json`
+4. 输出项目ID和工作目录路径
+
+> 注意：脚本输出的 `skillProjectId` 需要记录，后续步骤会用到。
 
 ---
 

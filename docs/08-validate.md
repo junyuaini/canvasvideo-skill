@@ -24,25 +24,25 @@
 
 ### 第 1 步：运行校验脚本
 
-```js
-const { validate } = require('./scripts/validate');
-const result = validate(project);
+验证脚本会自动检查设计文档来源：
 
-if (!result.valid) {
-  throw new Error(`校验失败：${result.errors.join(', ')}`);
-}
+**执行命令：**
+
+```bash
+node scripts/validate.js {workdir}/{skillProjectId}/project.json
 ```
+
+**脚本会自动验证：**
+
+1. **骨架设计文档** - 检查 project.json 包含 `source_design_doc` 字段，且 `./design-skeleton-xxx.md` 文件存在
+2. **区域设计文档** - 检查每个区域包含 `source_design_doc` 字段，且对应的 `./design-P{n}.md` 文件存在
+3. **selfcheck 规则** - 节奏 4 门槛 + 布局 Y 坐标检查
+
+> ⚠️ **硬规则**：**严禁**跳过校验脚本。必须使用 `validate.js` 脚本验证通过后才能进入打包步骤。这是确保设计文档未被跳过的最后一道防线。
 
 ### 第 2 步：检查资源存在性
 
-```js
-const { checkMissingAssets } = require('./scripts/package');
-const missing = checkMissingAssets(path.join(workdirRoot, skillProjectId));
-
-if (missing.length > 0) {
-  throw new Error(`资源缺失：${missing.join(', ')}`);
-}
-```
+脚本会自动检查所有引用的资源文件是否存在。
 
 ---
 
@@ -62,6 +62,10 @@ if (missing.length > 0) {
 - [E] project.json 校验通过
 - [E] 所有资源文件存在
 - [E] 无报错信息
+- [E] 骨架 source_design_doc 字段存在且不为空
+- [E] 骨架 source_design_doc 引用的设计文档文件存在
+- [E] 每个区域都有 source_design_doc 字段
+- [E] 每个区域的 source_design_doc 引用的设计文档文件存在
 
 ---
 

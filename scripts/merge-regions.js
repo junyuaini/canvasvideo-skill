@@ -10,6 +10,47 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * 验证 skeleton.json 来源
+ * @param {string} workdir - 工作目录
+ * @param {Object} skeleton - skeleton.json 解析后的对象
+ */
+function validateSkeletonSource(workdir, skeleton) {
+  // 检查 source_design_doc 字段
+  if (!skeleton.source_design_doc || skeleton.source_design_doc.trim() === '') {
+    throw new Error('[E] skeleton.json 缺少 source_design_doc 字段，必须记录设计文档来源');
+  }
+  
+  // 检查设计文档文件是否存在
+  const designDocPath = path.join(workdir, skeleton.source_design_doc);
+  if (!fs.existsSync(designDocPath)) {
+    throw new Error(`[E] 骨架设计文档不存在: ${skeleton.source_design_doc}，请确认步骤2已完成`);
+  }
+  
+  console.log(`[✓] 骨架设计文档来源验证通过: ${skeleton.source_design_doc}`);
+}
+
+/**
+ * 验证区域JSON来源
+ * @param {string} workdir - 工作目录
+ * @param {Object} regionData - 区域JSON解析后的对象
+ * @param {string} regionFileName - 区域文件名（如 P1.json）
+ */
+function validateRegionSource(workdir, regionData, regionFileName) {
+  // 检查 source_design_doc 字段
+  if (!regionData.source_design_doc || regionData.source_design_doc.trim() === '') {
+    throw new Error(`[E] ${regionFileName} 缺少 source_design_doc 字段，必须记录区域设计文档来源`);
+  }
+  
+  // 检查区域设计文档文件是否存在
+  const designDocPath = path.join(workdir, regionData.source_design_doc);
+  if (!fs.existsSync(designDocPath)) {
+    throw new Error(`[E] 区域设计文档不存在: ${regionData.source_design_doc}（来自 ${regionFileName}），请确认步骤4已完成`);
+  }
+  
+  console.log(`[✓] ${regionFileName} 设计文档来源验证通过: ${regionData.source_design_doc}`);
+}
+
+/**
  * 合并区域文件为完整 project.json
  * @param {string} workdir - 工作目录路径
  * @returns {Object} 合并后的 project 对象
@@ -23,7 +64,10 @@ function mergeRegions(workdir) {
   
   const skeleton = JSON.parse(fs.readFileSync(skeletonPath, 'utf-8'));
   
-  // 初始化 project
+  // 步骤1：验证骨架来源
+  validateSkeletonSource(workdir, skeleton);
+  
+  // 初始化 project（保留骨架的 source_design_doc）
   const project = {
     name: skeleton.name,
     description: skeleton.description,
@@ -33,16 +77,19 @@ function mergeRegions(workdir) {
     canvas: skeleton.canvas,
     settings: skeleton.settings,
     audio: skeleton.audio,
-    regions: skeleton.regions,
+    regions: [],  // 将在下面填充，包含 source_design_doc
     components: [],
     subtitles: []
   };
   
-  // 合并每个区域的组件和字幕
+  // 保留骨架的 source_design_doc（已经在 project 对象中通过展开 skeleton 保留了）
+  project.source_design_doc = skeleton.source_design_doc;
+  
+  // 步骤2：验证区域来源并合并
   const regionsDir = path.join(workdir, 'regions');
   
-  for (const region of skeleton.regions) {
-    const regionFile = path.join(regionsDir, `${region.name}.json`);
+  for (const skeletonRegion of skeleton.regions) {
+    const regionFile = path.join(regionsDir, `${skeletonRegion.name}.json`);
     
     if (!fs.existsSync(regionFile)) {
       console.warn(`警告: 区域文件不存在 ${regionFile}`);
@@ -51,10 +98,21 @@ function mergeRegions(workdir) {
     
     const regionData = JSON.parse(fs.readFileSync(regionFile, 'utf-8'));
     
+    // 验证区域来源
+    validateRegionSource(workdir, regionData, `${skeletonRegion.name}.json`);
+    
     // 验证 regionName 匹配
-    if (regionData.regionName !== region.name) {
-      console.warn(`警告: regionName 不匹配 ${regionData.regionName} !== ${region.name}`);
+    if (regionData.regionName !== skeletonRegion.name) {
+      console.warn(`警告: regionName 不匹配 ${regionData.regionName} !== ${skeletonRegion.name}`);
     }
+    
+    // 将区域信息添加到 project.regions（包含 source_design_doc）
+    project.regions.push({
+      name: skeletonRegion.name,
+      x: skeletonRegion.x,
+      y: skeletonRegion.y,
+      source_design_doc: regionData.source_design_doc
+    });
     
     // 合并组件
     if (Array.isArray(regionData.components)) {

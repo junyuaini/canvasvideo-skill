@@ -22,36 +22,41 @@
 
 ## 操作
 
-### 第 1 步：复制占位素材
+### 第 1 步：运行素材设置脚本
 
-```js
-const { ensurePlaceholders } = require('./scripts/scaffold');
-ensurePlaceholders(workdirRoot, skillProjectId, project.theme);
+```bash
+node scripts/setup-assets.js {workdir} {skillProjectId} --theme={white|black} --bgm={bgmStyle}
 ```
 
-### 第 2 步：复制 BGM（BGM 模式）
+**参数说明**：
+- `--theme`：主题色（`white` 或 `black`，默认 `white`）
+- `--bgm`：BGM 风格（如 `tech-pulse`，不传则不复制 BGM）
 
-```js
-const { ensureBgm } = require('./scripts/scaffold');
-const bgm = ensureBgm(workdirRoot, skillProjectId, project.bgmStyle);
+**示例**：
 
-if (bgm.hasBgm) {
-  project.audio = { path: bgm.copied[0], loop: true, fadeIn: 1, fadeOut: 2 };
-} else if (project.bgmStyle) {
-  throw new Error(`BGM 复制失败：templates/bgm/ 下没有 ${project.bgmStyle} 对应的 mp3 文件`);
-}
+```bash
+# 复制占位素材 + BGM
+node scripts/setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=white --bgm=tech-pulse
+
+# 仅复制占位素材（无 BGM）
+node scripts/setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=black
 ```
 
-**⚠️ 必须先复制 BGM 文件到 workdir，再写 project.json 的 audio.path**
+脚本会自动完成：
+1. 将占位 SVG 复制到 `{workdir}/{skillProjectId}/assets/placeholders/{theme}/`
+2. 将 BGM 复制到 `{workdir}/{skillProjectId}/assets/placeholders/bgm/`
 
-### 第 3 步：保存更新后的 project.json
+**⚠️ 必须先复制 BGM 文件到 workdir，再更新 project.json 的 audio.path**
 
-```js
-fs.writeFileSync(
-  path.join(workdirRoot, skillProjectId, 'project.json'),
-  JSON.stringify(project, null, 2)
-);
+### 第 2 步：保存更新后的 project.json
+
+如果修改了 project.json（如更新 audio.path），直接保存即可：
+
+```bash
+node scripts/save-project.js {workdir} {skillProjectId}
 ```
+
+> 注：如果没有修改 project.json，可跳过此步。
 
 ---
 

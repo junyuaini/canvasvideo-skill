@@ -5,6 +5,7 @@
   "duration": 9,
   "viewport": { "width": 780, "height": 585 },
   "canvas": { "width": 3300, "height": 700 },
+  "source_design_doc": "./design-skeleton-creative.md",
   "regions": [
     { "name": "P1", "x": 120, "y": 50 },
     { "name": "P2", "x": 900, "y": 50 },
