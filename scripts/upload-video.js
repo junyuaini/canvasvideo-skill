@@ -30,7 +30,7 @@ const crypto = require('crypto');
 const DEFAULT_SERVER_URL = 'http://8.147.60.112/cv';
 
 // 网络层默认参数（单次请求超时 + 5xx 退避重试）
-const REQUEST_TIMEOUT_MS = 30000;   // 30s
+const REQUEST_TIMEOUT_MS = 120000;   // 120s
 const RETRY_MAX = 1;                // 5xx 最多重试 1 次
 const RETRY_BACKOFF_MS = 1000;      // 重试前等待 1s
 
