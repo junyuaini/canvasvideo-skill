@@ -1,4 +1,4 @@
-# 步骤1：初始化
+﻿# 步骤1：初始化
 
 > 前置步骤：无（用户首次提出需求）
 > 下一步：[步骤2：骨架设计](02-skeleton-design-creative.md)（创作模式）或 [02-skeleton-design-dubbing.md](02-skeleton-design-dubbing.md)（口播模式）

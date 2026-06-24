@@ -13,143 +13,170 @@
   "components": [
     {
       "id": "P1-001",
-      "type": "TitleComponent",
-      "position": { "x": 100, "y": 80, "w": 580, "h": 80 },
-      "content": { "text": "示例标题" },
-      "customStyle": {
-        "level1": {
-          "fontSize": "44px",
-          "fontWeight": "700",
-          "color": "#111827"
+      "type": "AggregateComponent",
+      "layoutMode": "auto",
+      "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+      "children": [
+        {
+          "id": "P1-001a",
+          "type": "TitleComponent",
+          "content": { "text": "示例标题", "level": 1 },
+          "customStyle": {
+            "level1": {
+              "fontSize": "48px",
+              "fontWeight": "900",
+              "color": "#111827",
+              "lineHeight": "1.1"
+            }
+          },
+          "start": 0,
+          "end": 3
+        },
+        {
+          "id": "P1-001b",
+          "type": "TextComponent",
+          "content": { "text": "副标题 / 概述句", "style": "paragraph" },
+          "customStyle": {
+            "paragraph": {
+              "fontSize": "20px",
+              "color": "#374151",
+              "lineHeight": "1.6"
+            }
+          },
+          "start": 1.0,
+          "end": 3
+        },
+        {
+          "id": "P1-001c",
+          "type": "BadgeComponent",
+          "content": { "text": "立即了解" },
+          "customStyle": {
+            "color": "#2563EB",
+            "textColor": "#FFFFFF",
+            "borderRadius": "8px",
+            "fontSize": "18px",
+            "padding": "12px 24px"
+          },
+          "start": 2.0,
+          "end": 3
         }
-      },
+      ],
       "start": 0,
       "end": 3
     },
     {
-      "id": "P1-002",
-      "type": "TextComponent",
-      "position": { "x": 100, "y": 220, "w": 580, "h": 80 },
-      "content": { "text": "副标题 / 概述句" },
-      "customStyle": {
-        "paragraph": {
-          "fontSize": "20px",
-          "color": "#374151",
-          "lineHeight": "1.6"
-        }
-      },
-      "start": 1.0,
-      "end": 3
-    },
-    {
-      "id": "P1-003",
-      "type": "BadgeComponent",
-      "position": { "x": 100, "y": 340, "w": 220, "h": 60 },
-      "content": { "text": "立即了解" },
-      "customStyle": {
-        "background": "#2563EB",
-        "color": "#FFFFFF",
-        "borderRadius": "8px",
-        "fontSize": "18px",
-        "padding": "12px 24px"
-      },
-      "start": 2.0,
-      "end": 3
-    },
-    {
       "id": "P2-001",
-      "type": "TitleComponent",
-      "position": { "x": 100, "y": 80, "w": 580, "h": 80 },
-      "content": { "text": "核心要点" },
-      "customStyle": {
-        "level1": {
-          "fontSize": "44px",
-          "fontWeight": "700",
-          "color": "#111827"
+      "type": "AggregateComponent",
+      "layoutMode": "auto",
+      "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+      "children": [
+        {
+          "id": "P2-001a",
+          "type": "TitleComponent",
+          "content": { "text": "核心要点", "level": 1 },
+          "customStyle": {
+            "level1": {
+              "fontSize": "48px",
+              "fontWeight": "900",
+              "color": "#111827",
+              "lineHeight": "1.1"
+            }
+          },
+          "start": 3,
+          "end": 6
+        },
+        {
+          "id": "P2-001b",
+          "type": "TextComponent",
+          "content": { "text": "用一段话点明价值", "style": "paragraph" },
+          "customStyle": {
+            "paragraph": {
+              "fontSize": "20px",
+              "color": "#374151",
+              "lineHeight": "1.6"
+            }
+          },
+          "start": 4.0,
+          "end": 6
+        },
+        {
+          "id": "P2-001c",
+          "type": "BadgeComponent",
+          "content": { "text": "查看详情" },
+          "customStyle": {
+            "color": "#10B981",
+            "textColor": "#FFFFFF",
+            "borderRadius": "8px",
+            "fontSize": "18px",
+            "padding": "12px 24px"
+          },
+          "start": 5.0,
+          "end": 6
         }
-      },
+      ],
       "start": 3,
       "end": 6
     },
     {
-      "id": "P2-002",
-      "type": "TextComponent",
-      "position": { "x": 100, "y": 220, "w": 580, "h": 80 },
-      "content": { "text": "用一段话点明价值" },
-      "customStyle": {
-        "paragraph": {
-          "fontSize": "20px",
-          "color": "#374151",
-          "lineHeight": "1.6"
-        }
-      },
-      "start": 4.0,
-      "end": 6
-    },
-    {
-      "id": "P2-003",
-      "type": "BadgeComponent",
-      "position": { "x": 100, "y": 340, "w": 220, "h": 60 },
-      "content": { "text": "查看详情" },
-      "customStyle": {
-        "background": "#10B981",
-        "color": "#FFFFFF",
-        "borderRadius": "8px",
-        "fontSize": "18px",
-        "padding": "12px 24px"
-      },
-      "start": 5.0,
-      "end": 6
-    },
-    {
       "id": "P3-001",
-      "type": "TitleComponent",
-      "position": { "x": 100, "y": 80, "w": 580, "h": 80 },
-      "content": { "text": "号召行动" },
-      "customStyle": {
-        "level1": {
-          "fontSize": "44px",
-          "fontWeight": "700",
-          "color": "#111827"
+      "type": "AggregateComponent",
+      "layoutMode": "auto",
+      "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+      "children": [
+        {
+          "id": "P3-001a",
+          "type": "TitleComponent",
+          "content": { "text": "号召行动", "level": 1 },
+          "customStyle": {
+            "level1": {
+              "fontSize": "48px",
+              "fontWeight": "900",
+              "color": "#111827",
+              "lineHeight": "1.1"
+            }
+          },
+          "start": 6,
+          "end": 9
+        },
+        {
+          "id": "P3-001b",
+          "type": "TextComponent",
+          "content": { "text": "邀请用户下一步行动", "style": "paragraph" },
+          "customStyle": {
+            "paragraph": {
+              "fontSize": "20px",
+              "color": "#374151",
+              "lineHeight": "1.6"
+            }
+          },
+          "start": 7.0,
+          "end": 9
+        },
+        {
+          "id": "P3-001c",
+          "type": "BadgeComponent",
+          "content": { "text": "扫码体验" },
+          "customStyle": {
+            "color": "#F59E0B",
+            "textColor": "#FFFFFF",
+            "borderRadius": "8px",
+            "fontSize": "18px",
+            "padding": "12px 24px"
+          },
+          "start": 8.0,
+          "end": 9
         }
-      },
+      ],
       "start": 6,
-      "end": 9
-    },
-    {
-      "id": "P3-002",
-      "type": "TextComponent",
-      "position": { "x": 100, "y": 220, "w": 580, "h": 80 },
-      "content": { "text": "邀请用户下一步行动" },
-      "customStyle": {
-        "paragraph": {
-          "fontSize": "20px",
-          "color": "#374151",
-          "lineHeight": "1.6"
-        }
-      },
-      "start": 7.0,
-      "end": 9
-    },
-    {
-      "id": "P3-003",
-      "type": "BadgeComponent",
-      "position": { "x": 100, "y": 340, "w": 220, "h": 60 },
-      "content": { "text": "扫码体验" },
-      "customStyle": {
-        "background": "#F59E0B",
-        "color": "#FFFFFF",
-        "borderRadius": "8px",
-        "fontSize": "18px",
-        "padding": "12px 24px"
-      },
-      "start": 8.0,
       "end": 9
     }
   ],
   "settings": {
     "autoPlay": false,
     "loop": false,
+    "minScale": 0.01,
+    "maxScale": 5,
+    "ease": 0.08,
     "contentZoomRatio": 0.9,
     "preFullViewDuration": 0.4,
     "postFullViewDuration": 0.4

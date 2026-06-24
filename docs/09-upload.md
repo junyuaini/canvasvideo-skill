@@ -1,6 +1,6 @@
-# 步骤10：上传
+﻿# 步骤9：上传
 
-> 前置步骤：[步骤9：打包](09-package.md)
+> 前置步骤：[步骤8：打包](08-package.md)
 > 下一步：无（完成）
 
 ---
@@ -19,8 +19,8 @@
 - [ ] `project.json` 已存在且校验通过
 
 **如果不满足**：
-- 没有 `output.zip` → 回到 [步骤9：打包](09-package.md)
-- 没有 `project.json` → 回到 [步骤6：合并](06-merge.md)
+- 没有 `output.zip` → 回到 [步骤8：打包](08-package.md)
+- 没有 `project.json` → 回到 [步骤5：合并](05-merge.md)
 
 ---
 

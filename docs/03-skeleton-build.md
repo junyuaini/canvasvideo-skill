@@ -1,4 +1,4 @@
-# 步骤3：生成骨架JSON
+﻿# 步骤3：生成骨架JSON
 
 > 前置步骤：[步骤2：骨架设计](02-skeleton-design-creative.md)
 > 下一步：[步骤4：区域设计](04-region-design-creative.md)
@@ -116,4 +116,4 @@ node scripts/setup-workdir.js {workdir} {skillProjectId}
 - 区域1 → [步骤4：区域设计](04-region-design-creative.md) → 步骤5：生成区域JSON
 - 区域2 → [步骤4：区域设计](04-region-design-creative.md) → 步骤5：生成区域JSON
 - ...（直到所有区域完成）
-- 全部完成后 → [步骤6：合并](06-merge.md)
+- 全部完成后 → [步骤5：合并](05-merge.md)

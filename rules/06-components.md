@@ -28,7 +28,105 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ---
 
-## R2 组件清单
+## R2 AggregateComponent 核心规则
+
+**重要硬规则**：
+- ✅ 所有视频区只能放 AggregateComponent
+- ✅ 普通组件必须嵌套在 AggregateComponent.children 中
+- ✅ AggregateComponent 自身需要完整 position
+- ✅ AggregateComponent 不需要 customStyle
+
+### R2.1 layoutMode 两种模式
+
+| 模式 | 简介 | 子组件需要 position？ | 推荐场景 |
+|------|------|----------------------|---------|
+| **auto** | 自动布局模式，由 flex 自动居中、排列、换行 | ❌ 不需要 | 简单布局（标题+图形、单列等），快速创建 |
+| **manual** | 手动布局模式，精确控制子组件位置 | ✅ 必须 | 复杂布局、需要精确定位 |
+
+**推荐选择**：优先用 manual，除非确实不需要精准控制。
+
+### R2.2 AggregateComponent Schema
+
+```json
+{
+  "id": "P1-001",
+  "type": "AggregateComponent",
+  "layoutMode": "auto",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "children": [],
+  "start": 0,
+  "end": 5
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | string | ✅ | 组件唯一标识 |
+| type | string | ✅ | 固定为 "AggregateComponent" |
+| layoutMode | string | ✅ | "auto" 或 "manual" |
+| position | object | ✅ | { x, y, w, h } |
+| children | array | ✅ | 子组件数组 |
+| start | number | ✅ | 出现时间（秒） |
+| end | number | ✅ | 消失时间（秒） |
+
+### R2.3 使用示例
+
+**✅ auto 模式（子组件无 position）**：
+```json
+{
+  "id": "P1-001",
+  "type": "AggregateComponent",
+  "layoutMode": "auto",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "children": [
+    {
+      "id": "P1-002",
+      "type": "TitleComponent",
+      "content": { "text": "标题", "level": 1 },
+      "customStyle": { "level1": { "fontSize": "48px", "color": "#FFFFFF" } },
+      "start": 0,
+      "end": 3
+    },
+    {
+      "id": "P1-003",
+      "type": "BadgeComponent",
+      "content": { "text": "标签" },
+      "customStyle": { "color": "#00B894", "textColor": "#FFFFFF" },
+      "start": 1,
+      "end": 3
+    }
+  ],
+  "start": 0,
+  "end": 3
+}
+```
+
+**✅ manual 模式（子组件有 position）**：
+```json
+{
+  "id": "P1-001",
+  "type": "AggregateComponent",
+  "layoutMode": "manual",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "children": [
+    {
+      "id": "P1-002",
+      "type": "TitleComponent",
+      "position": { "x": 100, "y": 100, "w": 580, "h": 80 },
+      "content": { "text": "标题", "level": 1 },
+      "customStyle": { "level1": { "fontSize": "48px", "color": "#FFFFFF" } },
+      "start": 0,
+      "end": 3
+    }
+  ],
+  "start": 0,
+  "end": 3
+}
+```
+
+---
+
+## R3 子组件清单
 
 **总计：10 种组件类型，40 个变种**
 
@@ -43,9 +141,9 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | 7 | CornerComponent | 文字 | 1 | 角标（HOT/NEW/VIP），比 Badge 字号小 | 全屏沉浸、图片叠加 |
 | 8 | ShockComponent | 文字 | 1 | 金句胶囊，最醒目，自带脉冲动画 | Data、Hook、CTA |
 | 9 | GraphicComponent | 图形 | 14 | 图形图表，含流程/循环/金字塔/漏斗/对比/架构/时间线/矩阵/饼图/环形图/折线图/柱状图/热力图/雷达图 | Data、Step、Timeline |
-| 10 | AggregateComponent | 容器 | 2 | 聚合容器（layout 模式/custom 模式），**推荐 custom** | 复杂布局、对比、多列 |
+| 10 | AggregateComponent | 容器 | 2 | 聚合容器（auto/manual 模式），**推荐 manual** | 复杂布局、对比、多列 |
 
-### R2.1 TitleComponent 变种（3个）
+### R3.1 TitleComponent 变种（3个）
 
 | 变种 | 简介 | 默认字号 |
 |-----|------|---------|
@@ -53,7 +151,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | `level2` | 二级标题，区域内子标题、副标题 | 36px |
 | `level3` | 三级标题，卡片内标题、小节标题 | 24px |
 
-### R2.2 TextComponent 变种（6个）
+### R3.2 TextComponent 变种（6个）
 
 | 变种 | 简介 | 默认字号 |
 |-----|------|---------|
@@ -64,13 +162,13 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | `list` | 列表，按 `\n` 切分为 li | 16px |
 | `small` | 注释/小字 | 14px |
 
-### R2.3 ImageComponent 变种（1个）
+### R3.3 ImageComponent 变种（1个）
 
 | 变种 | 简介 |
 |-----|------|
 | `default` | 单图或多图轮播展示（>1张自动3秒轮播） |
 
-### R2.4 CardComponent 变种（7个）
+### R3.4 CardComponent 变种（7个）
 
 | 变种 | 简介 |
 |-----|------|
@@ -83,31 +181,31 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | `gallery` | 图片网格画廊（最多9张） |
 | `double-image-title` | 双图+标题（上方两张图横排） |
 
-### R2.5 QuoteComponent 变种（1个）
+### R3.5 QuoteComponent 变种（1个）
 
 | 变种 | 简介 |
 |-----|------|
 | `default` | 名言/证言，左侧带色条+引文+作者 |
 
-### R2.6 BadgeComponent 变种（1个）
+### R3.6 BadgeComponent 变种（1个）
 
 | 变种 | 简介 |
 |-----|------|
 | `default` | 标签/胶囊，圆角背景+文字，中等字号 |
 
-### R2.7 CornerComponent 变种（1个）
+### R3.7 CornerComponent 变种（1个）
 
 | 变种 | 简介 |
 |-----|------|
 | `default` | 角标（HOT/NEW/VIP），比 Badge 字号小 |
 
-### R2.8 ShockComponent 变种（1个）
+### R3.8 ShockComponent 变种（1个）
 
 | 变种 | 简介 |
 |-----|------|
 | `default` | 金句胶囊，最醒目，自带脉冲动画，用于关键数据/CTA/口号 |
 
-### R2.9 GraphicComponent 变种（14个）
+### R3.9 GraphicComponent 变种（14个）
 
 | 变种 | 简介 |
 |-----|------|
@@ -126,31 +224,6 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | `bar` | 垂直柱状图+顶部数值 |
 | `heatmap` | 矩阵热力图（红色透明度映射） |
 | `radar` | 雷达图（4边参考多边形） |
-
-### R2.10 AggregateComponent 变种（2个）
-
-| 变种 | 简介 |
-|-----|------|
-| `layout` | 使用预设布局模板（如 two-column/four-column），**本 Skill 默认禁用** |
-| `custom` | **推荐模式**，手动配置子组件 x/y/w/h |
-
----
-
-## R3 组件选型速查
-
-| 场景 | 推荐组件 | 说明 |
-|------|---------|------|
-| 区域主标题 | TitleComponent (level1) | 最大字号，最醒目 |
-| 副标题 | TitleComponent (level2/3) | 次要层级 |
-| 核心数据/金句 | ShockComponent | 字号最大，视觉冲击 |
-| 正文说明 | TextComponent | 常规段落 |
-| 图片/场景 | ImageComponent | 支持圆角、阴影 |
-| 步骤卡片 | CardComponent | 标题+描述结构 |
-| 名言引用 | QuoteComponent | 左侧装饰线 |
-| 标签/分类 | BadgeComponent | 小尺寸圆角 |
-| 角标/水印 | CornerComponent | 角落小标识 |
-| 图表/流程 | GraphicComponent | 时间轴、流程图 |
-| 复杂布局 | AggregateComponent | 组合多个子组件 |
 
 ---
 

@@ -1,7 +1,7 @@
-# 步骤7：素材处理
+﻿# 步骤6：素材处理
 
-> 前置步骤：[步骤6：合并](06-merge.md)
-> 下一步：[步骤8：校验](08-validate.md)
+> 前置步骤：[步骤5：合并](05-merge.md)
+> 下一步：[步骤7：校验](07-validate.md)
 
 ---
 
@@ -82,4 +82,4 @@ node scripts/save-project.js {workdir} {skillProjectId}
 
 ## 下一步
 
-进入 [步骤8：校验](08-validate.md)
+进入 [步骤7：校验](07-validate.md)

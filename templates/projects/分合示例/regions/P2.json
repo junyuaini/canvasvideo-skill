@@ -1,6 +1,5 @@
 {
   "regionName": "P2",
-  "source_design_doc": "./design-P2.md",
   "subtitles": [
     {
       "start": 2.5,
@@ -11,73 +10,88 @@
   "components": [
     {
       "id": "P2-001",
-      "type": "BadgeComponent",
-      "content": {
-        "text": "AI LEARNING"
-      },
+      "type": "AggregateComponent",
+      "layoutMode": "manual",
       "position": {
-        "x": 310,
-        "y": 220,
-        "w": 160,
-        "h": 40
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
       },
-      "customStyle": {
-        "color": "#F59E0B",
-        "textColor": "#0B0719",
-        "padding": "10px 24px",
-        "borderRadius": "999px",
-        "fontSize": "18px",
-        "fontWeight": "800",
-        "shadow": "0 4px 12px rgba(245,158,11,0.4)"
-      },
-      "start": 3,
-      "end": 5
-    },
-    {
-      "id": "P2-002",
-      "type": "ImageComponent",
-      "content": {
-        "image": "assets/placeholders/dark/tech.svg",
-        "fit": "cover",
-        "borderRadius": 12
-      },
-      "position": {
-        "x": 20,
-        "y": 280,
-        "w": 740,
-        "h": 250
-      },
-      "customStyle": {
-        "borderRadius": 12,
-        "shadow": "0 4px 12px rgba(0,0,0,0.3)",
-        "captionColor": "#FFFFFF",
-        "captionFontSize": "14px"
-      },
-      "start": 4,
-      "end": 5
-    },
-    {
-      "id": "P2-003",
-      "type": "TextComponent",
-      "content": {
-        "text": "专业人士必读",
-        "style": "paragraph",
-        "align": "center"
-      },
-      "position": {
-        "x": 240,
-        "y": 540,
-        "w": 300,
-        "h": 40
-      },
-      "customStyle": {
-        "paragraph": {
-          "fontSize": "16px",
-          "color": "#9CA3AF",
-          "lineHeight": "1.4"
+      "children": [
+        {
+          "id": "P2-001a",
+          "type": "BadgeComponent",
+          "content": {
+            "text": "AI LEARNING"
+          },
+          "position": {
+            "x": 310,
+            "y": 220,
+            "w": 160,
+            "h": 40
+          },
+          "customStyle": {
+            "color": "#F59E0B",
+            "textColor": "#0B0719",
+            "padding": "10px 24px",
+            "borderRadius": "999px",
+            "fontSize": "18px",
+            "fontWeight": "800",
+            "shadow": "0 4px 12px rgba(245,158,11,0.4)"
+          },
+          "start": 3,
+          "end": 5
+        },
+        {
+          "id": "P2-001b",
+          "type": "ImageComponent",
+          "content": {
+            "image": "assets/placeholders/dark/tech.svg",
+            "fit": "cover",
+            "borderRadius": 12
+          },
+          "position": {
+            "x": 20,
+            "y": 280,
+            "w": 740,
+            "h": 250
+          },
+          "customStyle": {
+            "borderRadius": 12,
+            "shadow": "0 4px 12px rgba(0,0,0,0.3)",
+            "captionColor": "#FFFFFF",
+            "captionFontSize": "14px"
+          },
+          "start": 4,
+          "end": 5
+        },
+        {
+          "id": "P2-001c",
+          "type": "TextComponent",
+          "content": {
+            "text": "专业人士必读",
+            "style": "paragraph",
+            "align": "center"
+          },
+          "position": {
+            "x": 240,
+            "y": 540,
+            "w": 300,
+            "h": 40
+          },
+          "customStyle": {
+            "paragraph": {
+              "fontSize": "16px",
+              "color": "#9CA3AF",
+              "lineHeight": "1.4"
+            }
+          },
+          "start": 4.5,
+          "end": 5
         }
-      },
-      "start": 4.5,
+      ],
+      "start": 3,
       "end": 5
     }
   ]
