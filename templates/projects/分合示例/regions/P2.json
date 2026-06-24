@@ -1,5 +1,6 @@
 {
   "regionName": "P2",
+  "source_design_doc": "./design-P2.md",
   "subtitles": [
     {
       "start": 2.5,
