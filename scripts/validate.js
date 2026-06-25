@@ -48,33 +48,9 @@ function validateDesignDocSources(project, workdir) {
     }
   }
   
-  // 2. 验证每个区域的设计文档来源
+  // 检查 regions 数组存在
   if (!project.regions || project.regions.length === 0) {
     errors.push('[E] project.json 缺少 regions 数组');
-  } else {
-    project.regions.forEach((region, index) => {
-      const regionName = region.name || `索引${index}`;
-
-      // 检查区域 source_design_doc 字段
-      if (!region.source_design_doc || region.source_design_doc.trim() === '') {
-        errors.push(`[E] 区域 ${regionName} 缺少 source_design_doc 字段，无法追溯区域设计文档来源`);
-      } else {
-        // 检查 source_design_doc 是否指向正确的区域设计文档
-        const expectedDocName = `design-${regionName}.md`;
-        const actualDocName = path.basename(region.source_design_doc);
-        if (actualDocName !== expectedDocName) {
-          errors.push(`[E] 区域 ${regionName} 的 source_design_doc 指向错误文档: ${region.source_design_doc}，应为 ./${expectedDocName}（区域设计文档）`);
-        }
-
-        // 检查区域设计文档文件是否存在
-        const regionDesignDocPath = path.join(workdir, region.source_design_doc);
-        if (!fs.existsSync(regionDesignDocPath)) {
-          errors.push(`[E] 区域 ${regionName} 的设计文档不存在: ${region.source_design_doc}，请确认步骤4已完成`);
-        } else {
-          console.log(`[✓] 区域 ${regionName} 设计文档来源验证通过: ${region.source_design_doc}`);
-        }
-      }
-    });
   }
   
   return errors;

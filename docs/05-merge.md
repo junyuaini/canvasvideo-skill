@@ -1,6 +1,6 @@
 # 步骤5：合并
 
-> 前置步骤：[步骤5：生成区域JSON](05-region-build.md)
+> 前置步骤：[步骤4：区域设计与生成JSON](04-region-design-creative.md) / [步骤4：区域设计（口播模式）](04-region-design-dubbing.md)
 > 下一步：[步骤6：素材处理](06-assets.md)
 
 ---
