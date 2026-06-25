@@ -20,7 +20,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
-const DEFAULT_SERVER_URL = 'https://dajiulanren.top';
+const DEFAULT_SERVER_URL = 'https://dajiulanren.top/cv';
 
 const REQUEST_TIMEOUT_MS = 30000;
 const RETRY_MAX = 1;
@@ -86,6 +86,7 @@ async function httpRequestWithRetry(options, body) {
 function buildRequestOptions(baseUrl, apiPath, body, extraHeaders, method = 'POST') {
   const base = new URL(resolveServerUrl(baseUrl));
   const isHttps = base.protocol === 'https:';
+  // 路径必须以 /cv/api 开头。Nginx 的 location 块只把 /cv/ 转发到后端，裸 /api/ 走不通
   const fullPath = base.pathname.replace(/\/$/, '') + apiPath;
   return {
     protocol: base.protocol,
