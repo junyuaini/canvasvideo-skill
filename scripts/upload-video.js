@@ -388,8 +388,9 @@ async function upload(serverUrl, skillProjectId, zipPath, userId, userToken) {
     let absUrl = previewUrl;
     if (previewUrl && previewUrl.startsWith('/')) {
       const base = options._base;
-      const prefix = base.pathname.replace(/\/$/, '');
-      absUrl = `${base.origin}${prefix}${previewUrl}`;
+      // 服务器路径前缀为 /cv（与 /cv/api/... 一致），Nginx 只转发 /cv/ 到后端
+      // previewUrl 形如 "/view/<token>"，需补上 /cv 前缀，否则链接 404
+      absUrl = `${base.origin}/cv${previewUrl}`;
     }
     return { previewToken: response.previewToken, previewUrl: absUrl };
   }
