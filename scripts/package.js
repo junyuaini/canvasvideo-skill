@@ -1,14 +1,15 @@
 /**
  * 打包 project.json 与 assets 为 zip
- * 用法：node package.js <skillProjectId> [输出zip路径]
- * 
+ * 用法：node package.js --cwd=<Agent工作目录> <skillProjectId> [输出zip路径]
+ *
  * 示例：
- *   node package.js cv_abc123
- *   node package.js cv_abc123 ./output/video.zip
+ *   node package.js --cwd=/path/to/agent/workspace cv_abc123
+ *   node package.js --cwd=/path/to/agent/workspace cv_abc123 ./output/video.zip
  */
 const fs = require('fs');
 const path = require('path');
 const AdmZip = require('adm-zip');
+const { resolveAgentWorkdir } = require('./scaffold');
 
 /**
  * 检查 project.json 中引用的资源文件是否存在
@@ -113,16 +114,27 @@ function package(workdir, outputZip) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  const skillProjectId = process.argv[2];
-  const outputZip = process.argv[3];
-  
+  const argv = process.argv.slice(2);
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+  let skillProjectId = null;
+  let outputZip = null;
+  for (const arg of argv) {
+    if (arg.startsWith('--cwd=')) continue;
+    if (!arg.startsWith('--')) {
+      if (!skillProjectId) skillProjectId = arg;
+      else if (!outputZip) outputZip = arg;
+    }
+  }
+
   if (!skillProjectId) {
-    console.error('用法: node package.js <skillProjectId> [输出zip路径]');
+    console.error('用法: node package.js --cwd=<Agent工作目录> <skillProjectId> [输出zip路径]');
+    console.error('');
+    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
     console.error('');
     console.error('示例:');
-    console.error('  node package.js cv_abc123');
-    console.error('  node package.js cv_abc123 ./output/video.zip');
+    console.error('  node package.js --cwd=/path/to/agent/workspace cv_abc123');
+    console.error('  node package.js --cwd=/path/to/agent/workspace cv_abc123 ./output/video.zip');
     process.exit(1);
   }
   

@@ -131,14 +131,17 @@ sequenceDiagram
 ```js
 const path = require('path');
 
-// 1. 工作目录
-const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
+// 1. Agent 工作目录（由 AI 传入的绝对路径）
+const agentWorkdir = process.env.AGENT_WORKDIR || path.resolve(process.cwd(), '..');
 
-// 2. 项目状态
+// 2. canvasvideo-workdir 固定在 Agent 工作目录下
+const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+
+// 3. 项目状态
 const state = require('./scripts/state').loadOrCreateProject(workdirRoot);
 const skillProjectId = state.skillProjectId;
 
-// 3. 按步骤执行
+// 4. 按步骤执行
 // 步骤1：初始化（见 docs/01-init.md）
 // 步骤2：骨架设计（见 docs/02-skeleton-design-creative.md 或 02-skeleton-design-dubbing.md）
 // ... 以此类推

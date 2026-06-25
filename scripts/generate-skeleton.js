@@ -6,13 +6,14 @@
  *   - creative: design-skeleton-creative.md
  *   - dubbing:  design-skeleton-dubbing.md
  *
- * 用法：node generate-skeleton.js <workdir> <skillProjectId>
+ * 用法：node generate-skeleton.js --cwd=<Agent工作目录> <skillProjectId>
  *
  * 示例：
- *   node generate-skeleton.js ./canvasvideo-workdir cv_abc123
+ *   node generate-skeleton.js --cwd=/path/to/agent/workspace cv_abc123
  */
 const fs = require('fs');
 const path = require('path');
+const { resolveAgentWorkdir } = require('./scaffold');
 
 /**
  * 检测设计文档模式并返回文件路径
@@ -213,23 +214,24 @@ function generateSkeleton(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  const skillProjectId = process.argv[3]; // argv[2] now is mode (unused here), argv[3] is skillProjectId
+  const argv = process.argv.slice(2);
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+  const positionals = argv.filter(a => !a.startsWith('--'));
+  const skillProjectId = positionals[0];
 
-  // 兼容旧调用：node generate-skeleton.js <skillProjectId>
-  const projId = process.argv[2]?.startsWith('-') ? process.argv[3] : process.argv[2];
-  const effectiveProjectId = projId || skillProjectId;
-
-  if (!effectiveProjectId) {
-    console.error('用法: node generate-skeleton.js <skillProjectId>');
+  if (!skillProjectId) {
+    console.error('用法: node generate-skeleton.js --cwd=<Agent工作目录> <skillProjectId>');
+    console.error('');
+    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
     console.error('');
     console.error('示例:');
-    console.error('  node generate-skeleton.js cv_abc123');
+    console.error('  node generate-skeleton.js --cwd=/path/to/agent/workspace cv_abc123');
     process.exit(1);
   }
 
   try {
-    generateSkeleton(workdirRoot, effectiveProjectId);
+    generateSkeleton(workdirRoot, skillProjectId);
     process.exit(0);
   } catch (err) {
     console.error('生成失败:', err.message);

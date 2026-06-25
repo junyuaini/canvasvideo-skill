@@ -2,6 +2,7 @@
  * CanvasVideo Skill — 工作目录与设计文档脚手架
  *
  * 功能：
+ *  - resolveAgentWorkdir     ：解析 --cwd=<path> 参数，返回 Agent 工作目录绝对路径（核心）
  *  - ensureWorkdirRoot       ：确保工作根目录 canvasvideo-workdir/ 存在
  *  - ensureProjectWorkdir    ：确保某个项目的工作目录存在（含 assets/ 与 assets/images/）
  *  - ensurePlaceholders      ：把占位 SVG 复制到工作目录的 assets/placeholders/{theme}/
@@ -17,6 +18,43 @@ const path = require('path');
  * 7 个标准 hint 关键词（与 templates/placeholders/{theme}/{hint}.svg 一一对应）
  */
 const PLACEHOLDER_HINTS = ['hook', 'scene', 'pain', 'solve', 'result', 'cta', 'generic'];
+
+/**
+ * 解析 --cwd=<path> 参数，返回 Agent 工作目录绝对路径。
+ *
+ * 优先级：
+ *   1. --cwd=<绝对路径>     ← AI 显式传入（推荐）
+ *   2. AGENT_WORKDIR 环境变量
+ *   3. process.cwd()         ← 兜底（脚本在 Agent 工作目录下运行时才正确）
+ *
+ * 严禁使用相对路径（workdir 创建位置必须固定，绝对不能飘到脚本运行时目录）。
+ */
+function resolveAgentWorkdir(argv) {
+  let cwd = null;
+  if (Array.isArray(argv)) {
+    for (const arg of argv) {
+      if (typeof arg === 'string' && arg.startsWith('--cwd=')) {
+        cwd = arg.slice('--cwd='.length);
+        break;
+      }
+    }
+  }
+  if (!cwd && process.env.AGENT_WORKDIR) {
+    cwd = process.env.AGENT_WORKDIR;
+  }
+  if (!cwd) {
+    cwd = process.cwd();
+  }
+  if (!path.isAbsolute(cwd)) {
+    throw new Error(
+      `[E] --cwd 必须是 Agent 工作目录的绝对路径（当前值：${cwd}）。\n` +
+      `   请在调用脚本时显式传入 --cwd=<Agent工作目录的绝对路径>。\n` +
+      `   或者设置环境变量 AGENT_WORKDIR=<Agent工作目录的绝对路径>。\n` +
+      `   严禁使用相对路径，workdir 创建位置必须固定。`
+    );
+  }
+  return path.resolve(cwd);
+}
 
 /**
  * 主题枚举
@@ -269,6 +307,7 @@ module.exports = {
   writeDesignMd,
   readDesignMd,
   copyUserAsset,
+  resolveAgentWorkdir,
   PLACEHOLDER_HINTS,
   BGM_STYLES,
 };

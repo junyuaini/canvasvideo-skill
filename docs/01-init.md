@@ -1,4 +1,4 @@
-﻿# 步骤1：初始化
+# 步骤1：初始化
 
 > 前置步骤：无（用户首次提出需求）
 > 下一步：[步骤2：骨架设计](02-skeleton-design-creative.md)（创作模式）或 [02-skeleton-design-dubbing.md](02-skeleton-design-dubbing.md)（口播模式）
@@ -102,21 +102,26 @@
 
 ```bash
 # 创作模式配置示例
-node scripts/init-project.js ./canvasvideo-workdir creative --config=project-config.json
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --config=project-config.json
 
 # 口播模式配置示例
-node scripts/init-project.js ./canvasvideo-workdir dubbing --config=dubbing-config.json
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --config=dubbing-config.json
 ```
 
 **方式2：JSON 字符串（兼容旧方式）**
 
 ```bash
 # 创作模式
-node scripts/init-project.js ./canvasvideo-workdir creative '{"content":"视频主题","duration":15,"audience":"大众用户","theme":"white","aspect":"4:3","style":"warm","bgm":true}'
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative '{"content":"视频主题","duration":15,"audience":"大众用户","theme":"white","aspect":"4:3","style":"warm","bgm":true}'
 
 # 口播模式
-node scripts/init-project.js ./canvasvideo-workdir dubbing '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
 ```
+
+> **说明**：
+> - `<Agent工作目录的绝对路径>` 必须传 AI 当前所在工作目录的绝对路径
+> - workdir 固定 = `<Agent工作目录>/canvasvideo-workdir/`
+> - 不要传相对路径，不要用 `.` 或 `..`
 
 脚本会自动完成：
 1. 创建工作目录结构

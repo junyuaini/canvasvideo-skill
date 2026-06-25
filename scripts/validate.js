@@ -16,16 +16,17 @@
  *
  * 真正阻止上传的硬错（schema/customStyle 字段缺失）由 upload-video.js 的云端 precheck 兜底。
  *
- * 用法：node validate.js <skillProjectId>
+ * 用法：node validate.js --cwd=<Agent工作目录> <skillProjectId>
  *
  * 示例：
- *   node validate.js cv_abc123
+ *   node validate.js --cwd=/path/to/agent/workspace cv_abc123
  *
- * 工作目录：{skill根目录}/canvasvideo-workdir/{skillProjectId}/
+ * 工作目录：{Agent工作目录}/canvasvideo-workdir/{skillProjectId}/
  */
 const fs = require('fs');
 const path = require('path');
 const { selfcheck } = require('./selfcheck');
+const { resolveAgentWorkdir } = require('./scaffold');
 
 /**
  * 验证项目的设计文档来源
@@ -106,14 +107,25 @@ function validate(projectOrPath, workdir) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  const skillProjectId = process.argv[2];
-  
+  const argv = process.argv.slice(2);
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+  let skillProjectId = null;
+  for (const arg of argv) {
+    if (arg.startsWith('--cwd=')) continue;
+    if (!arg.startsWith('--')) {
+      skillProjectId = arg;
+      break;
+    }
+  }
+
   if (!skillProjectId) {
-    console.error('用法: node validate.js <skillProjectId>');
+    console.error('用法: node validate.js --cwd=<Agent工作目录> <skillProjectId>');
+    console.error('');
+    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
     console.error('');
     console.error('示例:');
-    console.error('  node validate.js cv_abc123');
+    console.error('  node validate.js --cwd=/path/to/agent/workspace cv_abc123');
     process.exit(1);
   }
   

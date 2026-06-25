@@ -1,4 +1,4 @@
-﻿# 步骤3：生成骨架JSON
+# 步骤3：生成骨架JSON
 
 > 前置步骤：[步骤2：骨架设计](02-skeleton-design-creative.md)
 > 下一步：[步骤4：区域设计](04-region-design-creative.md)
@@ -69,7 +69,7 @@ node scripts/generate-skeleton.js {workdir} {skillProjectId}
 ### 第 2 步：创建项目目录
 
 ```bash
-node scripts/setup-workdir.js {workdir} {skillProjectId}
+node scripts/setup-workdir.js --cwd=<Agent工作目录的绝对路径> {skillProjectId}
 ```
 
 脚本会自动创建：

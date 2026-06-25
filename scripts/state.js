@@ -25,10 +25,13 @@ function getStatePath(workdir) {
 
 /**
  * 加载或创建项目状态
- * @param {string} workdirRoot - 工作根目录（canvasvideo-workdir/）
+ * @param {string} workdirRoot - 工作根目录（即 <Agent工作目录>/canvasvideo-workdir/）
  * @returns {Object} { skillProjectId, mode, designConfirmed, ... }
  *
  * 说明：
+ *  - workdirRoot 必须是 <Agent工作目录>/canvasvideo-workdir/ 的绝对路径
+ *  - 由 CLI 脚本解析 --cwd=<Agent工作目录> 后 path.join(agentWorkdir, 'canvasvideo-workdir') 得到
+ *  - 不依赖 process.cwd()，避免不同 Agent/cwd 下 workdir 飘到奇怪位置
  *  - 如果 workdirRoot 下已有 .canvasvideo/project-state.json，直接读取
  *  - 如果没有，生成新的 skillProjectId，并在 workdirRoot 下创建状态文件
  *  - skillProjectId 格式：cv_{timestamp36}_{random8}（由代码生成，严禁 LLM 自编）

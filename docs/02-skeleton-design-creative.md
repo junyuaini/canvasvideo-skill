@@ -1,4 +1,4 @@
-﻿# 步骤2：骨架设计（创作模式）
+# 步骤2：骨架设计（创作模式）
 
 > 前置步骤：[步骤1：初始化](01-init.md)
 > 下一步：[步骤3：生成骨架JSON](03-skeleton-build.md)
@@ -282,7 +282,7 @@
 运行保存脚本：
 
 ```bash
-node scripts/save-project.js {workdir} {skillProjectId} design-skeleton-creative.md "{设计文档内容}"
+node scripts/save-project.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} design-skeleton-creative.md "{设计文档内容}"
 ```
 
 或直接使用文件系统保存到：

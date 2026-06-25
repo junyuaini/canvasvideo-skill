@@ -1,4 +1,4 @@
-﻿# 步骤9：上传
+# 步骤9：上传
 
 > 前置步骤：[步骤8：打包](08-package.md)
 > 下一步：无（完成）
@@ -39,7 +39,7 @@
 ### 第 1 步：运行上传脚本
 
 ```bash
-node scripts/upload-video.js {workdir}/{skillProjectId}/output.zip
+node scripts/upload-video.js --cwd=<Agent工作目录的绝对路径> {workdir}/{skillProjectId}/output.zip
 ```
 
 脚本会自动：

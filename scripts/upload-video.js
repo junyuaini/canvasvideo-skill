@@ -6,9 +6,9 @@
  *   - 程序化调用时给 serverUrl 传 null/undefined 即使用默认值
  *
  * 用法（CLI）：
- *   node upload-video.js [serverUrl] <skillProjectId> <zipPath>
- *   node upload-video.js cv-xxx ./demo.zip                       # 用默认服务端
- *   node upload-video.js https://dajiulanren.top cv-xxx ./demo.zip # 自定义服务端
+ *   node upload-video.js --cwd=<Agent工作目录> [serverUrl] <skillProjectId> <zipPath>
+ *   node upload-video.js --cwd=/path/to/agent/workspace cv-xxx ./demo.zip                       # 用默认服务端
+ *   node upload-video.js --cwd=/path/to/agent/workspace https://dajiulanren.top cv-xxx ./demo.zip # 自定义服务端
  *
  * 程序化导出：
  *   - generateUserId / generateUserToken      ：生成用户标识
@@ -25,6 +25,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
+const { resolveAgentWorkdir } = require('./scaffold');
 
 
 const DEFAULT_SERVER_URL = 'https://dajiulanren.top';
@@ -502,9 +503,9 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  // 工作目录推算（与 api-rules.md §4 保持一致：强制使用 CWD 下的 canvasvideo-workdir/）
+  // 工作目录 = Agent 工作目录 + /canvasvideo-workdir/（由 --cwd 决定）
   // 严禁从 zipPath 或其他路径回退——避免工作目录跑到 agent 自身目录
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
   // 如果不存在，ensureWorkdirRoot 会自动创建
 
   uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, {

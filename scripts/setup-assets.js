@@ -20,8 +20,9 @@ const path = require('path');
 const { ensurePlaceholders, ensureBgm } = require('./scaffold');
 
 function parseArgs(argv) {
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  
+  // workdir 在 parseArgs 头部已通过 resolveAgentWorkdir 解析
+  // 严禁再走 process.cwd()，避免 workdir 飘到脚本运行时目录
+
   const args = {
     workdirRoot,  // 固定路径
     skillProjectId: argv[2],
@@ -71,15 +72,16 @@ if (require.main === module) {
   const args = parseArgs(process.argv);
 
   if (!args.skillProjectId) {
-    console.error('用法: node setup-assets.js <skillProjectId> [options]');
+    console.error('用法: node setup-assets.js --cwd=<Agent工作目录> <skillProjectId> [options]');
     console.error('');
+    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
     console.error('选项:');
     console.error('  --theme=<white|black>    主题色（默认 white）');
     console.error('  --bgm=<style>            BGM 风格（如 tech-pulse）');
     console.error('');
     console.error('示例:');
-    console.error('  node setup-assets.js cv_abc123 --theme=white --bgm=tech-pulse');
-    console.error('  node setup-assets.js cv_abc123 --theme=black');
+    console.error('  node setup-assets.js --cwd=/path/to/agent/workspace cv_abc123 --theme=white --bgm=tech-pulse');
+    console.error('  node setup-assets.js --cwd=/path/to/agent/workspace cv_abc123 --theme=black');
     process.exit(1);
   }
 

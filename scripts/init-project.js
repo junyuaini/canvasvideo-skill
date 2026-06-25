@@ -25,32 +25,35 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { ensureProjectWorkdir } = require('./scaffold');
+const { ensureProjectWorkdir, resolveAgentWorkdir } = require('./scaffold');
 const { loadOrCreateProject, saveProjectState } = require('./state');
 
 /**
  * 解析命令行参数
  * @param {string[]} argv - process.argv
- * @returns {Object} { workdirRoot, mode, configSource, configValue }
+ * @returns {Object} { workdirRoot, mode, configFile, configJson }
  */
 function parseArgs(argv) {
-  // workdir 固定为 Agent 工作目录的 canvasvideo-workdir
-  // 避免写到 Skill 安装目录（可能有权限问题）
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  
+  // --cwd 必传，从 argv 里解析出 Agent 工作目录，再拼 canvasvideo-workdir
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+
   const args = {
-    workdirRoot,  // 固定路径，不再从命令行读取
-    mode: argv[2], // argv[2] is mode
+    workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
+    mode: null,   // 第一个非 -- 位置参数
     configFile: null,
     configJson: null
   };
 
-  for (let i = 3; i < argv.length; i++) {
+  // 从剩余参数里找 mode 和 config
+  for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
+    if (arg.startsWith('--cwd=')) continue;
     if (arg.startsWith('--config=')) {
       args.configFile = arg.slice('--config='.length);
+    } else if (!args.mode && !arg.startsWith('--')) {
+      args.mode = arg;
     } else if (!args.configJson && !arg.startsWith('--')) {
-      // 第一个非 -- 开头的参数作为 JSON 字符串
       args.configJson = arg;
     }
   }
@@ -139,11 +142,12 @@ function initProject(workdirRoot, mode, config = {}) {
 
 // CLI 模式
 if (require.main === module) {
-  const args = parseArgs(process.argv);
+  const args = parseArgs(process.argv.slice(2));
   
   if (!args.mode) {
-    console.error('用法: node init-project.js <mode> [options]');
+    console.error('用法: node init-project.js --cwd=<Agent工作目录> <mode> [options]');
     console.error('');
+    console.error('--cwd=<绝对路径>   Agent 工作目录的绝对路径（必传，避免 workdir 飘到奇怪地方）');
     console.error('mode: creative | dubbing');
     console.error('');
     console.error('配置方式（二选一）:');
@@ -151,8 +155,8 @@ if (require.main === module) {
     console.error('  2. JSON 字符串: \'{...}\'');
     console.error('');
     console.error('示例:');
-    console.error('  node init-project.js creative --config=project-config.json');
-    console.error('  node init-project.js dubbing --config=dubbing-config.json');
+    console.error('  node init-project.js --cwd=/path/to/agent/workspace creative --config=project-config.json');
+    console.error('  node init-project.js --cwd=/path/to/agent/workspace dubbing --config=dubbing-config.json');
     process.exit(1);
   }
   

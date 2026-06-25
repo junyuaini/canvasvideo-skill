@@ -38,14 +38,26 @@ function saveProject(workdirRoot, skillProjectId) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  const skillProjectId = process.argv[2] || getCurrentProjectId(workdirRoot);
+  const argv = process.argv.slice(2);
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+  let skillProjectId = null;
+  for (const arg of argv) {
+    if (arg.startsWith('--cwd=')) continue;
+    if (!arg.startsWith('--')) {
+      skillProjectId = arg;
+      break;
+    }
+  }
+  skillProjectId = skillProjectId || getCurrentProjectId(workdirRoot);
 
   if (!skillProjectId) {
-    console.error('用法: node save-project.js [skillProjectId]');
+    console.error('用法: node save-project.js --cwd=<Agent工作目录> [skillProjectId]');
+    console.error('');
+    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
     console.error('');
     console.error('示例:');
-    console.error('  node save-project.js cv_abc123');
+    console.error('  node save-project.js --cwd=/path/to/agent/workspace cv_abc123');
     process.exit(1);
   }
 

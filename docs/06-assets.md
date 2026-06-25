@@ -1,4 +1,4 @@
-﻿# 步骤6：素材处理
+# 步骤6：素材处理
 
 > 前置步骤：[步骤5：合并](05-merge.md)
 > 下一步：[步骤7：校验](07-validate.md)
@@ -53,7 +53,7 @@ node scripts/setup-assets.js ./canvasvideo-workdir cv_abc123 --theme=black
 如果修改了 project.json（如更新 audio.path），直接保存即可：
 
 ```bash
-node scripts/save-project.js {workdir} {skillProjectId}
+node scripts/save-project.js --cwd=<Agent工作目录的绝对路径> {skillProjectId}
 ```
 
 > 注：如果没有修改 project.json，可跳过此步。

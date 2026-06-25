@@ -29,7 +29,7 @@
 **执行命令：**
 
 ```bash
-node scripts/validate.js {workdir}/{skillProjectId}/project.json
+node --cwd=<Agent工作目录> scripts/validate.js {workdir}/{skillProjectId}
 ```
 
 **脚本会自动验证：**

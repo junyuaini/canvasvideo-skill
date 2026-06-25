@@ -34,7 +34,7 @@
 **执行命令：**
 
 ```bash
-node scripts/merge-regions.js {workdir}/{skillProjectId}
+node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillProjectId}
 ```
 
 **脚本会自动完成：**

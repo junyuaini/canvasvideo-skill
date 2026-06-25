@@ -1,4 +1,4 @@
-﻿# 步骤8：打包
+# 步骤8：打包
 
 > 前置步骤：[步骤7：校验](07-validate.md)
 > 下一步：[步骤9：上传](09-upload.md)
@@ -26,7 +26,7 @@
 ### 第 1 步：运行打包脚本
 
 ```bash
-node scripts/package.js {workdir}/{skillProjectId}
+node --cwd=<Agent工作目录> scripts/package.js {workdir}/{skillProjectId}
 ```
 
 或：

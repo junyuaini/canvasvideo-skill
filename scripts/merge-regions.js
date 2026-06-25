@@ -1,11 +1,12 @@
-﻿/**
+/**
  * 合并 skeleton + regions 为完整的 project.json
- * 用法：node merge-regions.js <workdir路径> [输出路径]
+ * 用法：node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]
  *   workdir: 包含 skeleton.json 和 regions/ 目录的工作目录
  *   输出路径: 默认为 workdir/project.json
  */
 const fs = require('fs');
 const path = require('path');
+const { resolveAgentWorkdir } = require('./scaffold');
 
 /**
  * 验证 skeleton.json 来源
@@ -106,16 +107,21 @@ function mergeRegions(workdir) {
 
 // CLI 模式
 if (require.main === module) {
-  const workdirRoot = path.resolve(process.cwd(), 'canvasvideo-workdir');
-  const skillProjectId = process.argv[2];
-  const outputPath = process.argv[3];
+  const argv = process.argv.slice(2);
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
+  const positionals = argv.filter(a => !a.startsWith('--'));
+  const skillProjectId = positionals[0];
+  const outputPath = positionals[1];
 
   if (!skillProjectId) {
-    console.error('用法: node merge-regions.js <skillProjectId> [输出路径]');
+    console.error('用法: node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]');
+    console.error('');
+    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
     console.error('');
     console.error('示例:');
-    console.error('  node merge-regions.js cv_abc123');
-    console.error('  node merge-regions.js cv_abc123 ./output/project.json');
+    console.error('  node merge-regions.js --cwd=/path/to/agent/workspace cv_abc123');
+    console.error('  node merge-regions.js --cwd=/path/to/agent/workspace cv_abc123 ./output/project.json');
     process.exit(1);
   }
 
