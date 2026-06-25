@@ -233,12 +233,25 @@ async function healthCheck(serverUrl) {
 
 function printUsage() {
   console.log('用法：');
-  console.log('  node query-api.js spec-batch <typeVariants.json路径>  批量查组件字段（需传入 type+variant）');
-  console.log('  node query-api.js spec <type> <variant>              单查组件字段');
-  console.log('  node query-api.js validate <project.json路径>       预校验 project.json');
-  console.log('  node query-api.js health                              健康检查');
+  console.log('  node query-api.js spec <type> <variant>                       单查组件字段');
+  console.log('  node query-api.js spec-batch <typeVariants.json路径>           批量查组件字段');
+  console.log('  node query-api.js spec-batch --json \'[{...}]\'                 直接传 JSON 字符串');
+  console.log('  node query-api.js validate <project.json路径>                 预校验 project.json');
+  console.log('  node query-api.js health                                      健康检查');
   console.log('');
   console.log('typeVariants.json 格式：[{ "type": "TitleComponent", "variant": "level1" }, ...]');
+}
+
+function parseTypeVariantsArg(argv) {
+  const arg = argv[1];
+  if (!arg) return null;
+  if (arg === '--json') {
+    return JSON.parse(argv[2]);
+  }
+  if (arg.startsWith('--json=')) {
+    return JSON.parse(arg.slice('--json='.length));
+  }
+  return JSON.parse(fs.readFileSync(arg, 'utf-8'));
 }
 
 if (require.main === module) {
@@ -254,13 +267,20 @@ if (require.main === module) {
     try {
       switch (command) {
         case 'spec-batch': {
-          const typeVariantsPath = argv[1];
-          if (!typeVariantsPath) {
-            console.error('❌ 缺少 typeVariants.json 路径');
+          let typeVariants;
+          try {
+            typeVariants = parseTypeVariantsArg(argv);
+          } catch (e) {
+            console.error('❌ 解析 typeVariants 失败：' + e.message);
+            console.error('   提示：传文件路径或 --json \'[{...}]\'');
             printUsage();
             process.exit(1);
           }
-          const typeVariants = JSON.parse(fs.readFileSync(typeVariantsPath, 'utf-8'));
+          if (!typeVariants) {
+            console.error('❌ 缺少 typeVariants 参数');
+            printUsage();
+            process.exit(1);
+          }
           const result = await queryComponentSpecBatch(typeVariants);
           console.log(JSON.stringify(result, null, 2));
           break;
