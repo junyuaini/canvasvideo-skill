@@ -1,14 +1,14 @@
 /**
  * CanvasVideo Skill — 上传与用户体系（v1.4 无感化）
  *
- * 默认服务端：http://8.147.60.112/cv
+ * 默认服务端：https://dajiulanren.top
  *   - 可在 CLI 通过位置参数显式覆盖
  *   - 程序化调用时给 serverUrl 传 null/undefined 即使用默认值
  *
  * 用法（CLI）：
  *   node upload-video.js [serverUrl] <skillProjectId> <zipPath>
  *   node upload-video.js cv-xxx ./demo.zip                       # 用默认服务端
- *   node upload-video.js http://localhost:3000 cv-xxx ./demo.zip # 自定义服务端
+ *   node upload-video.js https://dajiulanren.top cv-xxx ./demo.zip # 自定义服务端
  *
  * 程序化导出：
  *   - generateUserId / generateUserToken      ：生成用户标识
@@ -27,7 +27,7 @@ const http = require('http');
 const crypto = require('crypto');
 
 
-const DEFAULT_SERVER_URL = 'http://8.147.60.112/cv';
+const DEFAULT_SERVER_URL = 'https://dajiulanren.top';
 
 // 网络层默认参数（单次请求超时 + 5xx 退避重试）
 const REQUEST_TIMEOUT_MS = 30000;   // 30s

@@ -20,7 +20,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
-const DEFAULT_SERVER_URL = 'http://8.147.60.112/cv';
+const DEFAULT_SERVER_URL = 'https://dajiulanren.top';
 
 const REQUEST_TIMEOUT_MS = 30000;
 const RETRY_MAX = 1;

@@ -115,10 +115,11 @@
 
 | 模式 | 子组件需要 position？ | 适用场景 |
 |------|----------------------|---------|
+| **free（默认推荐）** | ❌ 不需要，通过 content.css 控制 | HtmlComponent 自定义布局，最大自由度 |
 | **auto** | ❌ 不需要 | 简单布局（标题+图形、单列等），flex 自动居中、排列、换行 |
-| **manual（默认推荐）** | ✅ 必须 | 复杂布局、需要精确控制每个元素位置 |
+| **manual** | ✅ 必须 | 复杂布局、需要精确控制每个元素位置 |
 
-**推荐选择**：优先用 manual，除非确实不需要精准控制。
+**推荐选择**：优先用 free + HtmlComponent，可最大自由度控制布局和样式。简单排列场景可用 auto，精确定位场景用 manual。
 
 **补充说明**：每个区域可以配置多个 AggregateComponent。
 
@@ -311,10 +312,11 @@
 
 | 模式 | 子组件需要 position？ | 适用场景 |
 |------|----------------------|---------|
+| **free（默认推荐）** | ❌ 不需要，通过 content.css 控制 | HtmlComponent 自定义布局，最大自由度 |
 | **auto** | ❌ 不需要 | 简单布局（标题+图形、单列等），flex 自动居中、排列、换行 |
-| **manual（默认推荐）** | ✅ 必须 | 复杂布局、需要精确控制每个元素位置 |
+| **manual** | ✅ 必须 | 复杂布局、需要精确控制每个元素位置 |
 
-**推荐选择**：优先用 manual，除非确实不需要精准控制。
+**推荐选择**：优先用 free + HtmlComponent，可最大自由度控制布局和样式。简单排列场景可用 auto，精确定位场景用 manual。
 
 **组件时间轴节奏**：
 
@@ -474,52 +476,32 @@ typeVariants = [
 - ✅ AggregateComponent 自身需要完整 position
 - ✅ AggregateComponent 不需要 customStyle
 
-**AggregateComponent.layoutMode 两种模式**：
+**AggregateComponent.layoutMode 选择**：
 
-| 模式 | 子组件需要 position？ |
-|------|----------------------|
-| **auto** | ❌ 不需要 |
-| **manual（默认推荐）** | ✅ 必须 |
+| 模式 | 子组件需要 position？ | 说明 |
+|------|----------------------|------|
+| **free（推荐）** | ❌ 不需要，通过 content.css 控制 | 自由定位，子组件使用 HtmlComponent，通过 html+css 自定义布局 |
+| **auto** | ❌ 不需要 | 自动布局，flex居中排列 |
+| **manual** | ✅ 必须 | 手动布局，精确控制位置 |
 
 **AggregateComponent 示例**
 
-**✅ auto 模式（子组件无 position）**：
+**✅ free 模式（子组件无 position，通过 html+css 自定义布局）**：
 ```json
 {
   "id": "P1-001",
   "type": "AggregateComponent",
-  "layoutMode": "auto",
+  "layoutMode": "free",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "children": [
     {
       "id": "P1-002",
-      "type": "TitleComponent",
-      "content": { "text": "标题", "level": 1 },
-      "customStyle": {
-        "level1": {
-          "fontSize": "48px",
-          "fontWeight": "900",
-          "color": "#FFFFFF",
-          "lineHeight": "1.1"
-        }
+      "type": "HtmlComponent",
+      "content": {
+        "html": "<div class=\"card\">\n  <h2 class=\"title\">标题</h2>\n  <span class=\"badge\">徽章</span>\n</div>",
+        "css": ".card { display: flex; flex-direction: column; align-items: center; } .title { font-size: 48px; font-weight: 900; color: #FFFFFF; } .badge { background: #00B894; color: #FFFFFF; padding: 12px 24px; border-radius: 999px; font-size: 20px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,184,148,0.3); }"
       },
       "start": 0,
-      "end": 3
-    },
-    {
-      "id": "P1-003",
-      "type": "BadgeComponent",
-      "content": { "text": "徽章" },
-      "customStyle": {
-        "color": "#00B894",
-        "textColor": "#FFFFFF",
-        "padding": "12px 24px",
-        "borderRadius": "999px",
-        "fontSize": "20px",
-        "fontWeight": "700",
-        "shadow": "0 4px 12px rgba(0,184,148,0.3)"
-      },
-      "start": 0.5,
       "end": 3
     }
   ],

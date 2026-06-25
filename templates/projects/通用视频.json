@@ -1,6 +1,6 @@
 {
   "name": "通用视频项目",
-  "description": "最小可用模板，符合创作模式所有硬规则",
+  "description": "最小可用模板，使用 free + HtmlComponent 模式",
   "theme": "white",
   "duration": 9,
   "viewport": { "width": 780, "height": 585 },
@@ -14,50 +14,17 @@
     {
       "id": "P1-001",
       "type": "AggregateComponent",
-      "layoutMode": "auto",
+      "layoutMode": "free",
       "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
       "children": [
         {
-          "id": "P1-001a",
-          "type": "TitleComponent",
-          "content": { "text": "示例标题", "level": 1 },
-          "customStyle": {
-            "level1": {
-              "fontSize": "48px",
-              "fontWeight": "900",
-              "color": "#111827",
-              "lineHeight": "1.1"
-            }
+          "id": "P1-002",
+          "type": "HtmlComponent",
+          "content": {
+            "html": "<div class=\"hero\"><h1 class=\"title\">示例标题</h1><p class=\"subtitle\">副标题 / 概述句</p></div>",
+            "css": ".hero { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #111827; line-height: 1.1; margin-bottom: 12px; } .subtitle { font-size: 20px; color: #374151; line-height: 1.6; }"
           },
           "start": 0,
-          "end": 3
-        },
-        {
-          "id": "P1-001b",
-          "type": "TextComponent",
-          "content": { "text": "副标题 / 概述句", "style": "paragraph" },
-          "customStyle": {
-            "paragraph": {
-              "fontSize": "20px",
-              "color": "#374151",
-              "lineHeight": "1.6"
-            }
-          },
-          "start": 1.0,
-          "end": 3
-        },
-        {
-          "id": "P1-001c",
-          "type": "BadgeComponent",
-          "content": { "text": "立即了解" },
-          "customStyle": {
-            "color": "#2563EB",
-            "textColor": "#FFFFFF",
-            "borderRadius": "8px",
-            "fontSize": "18px",
-            "padding": "12px 24px"
-          },
-          "start": 2.0,
           "end": 3
         }
       ],
@@ -67,50 +34,17 @@
     {
       "id": "P2-001",
       "type": "AggregateComponent",
-      "layoutMode": "auto",
+      "layoutMode": "free",
       "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
       "children": [
         {
-          "id": "P2-001a",
-          "type": "TitleComponent",
-          "content": { "text": "核心要点", "level": 1 },
-          "customStyle": {
-            "level1": {
-              "fontSize": "48px",
-              "fontWeight": "900",
-              "color": "#111827",
-              "lineHeight": "1.1"
-            }
+          "id": "P2-002",
+          "type": "HtmlComponent",
+          "content": {
+            "html": "<div class=\"section\"><h1 class=\"title\">核心要点</h1><p class=\"desc\">用一段话点明价值</p><span class=\"badge\">查看详情</span></div>",
+            "css": ".section { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #111827; line-height: 1.1; margin-bottom: 12px; } .desc { font-size: 20px; color: #374151; line-height: 1.6; margin-bottom: 16px; } .badge { font-size: 18px; font-weight: 700; color: #fff; background: #10B981; padding: 12px 24px; border-radius: 8px; }"
           },
           "start": 3,
-          "end": 6
-        },
-        {
-          "id": "P2-001b",
-          "type": "TextComponent",
-          "content": { "text": "用一段话点明价值", "style": "paragraph" },
-          "customStyle": {
-            "paragraph": {
-              "fontSize": "20px",
-              "color": "#374151",
-              "lineHeight": "1.6"
-            }
-          },
-          "start": 4.0,
-          "end": 6
-        },
-        {
-          "id": "P2-001c",
-          "type": "BadgeComponent",
-          "content": { "text": "查看详情" },
-          "customStyle": {
-            "color": "#10B981",
-            "textColor": "#FFFFFF",
-            "borderRadius": "8px",
-            "fontSize": "18px",
-            "padding": "12px 24px"
-          },
-          "start": 5.0,
           "end": 6
         }
       ],
@@ -120,50 +54,17 @@
     {
       "id": "P3-001",
       "type": "AggregateComponent",
-      "layoutMode": "auto",
+      "layoutMode": "free",
       "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
       "children": [
         {
-          "id": "P3-001a",
-          "type": "TitleComponent",
-          "content": { "text": "号召行动", "level": 1 },
-          "customStyle": {
-            "level1": {
-              "fontSize": "48px",
-              "fontWeight": "900",
-              "color": "#111827",
-              "lineHeight": "1.1"
-            }
+          "id": "P3-002",
+          "type": "HtmlComponent",
+          "content": {
+            "html": "<div class=\"cta\"><h1 class=\"title\">号召行动</h1><p class=\"desc\">邀请用户下一步行动</p><span class=\"badge\">扫码体验</span></div>",
+            "css": ".cta { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #111827; line-height: 1.1; margin-bottom: 12px; } .desc { font-size: 20px; color: #374151; line-height: 1.6; margin-bottom: 16px; } .badge { font-size: 18px; font-weight: 700; color: #fff; background: #F59E0B; padding: 12px 24px; border-radius: 8px; }"
           },
           "start": 6,
-          "end": 9
-        },
-        {
-          "id": "P3-001b",
-          "type": "TextComponent",
-          "content": { "text": "邀请用户下一步行动", "style": "paragraph" },
-          "customStyle": {
-            "paragraph": {
-              "fontSize": "20px",
-              "color": "#374151",
-              "lineHeight": "1.6"
-            }
-          },
-          "start": 7.0,
-          "end": 9
-        },
-        {
-          "id": "P3-001c",
-          "type": "BadgeComponent",
-          "content": { "text": "扫码体验" },
-          "customStyle": {
-            "color": "#F59E0B",
-            "textColor": "#FFFFFF",
-            "borderRadius": "8px",
-            "fontSize": "18px",
-            "padding": "12px 24px"
-          },
-          "start": 8.0,
           "end": 9
         }
       ],

@@ -1,6 +1,6 @@
 ---
 name: "canvasvideo"
-description: "生成画布视频（CanvasVideo）—— 基于 H5 Canvas 的动画视频制作工具。支持两种模式：1）创作模式：输入主题/文案，AI 自动生成画面、组件动画、BGM 配乐，导出可分享的视频链接；2）口播模式：上传音频（MP3）+ 字幕（SRT），AI 按音频节奏自动排版画面，生成配音视频。输出为高清 H5 视频，支持播放/暂停/快进/全景浏览，可导出 MP4。适用于产品宣传，知识科普，口播短视频，数据可视化，品牌发布等场景。"
+description: "生成画布视频（CanvasVideo）—— 基于 H5 Canvas 的动画视频制作工具。默认使用 free + HtmlComponent 模式自由布局。支持两种模式：1）创作模式：输入主题/文案，AI 自动生成画面、组件动画、BGM 配乐，导出可分享的视频链接；2）口播模式：上传音频（MP3）+ 字幕（SRT），AI 按音频节奏自动排版画面，生成配音视频。输出为高清 H5 视频，支持播放/暂停/快进/全景浏览，可导出 MP4。适用于产品宣传，知识科普，口播短视频，数据可视化，品牌发布等场景。"
 ---
 
 # CanvasVideo Skill
@@ -120,7 +120,7 @@ sequenceDiagram
 
 - **工作目录**：`{cwd}/canvasvideo-workdir/`
 - **Skill 目录**：`{cwd}/canvasvideo-skill/`
-- **服务器**：`http://8.147.60.112/cv/`
+- **服务器**：`https://dajiulanren.top/`
 
 ---
 
