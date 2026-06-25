@@ -148,7 +148,7 @@ if (require.main === module) {
     }
     if (result.valid) {
       console.log('✓ 本地自检通过（节奏/布局规则 + 设计文档来源）');
-      console.log('  注意：schema 结构 + customStyle 字段级 校验由云端 /api/projects/validate 在上传前自动完成');
+      console.log('  注意：schema 结构 + customStyle 字段级 校验由云端 /cv/api/projects/validate 在上传前自动完成');
       process.exit(0);
     } else {
       console.error('✗ 本地自检未通过:');

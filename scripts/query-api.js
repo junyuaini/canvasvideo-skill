@@ -120,7 +120,7 @@ async function queryComponentSpecBatch(typeVariants, serverUrl) {
   // 调用者必须传入 { type, variant }，不再使用默认 variant
   const components = typeVariants.map(tv => ({ type: tv.type, variant: tv.variant }));
   const body = Buffer.from(JSON.stringify({ components }));
-  const options = buildRequestOptions(serverUrl, '/api/component/spec/batch', body, {
+  const options = buildRequestOptions(serverUrl, '/cv/api/component/spec/batch', body, {
     'Content-Type': 'application/json',
   });
 
@@ -151,7 +151,7 @@ async function queryComponentSpec(type, variant, serverUrl) {
 
   const options = buildRequestOptions(
     serverUrl,
-    `/api/component/spec/${encodeURIComponent(type)}/${encodeURIComponent(variant)}`,
+    `/cv/api/component/spec/${encodeURIComponent(type)}/${encodeURIComponent(variant)}`,
     null,
     {},
     'GET'
@@ -173,7 +173,7 @@ async function queryComponentSpec(type, variant, serverUrl) {
 // ---------- 项目预校验 ----------
 
 /**
- * 调用云端 /api/projects/validate 预校验 project.json
+ * 调用云端 /cv/api/projects/validate 预校验 project.json
  * @param {object|string} projectOrPath - project.json 对象或文件路径
  * @param {string} [serverUrl]
  * @returns {Promise<{ valid: boolean, errors: string[] }>}
@@ -187,7 +187,7 @@ async function validateProjectJson(projectOrPath, serverUrl) {
   }
 
   const body = Buffer.from(JSON.stringify(project));
-  const options = buildRequestOptions(serverUrl, '/api/projects/validate', body, {
+  const options = buildRequestOptions(serverUrl, '/cv/api/projects/validate', body, {
     'Content-Type': 'application/json',
   });
 
@@ -215,7 +215,7 @@ async function validateProjectJson(projectOrPath, serverUrl) {
  * @returns {Promise<{ status: string }>}
  */
 async function healthCheck(serverUrl) {
-  const options = buildRequestOptions(serverUrl, '/api/health', null, {}, 'GET');
+  const options = buildRequestOptions(serverUrl, '/cv/api/health', null, {}, 'GET');
 
   const { status, raw } = await httpRequestWithRetry(options, null);
 

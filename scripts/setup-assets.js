@@ -17,25 +17,29 @@
  *   node setup-assets.js cv_abc123
  */
 const path = require('path');
-const { ensurePlaceholders, ensureBgm } = require('./scaffold');
+const { ensurePlaceholders, ensureBgm, resolveAgentWorkdir } = require('./scaffold');
 
 function parseArgs(argv) {
   // workdir 在 parseArgs 头部已通过 resolveAgentWorkdir 解析
   // 严禁再走 process.cwd()，避免 workdir 飘到脚本运行时目录
+  const workdirRoot = path.join(resolveAgentWorkdir(argv), 'canvasvideo-workdir');
 
   const args = {
-    workdirRoot,  // 固定路径
-    skillProjectId: argv[2],
+    workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
+    skillProjectId: null,
     theme: 'white',
     bgm: null
   };
 
-  for (let i = 3; i < argv.length; i++) {
+  for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
+    if (arg.startsWith('--cwd=')) continue;
     if (arg.startsWith('--theme=')) {
       args.theme = arg.slice('--theme='.length);
     } else if (arg.startsWith('--bgm=')) {
       args.bgm = arg.slice('--bgm='.length);
+    } else if (!args.skillProjectId && !arg.startsWith('--')) {
+      args.skillProjectId = arg;
     }
   }
 

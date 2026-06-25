@@ -5,7 +5,7 @@
  *   1. ID 格式：{区域ID}-{三位数字}，如 P1-001、P3-005
  *   2. ID 重复：全局唯一
  *
- * 真正的格式硬校验由云端 /api/projects/validate 在上传前完成。
+ * 真正的格式硬校验由云端 /cv/api/projects/validate 在上传前完成。
  *
  * 用法：node selfcheck.js <project.json路径>
  *

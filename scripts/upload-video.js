@@ -126,7 +126,7 @@ function buildRequestOptions(baseUrl, apiPath, body, extraHeaders) {
 // ---------- 服务端预校验（云端权威） ----------
 
 /**
- * 调用云端 /api/projects/validate 预校验 project.json。
+ * 调用云端 /cv/api/projects/validate 预校验 project.json。
  *
  * 这是"云端权威校验"——服务端镜像了前端 ComponentFactory 的 customStyle 必填表，
  * 能在不落盘的情况下提前捕获浏览器渲染期才会爆的硬错误（如 borderRadius 缺失）。
@@ -145,7 +145,7 @@ async function precheckProjectJson(serverUrl, projectOrPath) {
   }
 
   const body = Buffer.from(JSON.stringify(project));
-  const options = buildRequestOptions(serverUrl, '/api/projects/validate', body, {
+  const options = buildRequestOptions(serverUrl, '/cv/api/projects/validate', body, {
     'Content-Type': 'application/json',
   });
 
@@ -251,7 +251,7 @@ function writeLocalUser(workdirRoot, user) {
  */
 async function registerUser(serverUrl, userId, userToken) {
   const body = Buffer.from(JSON.stringify({ userId, userToken }));
-  const options = buildRequestOptions(serverUrl, '/api/users/register', body, {
+  const options = buildRequestOptions(serverUrl, '/cv/api/users/register', body, {
     'Content-Type': 'application/json',
   });
 
@@ -359,7 +359,7 @@ async function upload(serverUrl, skillProjectId, zipPath, userId, userToken) {
   ];
   const body = Buffer.concat(parts.map(p => typeof p === 'string' ? Buffer.from(p) : p));
 
-  const options = buildRequestOptions(serverUrl, '/api/projects/upload', body, {
+  const options = buildRequestOptions(serverUrl, '/cv/api/projects/upload', body, {
     'Content-Type': `multipart/form-data; boundary=${boundary}`,
   });
 
@@ -484,22 +484,25 @@ function resolveProjectJsonForCli(workdirRoot, skillProjectId, zipPath) {
 }
 
 if (require.main === module) {
-  // 支持两种 CLI 形式：
-  //   node upload-video.js <skillProjectId> <zipPath>                     ← 用默认 SERVER_URL
-  //   node upload-video.js <serverUrl>      <skillProjectId> <zipPath>    ← 显式 SERVER_URL
+  // 支持两种 CLI 形式（--cwd 必传，--cwd 不算位置参数）：
+  //   node upload-video.js --cwd=<Agent工作目录> <skillProjectId> <zipPath>                     ← 用默认 SERVER_URL
+  //   node upload-video.js --cwd=<Agent工作目录> <serverUrl>      <skillProjectId> <zipPath>    ← 显式 SERVER_URL
   const argv = process.argv.slice(2);
+  const agentWorkdir = resolveAgentWorkdir(argv);
+  const positional = argv.filter(a => !a.startsWith('--cwd='));
   let serverUrl, skillProjectId, zipPath;
-  if (argv.length === 2) {
+  if (positional.length === 2) {
     serverUrl = DEFAULT_SERVER_URL;
-    skillProjectId = argv[0];
-    zipPath = argv[1];
-  } else if (argv.length === 3) {
-    serverUrl = argv[0];
-    skillProjectId = argv[1];
-    zipPath = argv[2];
+    skillProjectId = positional[0];
+    zipPath = positional[1];
+  } else if (positional.length === 3) {
+    serverUrl = positional[0];
+    skillProjectId = positional[1];
+    zipPath = positional[2];
   } else {
-    console.error('用法: node upload-video.js [serverUrl] <skillProjectId> <zipPath>');
+    console.error('用法: node upload-video.js --cwd=<Agent工作目录> [serverUrl] <skillProjectId> <zipPath>');
     console.error('  默认 serverUrl: ' + DEFAULT_SERVER_URL);
+    console.error('  必传: --cwd=<Agent工作目录的绝对路径>');
     process.exit(1);
   }
 
