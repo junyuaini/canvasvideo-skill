@@ -107,9 +107,10 @@
 ### 步骤1.5：确定 AggregateComponent layoutMode
 
 **必须规则**：
-- ✅ 所有视频区只能放 AggregateComponent
-- ✅ 普通组件必须嵌套在 AggregateComponent.children 中
-- ✅ AggregateComponent 自身需要完整 position
+- ✅ 顶层组件优先使用 HtmlComponent（简洁、自由度高）
+- ✅ 顶层组件也支持 AggregateComponent（需组合非 Html 组件时使用）
+- ✅ 其他组件（TitleComponent、CardComponent 等）必须嵌套在 AggregateComponent.children 中
+- ✅ 所有顶层组件必须配置 position（至少包含 w 和 h）
 
 **layoutMode 选择**：
 
@@ -304,9 +305,10 @@
 - 如需复杂动画效果，使用AggregateComponent（聚合组件），内部子组件可单独控制
 
 **重要硬规则**：
-- ✅ 所有视频区只能放 AggregateComponent
-- ✅ 普通组件必须嵌套在 AggregateComponent.children 中
-- ✅ AggregateComponent 自身需要完整 position
+- ✅ 顶层组件优先使用 HtmlComponent（简洁、自由度高）
+- ✅ 顶层组件也支持 AggregateComponent（需组合非 Html 组件时使用）
+- ✅ 其他组件（TitleComponent、CardComponent 等）必须嵌套在 AggregateComponent.children 中
+- ✅ 所有顶层组件必须配置 position（至少包含 w 和 h）
 
 **AggregateComponent.layoutMode 选择**：
 
@@ -471,9 +473,10 @@ typeVariants = [
 **AggregateComponent 核心规则**
 
 **重要硬规则**：
-- ✅ 所有视频区只能放 AggregateComponent
-- ✅ 普通组件必须嵌套在 AggregateComponent.children 中
-- ✅ AggregateComponent 自身需要完整 position
+- ✅ 顶层组件优先使用 HtmlComponent（简洁、自由度高）
+- ✅ 顶层组件也支持 AggregateComponent（需组合非 Html 组件时使用）
+- ✅ 其他组件（TitleComponent、CardComponent 等）必须嵌套在 AggregateComponent.children 中
+- ✅ 所有顶层组件必须配置 position（至少包含 w 和 h）
 - ✅ AggregateComponent 不需要 customStyle
 
 **AggregateComponent.layoutMode 选择**：
