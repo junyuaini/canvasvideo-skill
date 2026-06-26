@@ -29,25 +29,51 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ---
 
-## R2 AggregateComponent 核心规则
+## R2 顶层组件规则
 
 **重要硬规则**：
-- ✅ 所有视频区只能放 AggregateComponent
-- ✅ 普通组件必须嵌套在 AggregateComponent.children 中
-- ✅ AggregateComponent 自身需要完整 position
-- ✅ AggregateComponent 不需要 customStyle
+- ✅ 顶层组件只允许 **HtmlComponent** 和 **AggregateComponent**
+- ✅ **优先推荐直接使用 HtmlComponent 作为顶层组件**（简洁、自由度高）
+- ✅ **所有顶层组件必须配置 position**（至少包含 w 和 h）
+- ✅ 顶层 HtmlComponent 不需要 customStyle，通过 content.css 控制样式
+- ✅ 其他组件（TitleComponent、CardComponent 等）必须嵌套在 AggregateComponent.children 中
 
-### R2.1 layoutMode 三种模式
+### R2.1 推荐方案：顶层 HtmlComponent（优先）
+
+```json
+{
+  "id": "P1-001",
+  "type": "HtmlComponent",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "content": {
+    "html": "<div class='stage'>...</div>",
+    "css": ".stage { position: absolute; inset: 0; ... }",
+    "elementIds": {
+      ".stage": { "id": "P1-001-STAGE", "start": 0, "end": 5 },
+      ".title": { "id": "P1-001-TITLE", "start": 0.3, "end": 5 }
+    }
+  },
+  "start": 0,
+  "end": 5
+}
+```
+
+**优势**：
+- 结构扁平，无需 AggregateComponent 包裹
+- HTML/CSS 完全自由，适合复杂自定义布局
+- 通过 elementIds 控制内部元素的独立时间线
+
+### R2.2 备选方案：AggregateComponent
+
+当需要组合多个非 Html 组件时使用：
 
 | 模式 | 简介 | 子组件需要 position？ | 推荐场景 |
 |------|------|----------------------|---------|
-| **free** | 自由定位模式，子组件自行管理位置和样式 | ❌ 不需要（通过 content.css 或 customStyle 控制） | **默认推荐**，适合 HtmlComponent 自定义布局 |
+| **free** | 自由定位模式，子组件自行管理位置和样式 | ❌ 不需要（通过 content.css 或 customStyle 控制） | HtmlComponent 自定义布局 |
 | **auto** | 自动布局模式，由 flex 自动居中、排列、换行 | ❌ 不需要 | 简单布局（标题+图形、单列等），快速创建 |
 | **manual** | 手动布局模式，精确控制子组件位置 | ✅ 必须 | 复杂布局、需要精确定位 |
 
-**推荐选择**：优先用 free + HtmlComponent，可最大自由度控制布局和样式。简单排列场景可用 auto，精确定位场景用 manual。
-
-### R2.2 AggregateComponent Schema
+### R2.3 AggregateComponent Schema
 
 ```json
 {
@@ -71,9 +97,29 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | start | number | ✅ | 出现时间（秒） |
 | end | number | ✅ | 消失时间（秒） |
 
-### R2.3 使用示例
+### R2.4 使用示例
 
-**✅ free 模式（推荐，子组件用 HtmlComponent 自定义布局）**：
+**✅ 顶层 HtmlComponent（推荐，最简洁）**：
+```json
+{
+  "id": "P1-001",
+  "type": "HtmlComponent",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "content": {
+    "html": "<div class='stage'><div class='title'>标题</div><div class='subtitle'>副标题</div></div>",
+    "css": ".stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #fff; } .subtitle { font-size: 20px; color: #ccc; }",
+    "elementIds": {
+      ".stage": { "id": "P1-001-STAGE", "start": 0, "end": 5 },
+      ".title": { "id": "P1-001-TITLE", "start": 0.3, "end": 5 },
+      ".subtitle": { "id": "P1-001-SUB", "start": 1.0, "end": 5 }
+    }
+  },
+  "start": 0,
+  "end": 5
+}
+```
+
+**✅ free 模式（子组件用 HtmlComponent 自定义布局）**：
 ```json
 {
   "id": "P1-001",
@@ -180,7 +226,31 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 - 不需要 customStyle（用 content.css 控制样式）
 - CSS 自动限定在组件 ID 作用域内（`#${componentId}`）
 - 子元素统一 `box-sizing: border-box`
-- 适合 free 模式下使用，可自由控制位置和样式
+- **必须配置 elementIds**，为 HTML 内部元素分配 ID 和独立时间线
+
+**HtmlComponent elementIds 规则**（必填）：
+
+elementIds 为对象格式，key 是 CSS 选择器，value 是 `{ id, start, end }` 对象：
+
+```json
+"elementIds": {
+  ".stage": { "id": "P1-001-STAGE", "start": 0, "end": 5 },
+  ".title": { "id": "P1-001-TITLE", "start": 0.3, "end": 5 },
+  ".subtitle": { "id": "P1-001-SUB", "start": 1.0, "end": 5 }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| key | string | ✅ | CSS 选择器，如 `.title`、`#hero`、`.card` |
+| id | string | ✅ | 元素唯一标识，格式：`{组件ID}-{大写名称}`，如 `P1-001-TITLE` |
+| start | number | ✅ | 元素开始显示时间（秒） |
+| end | number | ✅ | 元素结束显示时间（秒） |
+
+**作用**：
+1. 按 ↑ 键显示元素 ID 标签，方便定位和修改
+2. 每个 HTML 子元素可独立控制出现/消失时间
+3. 不再支持字符串简写格式（如 `".xxx": "ID"`），必须使用对象格式
 
 ### R3.2 TitleComponent 变种（3个）
 
@@ -268,14 +338,16 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ## R4 布局 → 组件组合建议
 
-| 布局 | 外层组件 | layoutMode | 内部子组件组合 |
-|------|---------|------------|--------------|
-| 自定义布局 | AggregateComponent | **free** | HtmlComponent（自定义渲染） |
-| 单点聚焦 | AggregateComponent | free/auto | ShockComponent（大字） |
-| 左右分栏 | AggregateComponent | free/manual | ImageComponent + TitleComponent + TextComponent |
-| 上下分层 | AggregateComponent | free/auto | TitleComponent + GraphicComponent |
-| 多列并排 | AggregateComponent | free/auto | 多个 CardComponent |
-| 全屏沉浸 | AggregateComponent | free | ImageComponent（全屏背景）+ TitleComponent |
-| 对比式 | AggregateComponent | free/manual | 2个 AggregateComponent（左右各一个） |
-| 时间轴 | AggregateComponent | free/auto | GraphicComponent |
-| 极简过渡 | AggregateComponent | free/auto | TextComponent（单个） |
+| 布局 | 外层组件 | 说明 |
+|------|---------|------|
+| 自定义布局（**推荐**） | **HtmlComponent**（顶层） | 最简洁，HTML/CSS 完全自由，通过 elementIds 控制元素时间线 |
+| 多组件组合 | AggregateComponent（free） | 需组合多个非 Html 组件时使用 |
+| 单点聚焦 | HtmlComponent（顶层） | 大字金句，全屏居中 |
+| 左右分栏 | HtmlComponent（顶层） | CSS flex/grid 实现分栏 |
+| 上下分层 | HtmlComponent（顶层） | CSS flex 实现上下排列 |
+| 多列并排 | HtmlComponent（顶层） | CSS grid 实现多列 |
+| 全屏沉浸 | HtmlComponent（顶层） | 背景图+叠加标题 |
+| 时间轴 | HtmlComponent（顶层） | CSS 绘制时间线 |
+| 极简过渡 | HtmlComponent（顶层） | 单行文字 |
+
+> **原则**：优先使用顶层 HtmlComponent，仅在需要组合 TitleComponent/CardComponent/GraphicComponent 等非 Html 组件时才用 AggregateComponent。

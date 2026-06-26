@@ -169,7 +169,7 @@ function generateSkeleton(workdirRoot, skillProjectId) {
       minScale: 0.01,
       maxScale: 5,
       ease: 0.08,
-      contentZoomRatio: 0.9,
+      contentZoomRatio: 1,
       preFullViewDuration: 0.4,
       postFullViewDuration: 0.4
     },
