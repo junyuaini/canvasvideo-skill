@@ -249,6 +249,16 @@ function checkTimeHierarchy(project) {
     );
   }
 
+  // [层级 1.4] region 必填字段校验（与后端 schema 对齐）
+  regions.forEach((region, index) => {
+    if (!region || typeof region !== 'object') return;
+    if (!region.id || typeof region.id !== 'string' || region.id.trim() === '') {
+      errors.push(
+        `regions[${index}] 缺少必填字段 'id'。建议：给每个 region 加一个唯一 ID（如 "P1"），并保证与组件 ID 前缀一致。`
+      );
+    }
+  });
+
   // [层级 1.5] 累计 region 时长校验
   if (typeof project.duration === 'number' && Number.isFinite(project.duration)) {
     let regionTotal = 0;
