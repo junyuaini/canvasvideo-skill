@@ -1,9 +1,10 @@
 /**
  * CanvasVideo Skill — 程序化自检（selfcheck）
  *
- * 只做两项检查：
+ * 只做三项检查：
  *   1. ID 格式：{区域ID}-{三位数字}，如 P1-001、P3-005
  *   2. ID 重复：全局唯一
+ *   3. HtmlComponent elementIds 必填且格式合法
  *
  * 真正的格式硬校验由云端 /cv/api/projects/validate 在上传前完成。
  *
@@ -43,6 +44,71 @@ function checkDuplicateIds(components) {
 }
 
 /**
+ * 检查 HtmlComponent 的 elementIds
+ */
+function checkHtmlElementIds(components) {
+  const errors = [];
+  const elementIdPattern = /^[A-Za-z0-9_\-]+$/;
+
+  function checkRecursive(comps) {
+    comps.forEach((comp) => {
+      if (!comp || typeof comp !== 'object') return;
+
+      if (comp.type === 'HtmlComponent') {
+        const labelId = comp.id || '未知';
+
+        // elementIds 必填
+        if (!comp.content || !comp.content.elementIds || typeof comp.content.elementIds !== 'object') {
+          errors.push(`HtmlComponent [${labelId}] 缺少 elementIds：必须为内部元素配置独立时间线。`);
+          return;
+        }
+
+        // elementIds 非空
+        const elementIds = comp.content.elementIds;
+        if (Object.keys(elementIds).length === 0) {
+          errors.push(`HtmlComponent [${labelId}] elementIds 不能为空，至少配置一个元素。`);
+          return;
+        }
+
+        // 校验每个 elementId
+        Object.entries(elementIds).forEach(([selector, value]) => {
+          if (!value || typeof value !== 'object') {
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"] 格式错误，应为 { id, start, end }。`);
+            return;
+          }
+
+          if (!value.id || typeof value.id !== 'string') {
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id 必须是字符串。`);
+          } else if (!elementIdPattern.test(value.id)) {
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 包含非法字符。`);
+          }
+
+          if (typeof value.start !== 'number' || value.start < 0) {
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].start 必须是非负数字。`);
+          }
+
+          if (typeof value.end !== 'number' || value.end < 0) {
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].end 必须是非负数字。`);
+          }
+
+          if (typeof value.start === 'number' && typeof value.end === 'number' && value.start > value.end) {
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].start (${value.start}) 不能大于 end (${value.end})。`);
+          }
+        });
+      }
+
+      // 递归检查 children
+      if (Array.isArray(comp.children) && comp.children.length > 0) {
+        checkRecursive(comp.children);
+      }
+    });
+  }
+
+  checkRecursive(components);
+  return errors;
+}
+
+/**
  * 主入口
  * @param {object} project - 已解析的 project.json
  * @returns {{ ok: boolean, errors: string[], warnings: string[], infos: string[] }}
@@ -65,6 +131,10 @@ function selfcheck(project) {
   // 检查 ID 重复
   const dupError = checkDuplicateIds(components);
   if (dupError) errors.push(dupError);
+
+  // 检查 HtmlComponent elementIds
+  const htmlElementIdsErrors = checkHtmlElementIds(components);
+  errors.push(...htmlElementIdsErrors);
 
   return { ok: errors.length === 0, errors, warnings, infos };
 }

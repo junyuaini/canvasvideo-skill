@@ -27,10 +27,12 @@
 - 所有组件 ID 必须**全局唯一**
 - 同一区域内的序号不可重复（如 P1-001 只能出现一次）
 
-### 3. ID 区域前缀匹配
+### 3. HtmlComponent elementIds 检查
 
-- 组件 ID 的区域前缀必须在 regions 列表中存在
-- 例如 regions 为 P1-P7，则组件 ID 只能以 P1- 到 P7- 开头
+- HtmlComponent 必须配置 `content.elementIds`
+- elementIds 必须是非空对象，key 为 CSS 选择器，value 为 `{ id, start, end }` 对象
+- 每个元素的 `id` 必填，格式推荐 `{组件ID}-{大写名称}`（如 `P1-001-TITLE`）
+- `start` 和 `end` 必填，且 `start <= end`
 
 ---
 
