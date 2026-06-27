@@ -44,6 +44,31 @@ function checkDuplicateIds(components) {
 }
 
 /**
+ * 检查 region schema 必填字段（与后端 schema 对齐）
+ * - id 必填、字符串、非空（与组件 ID 前缀对应）
+ * - name 必填、字符串、非空（仅用于日志展示）
+ * - duration 必填校验由 checkTimeHierarchy 处理，不重复
+ */
+function checkRegionSchema(regions) {
+  const errors = [];
+  if (!Array.isArray(regions)) return errors;
+  regions.forEach((region, index) => {
+    if (!region || typeof region !== 'object') return;
+    if (!region.id || typeof region.id !== 'string' || region.id.trim() === '') {
+      errors.push(
+        `regions[${index}] 缺少必填字段 'id'。建议：给每个 region 加一个唯一 ID（如 "P1"），并保证与组件 ID 前缀一致。`
+      );
+    }
+    if (!region.name || typeof region.name !== 'string' || region.name.trim() === '') {
+      errors.push(
+        `regions[${index}] 缺少必填字段 'name'。建议：给每个 region 加一个可读名称（如 "开场封面"），仅用于日志展示。`
+      );
+    }
+  });
+  return errors;
+}
+
+/**
  * 检查顶级组件 regionId 必填
  * - 顶级组件（顶层数组成员）必须配置 regionId
  * - regionId 必须在 regions 中存在
@@ -249,16 +274,6 @@ function checkTimeHierarchy(project) {
     );
   }
 
-  // [层级 1.4] region 必填字段校验（与后端 schema 对齐）
-  regions.forEach((region, index) => {
-    if (!region || typeof region !== 'object') return;
-    if (!region.id || typeof region.id !== 'string' || region.id.trim() === '') {
-      errors.push(
-        `regions[${index}] 缺少必填字段 'id'。建议：给每个 region 加一个唯一 ID（如 "P1"），并保证与组件 ID 前缀一致。`
-      );
-    }
-  });
-
   // [层级 1.5] 累计 region 时长校验
   if (typeof project.duration === 'number' && Number.isFinite(project.duration)) {
     let regionTotal = 0;
@@ -396,6 +411,10 @@ function selfcheck(project) {
   // 检查 ID 重复（顶级组件）
   const dupError = checkDuplicateIds(components);
   if (dupError) errors.push(dupError);
+
+  // 检查 region 必填字段（id / name）
+  const regionSchemaErrors = checkRegionSchema(regions);
+  errors.push(...regionSchemaErrors);
 
   // 检查顶级组件 regionId
   const topRegionIdErrors = checkTopRegionId(components, regions);
