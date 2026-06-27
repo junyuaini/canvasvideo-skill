@@ -105,17 +105,24 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "content": {
-    "html": "<div class='stage'>...</div>",
+    "html": "<div id='P1-002' class='stage'>...</div><div id='P1-003' class='title'>...</div>",
     "css": ".stage { position: absolute; inset: 0; ... }",
     "elementIds": {
-      ".stage": { "id": "P1-001-STAGE", "start": 0, "end": 5 },
-      ".title": { "id": "P1-001-TITLE", "start": 0.3, "end": 5 }
+      "#P1-002": { "id": "P1-002", "start": 0,   "end": 5 },
+      "#P1-003": { "id": "P1-003", "start": 0.3, "end": 5 }
     }
   },
   "start": 0,
   "end": 5
 }
 ```
+
+**关键约束（elementIds）**：
+- ✅ **key 必须是 `#ID` 形式**（如 `#P1-002`），不再支持 class/tag 等其他 CSS 选择器
+- ✅ **HTML 字符串里必须有对应的 `id` 属性**（如 `<div id="P1-002">`）
+- ✅ `value.id` 必填，且必须等于 `key.slice(1)`（即去掉 `#` 后的部分）
+- ✅ 元素 ID 格式：`P{区域编号}-{三位数字}`，全局唯一（与顶级组件 ID 同池）
+- ✅ `start` / `end` 必填，数字、非负、`start <= end`
 
 **优势**：
 - 结构扁平，无需 AggregateComponent 包裹
@@ -168,12 +175,12 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "content": {
-    "html": "<div class='stage'><div class='title'>标题</div><div class='subtitle'>副标题</div></div>",
+    "html": "<div id='P1-002' class='stage'><div id='P1-003' class='title'>标题</div><div id='P1-004' class='subtitle'>副标题</div></div>",
     "css": ".stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #fff; } .subtitle { font-size: 20px; color: #ccc; }",
     "elementIds": {
-      ".stage": { "id": "P1-001-STAGE", "start": 0, "end": 5 },
-      ".title": { "id": "P1-001-TITLE", "start": 0.3, "end": 5 },
-      ".subtitle": { "id": "P1-001-SUB", "start": 1.0, "end": 5 }
+      "#P1-002": { "id": "P1-002", "start": 0,   "end": 5 },
+      "#P1-003": { "id": "P1-003", "start": 0.3, "end": 5 },
+      "#P1-004": { "id": "P1-004", "start": 1.0, "end": 5 }
     }
   },
   "start": 0,
@@ -295,22 +302,26 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 **HtmlComponent elementIds 规则**（必填）：
 
-elementIds 为对象格式，key 是 CSS 选择器，value 是 `{ id, start, end }` 对象：
+elementIds 为对象格式，**key 必须是 `#ID` 形式**（`#` 后跟元素 ID），value 是 `{ id, start, end }` 对象，其中 `value.id` 必填且必须等于 `key.slice(1)`：
 
 ```json
 "elementIds": {
-  ".stage": { "id": "P1-002", "start": 0, "end": 5 },
-  ".title": { "id": "P1-003", "start": 0.3, "end": 5 },
-  ".subtitle": { "id": "P1-004", "start": 1.0, "end": 5 }
+  "#P1-002": { "id": "P1-002", "start": 0, "end": 5 },
+  "#P1-003": { "id": "P1-003", "start": 0.3, "end": 5 },
+  "#P1-004": { "id": "P1-004", "start": 1.0, "end": 5 }
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| key | string | ✅ | CSS 选择器，如 `.title`、`#hero`、`.card` |
-| id | string | ✅ | 元素唯一标识，格式必须为 `P{区域编号}-{三位数字}`（如 `P1-002`、`P1-003`），与顶级组件 ID 规则统一，且全局唯一 |
-| start | number | ✅ | 元素开始显示时间（秒） |
-| end | number | ✅ | 元素结束显示时间（秒） |
+| key | string | ✅ | 必须是 `#ID` 形式（如 `#P1-002`），不再支持 class/tag 等其他 CSS 选择器 |
+| id | string | ✅ | 元素唯一标识，必须等于 `key.slice(1)`；格式为 `P{区域编号}-{三位数字}`（如 `P1-002`），与顶级组件 ID 规则统一，且全局唯一 |
+| start | number | ✅ | 元素开始显示时间（秒）。有限数字，不允许 Infinity |
+| end | number | ✅ | 元素结束显示时间（秒）。有限数字，不允许 Infinity |
+
+> **HTML 字符串里必须有对应的 `id` 属性**（如 `<div id="P1-002">`），否则渲染时该元素时间线不生效。
+>
+> **元素时间范围必须落在所属组件时间范围内**（`component.start ≤ element.start && element.end ≤ component.end`），且 `0 ≤ start ≤ end`，共同构成完整的时间层次约束。
 
 **作用**：
 1. 按 ↑ 键显示元素 ID 标签，方便定位和修改

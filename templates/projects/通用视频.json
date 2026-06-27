@@ -6,22 +6,23 @@
   "viewport": { "width": 780, "height": 585 },
   "source_design_doc": "./design-skeleton-creative.md",
   "regions": [
-    { "name": "P1", "duration": 3 },
-    { "name": "P2", "duration": 3 },
-    { "name": "P3", "duration": 3 }
+    { "id": "P1", "name": "P1", "duration": 3 },
+    { "id": "P2", "name": "P2", "duration": 3 },
+    { "id": "P3", "name": "P3", "duration": 3 }
   ],
   "components": [
     {
       "id": "P1-001",
+      "regionId": "P1",
       "type": "HtmlComponent",
       "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
       "content": {
-        "html": "<div class=\"hero\"><h1 class=\"title\">示例标题</h1><p class=\"subtitle\">副标题 / 概述句</p></div>",
+        "html": "<div id=\"P1-002\" class=\"hero\"><h1 id=\"P1-003\" class=\"title\">示例标题</h1><p id=\"P1-004\" class=\"subtitle\">副标题 / 概述句</p></div>",
         "css": ".hero { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #111827; line-height: 1.1; margin-bottom: 12px; } .subtitle { font-size: 20px; color: #374151; line-height: 1.6; }",
         "elementIds": {
-          ".hero": { "id": "P1-001-HERO", "start": 0, "end": 3 },
-          ".title": { "id": "P1-001-TITLE", "start": 0, "end": 3 },
-          ".subtitle": { "id": "P1-001-SUB", "start": 0.3, "end": 3 }
+          "#P1-002": { "id": "P1-002", "start": 0, "end": 3 },
+          "#P1-003": { "id": "P1-003", "start": 0, "end": 3 },
+          "#P1-004": { "id": "P1-004", "start": 0.3, "end": 3 }
         }
       },
       "start": 0,
@@ -29,16 +30,17 @@
     },
     {
       "id": "P2-001",
+      "regionId": "P2",
       "type": "HtmlComponent",
       "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
       "content": {
-        "html": "<div class=\"section\"><h1 class=\"title\">核心要点</h1><p class=\"desc\">用一段话点明价值</p><span class=\"badge\">查看详情</span></div>",
+        "html": "<div id=\"P2-002\" class=\"section\"><h1 id=\"P2-003\" class=\"title\">核心要点</h1><p id=\"P2-004\" class=\"desc\">用一段话点明价值</p><span id=\"P2-005\" class=\"badge\">查看详情</span></div>",
         "css": ".section { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #111827; line-height: 1.1; margin-bottom: 12px; } .desc { font-size: 20px; color: #374151; line-height: 1.6; margin-bottom: 16px; } .badge { font-size: 18px; font-weight: 700; color: #fff; background: #10B981; padding: 12px 24px; border-radius: 8px; }",
         "elementIds": {
-          ".section": { "id": "P2-001-SECTION", "start": 3, "end": 6 },
-          ".title": { "id": "P2-001-TITLE", "start": 3, "end": 6 },
-          ".desc": { "id": "P2-001-DESC", "start": 3.3, "end": 6 },
-          ".badge": { "id": "P2-001-BADGE", "start": 3.8, "end": 6 }
+          "#P2-002": { "id": "P2-002", "start": 3, "end": 6 },
+          "#P2-003": { "id": "P2-003", "start": 3, "end": 6 },
+          "#P2-004": { "id": "P2-004", "start": 3.3, "end": 6 },
+          "#P2-005": { "id": "P2-005", "start": 3.8, "end": 6 }
         }
       },
       "start": 3,
@@ -46,16 +48,17 @@
     },
     {
       "id": "P3-001",
+      "regionId": "P3",
       "type": "HtmlComponent",
       "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
       "content": {
-        "html": "<div class=\"cta\"><h1 class=\"title\">号召行动</h1><p class=\"desc\">邀请用户下一步行动</p><span class=\"badge\">扫码体验</span></div>",
+        "html": "<div id=\"P3-002\" class=\"cta\"><h1 id=\"P3-003\" class=\"title\">号召行动</h1><p id=\"P3-004\" class=\"desc\">邀请用户下一步行动</p><span id=\"P3-005\" class=\"badge\">扫码体验</span></div>",
         "css": ".cta { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #111827; line-height: 1.1; margin-bottom: 12px; } .desc { font-size: 20px; color: #374151; line-height: 1.6; margin-bottom: 16px; } .badge { font-size: 18px; font-weight: 700; color: #fff; background: #F59E0B; padding: 12px 24px; border-radius: 8px; }",
         "elementIds": {
-          ".cta": { "id": "P3-001-CTA", "start": 6, "end": 9 },
-          ".title": { "id": "P3-001-TITLE", "start": 6, "end": 9 },
-          ".desc": { "id": "P3-001-DESC", "start": 6.3, "end": 9 },
-          ".badge": { "id": "P3-001-BADGE", "start": 6.8, "end": 9 }
+          "#P3-002": { "id": "P3-002", "start": 6, "end": 9 },
+          "#P3-003": { "id": "P3-003", "start": 6, "end": 9 },
+          "#P3-004": { "id": "P3-004", "start": 6.3, "end": 9 },
+          "#P3-005": { "id": "P3-005", "start": 6.8, "end": 9 }
         }
       },
       "start": 6,
