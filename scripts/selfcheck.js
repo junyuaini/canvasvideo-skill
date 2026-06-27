@@ -90,11 +90,12 @@ function checkTopRegionId(components, regions) {
 
 /**
  * 检查 HtmlComponent 的 elementIds
+ *   元素 ID 格式：与顶级组件 ID 完全一致，P{区域编号}-{三位数字}，全局唯一
+ *   元素 ID 的 P{num} 部分必须等于所属区域的 regionId
  */
-function checkHtmlElementIds(components) {
+function checkHtmlElementIds(components, allIds) {
   const errors = [];
-  const elementIdPattern = /^[A-Za-z0-9_\-]+$/;
-  const upperSuffixPattern = /^[A-Z][A-Z0-9_]*$/;
+  const elementIdPattern = /^P\d+-\d{3}$/;
 
   function checkRecursive(comps) {
     comps.forEach((comp) => {
@@ -126,16 +127,18 @@ function checkHtmlElementIds(components) {
           if (!value.id || typeof value.id !== 'string') {
             errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id 必须是字符串。`);
           } else if (!elementIdPattern.test(value.id)) {
-            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 包含非法字符。`);
+            errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 格式错误，必须为 P{{区域编号}}-{三位数字}，如 P1-002、P1-003。`);
           } else {
-            // 强校验：必须为 {组件ID}-{大写名称} 格式，如 P1-001-TITLE
-            if (comp.id && value.id.startsWith(comp.id + '-')) {
-              const suffix = value.id.slice(comp.id.length + 1);
-              if (!upperSuffixPattern.test(suffix)) {
-                errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 后缀必须是「大写字母+数字+下划线」，如 ${comp.id}-TITLE。`);
-              }
+            // 元素 ID 必须以所属区域的 regionId 为前缀
+            if (comp.regionId && !value.id.startsWith(comp.regionId + '-')) {
+              errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 必须以所属区域 "${comp.regionId}" 为前缀，如 ${comp.regionId}-002。`);
+            }
+
+            // 元素 ID 全局唯一
+            if (allIds.has(value.id)) {
+              errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 重复：所有 ID（顶级组件 + 元素）必须全局唯一。`);
             } else {
-              errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 必须以组件 ID "${comp.id}" 为前缀，格式如 ${comp.id}-TITLE。`);
+              allIds.add(value.id);
             }
           }
 
@@ -185,7 +188,7 @@ function selfcheck(project) {
   const formatErrors = checkIdFormat(components);
   errors.push(...formatErrors);
 
-  // 检查 ID 重复
+  // 检查 ID 重复（顶级组件）
   const dupError = checkDuplicateIds(components);
   if (dupError) errors.push(dupError);
 
@@ -193,8 +196,14 @@ function selfcheck(project) {
   const topRegionIdErrors = checkTopRegionId(components, regions);
   errors.push(...topRegionIdErrors);
 
+  // 收集所有顶级组件 ID，用于元素 ID 全局唯一校验
+  const allIds = new Set();
+  components.forEach((c) => {
+    if (c && c.id) allIds.add(c.id);
+  });
+
   // 检查 HtmlComponent elementIds
-  const htmlElementIdsErrors = checkHtmlElementIds(components);
+  const htmlElementIdsErrors = checkHtmlElementIds(components, allIds);
   errors.push(...htmlElementIdsErrors);
 
   return { ok: errors.length === 0, errors, warnings, infos };

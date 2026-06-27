@@ -299,16 +299,16 @@ elementIds 为对象格式，key 是 CSS 选择器，value 是 `{ id, start, end
 
 ```json
 "elementIds": {
-  ".stage": { "id": "P1-001-STAGE", "start": 0, "end": 5 },
-  ".title": { "id": "P1-001-TITLE", "start": 0.3, "end": 5 },
-  ".subtitle": { "id": "P1-001-SUB", "start": 1.0, "end": 5 }
+  ".stage": { "id": "P1-002", "start": 0, "end": 5 },
+  ".title": { "id": "P1-003", "start": 0.3, "end": 5 },
+  ".subtitle": { "id": "P1-004", "start": 1.0, "end": 5 }
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | key | string | ✅ | CSS 选择器，如 `.title`、`#hero`、`.card` |
-| id | string | ✅ | 元素唯一标识，格式必须为 `{组件ID}-{大写名称}`，如 `P1-001-TITLE` |
+| id | string | ✅ | 元素唯一标识，格式必须为 `P{区域编号}-{三位数字}`（如 `P1-002`、`P1-003`），与顶级组件 ID 规则统一，且全局唯一 |
 | start | number | ✅ | 元素开始显示时间（秒） |
 | end | number | ✅ | 元素结束显示时间（秒） |
 
