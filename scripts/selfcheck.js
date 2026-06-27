@@ -94,6 +94,7 @@ function checkTopRegionId(components, regions) {
 function checkHtmlElementIds(components) {
   const errors = [];
   const elementIdPattern = /^[A-Za-z0-9_\-]+$/;
+  const upperSuffixPattern = /^[A-Z][A-Z0-9_]*$/;
 
   function checkRecursive(comps) {
     comps.forEach((comp) => {
@@ -126,6 +127,16 @@ function checkHtmlElementIds(components) {
             errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id 必须是字符串。`);
           } else if (!elementIdPattern.test(value.id)) {
             errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 包含非法字符。`);
+          } else {
+            // 强校验：必须为 {组件ID}-{大写名称} 格式，如 P1-001-TITLE
+            if (comp.id && value.id.startsWith(comp.id + '-')) {
+              const suffix = value.id.slice(comp.id.length + 1);
+              if (!upperSuffixPattern.test(suffix)) {
+                errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 后缀必须是「大写字母+数字+下划线」，如 ${comp.id}-TITLE。`);
+              }
+            } else {
+              errors.push(`HtmlComponent [${labelId}] elementIds["${selector}"].id "${value.id}" 必须以组件 ID "${comp.id}" 为前缀，格式如 ${comp.id}-TITLE。`);
+            }
           }
 
           if (typeof value.start !== 'number' || value.start < 0) {

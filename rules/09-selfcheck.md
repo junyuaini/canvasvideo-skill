@@ -43,7 +43,7 @@
 
 - HtmlComponent 必须配置 `content.elementIds`
 - elementIds 必须是非空对象，key 为 CSS 选择器，value 为 `{ id, start, end }` 对象
-- 每个元素的 `id` 必填，格式推荐 `{组件ID}-{大写名称}`（如 `P1-001-TITLE`）
+- 每个元素的 `id` 必填，格式必须为 `{组件ID}-{大写名称}`（如 `P1-001-TITLE`）
 - `start` 和 `end` 必填，且 `start <= end`
 
 ---
