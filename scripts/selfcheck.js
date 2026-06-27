@@ -44,6 +44,51 @@ function checkDuplicateIds(components) {
 }
 
 /**
+ * 检查顶级组件 regionId 必填
+ * - 顶级组件（顶层数组成员）必须配置 regionId
+ * - regionId 必须在 regions 中存在
+ * - 组件 ID 前缀必须与 regionId 一致
+ */
+function checkTopRegionId(components, regions) {
+  const errors = [];
+
+  const regionIds = new Set();
+  if (Array.isArray(regions)) {
+    regions.forEach(r => { if (r && r.id) regionIds.add(r.id); });
+  }
+
+  const idPattern = /^P(\d+)-\d{3}$/;
+
+  components.forEach((comp) => {
+    if (!comp || typeof comp !== 'object') return;
+    if (!comp.id) return;
+
+    if (!comp.regionId || typeof comp.regionId !== 'string' || comp.regionId.trim() === '') {
+      errors.push(`顶级组件 [${comp.id}] 缺少 regionId 字段。`);
+      return;
+    }
+
+    if (!regionIds.has(comp.regionId)) {
+      errors.push(
+        `顶级组件 [${comp.id}] regionId "${comp.regionId}" 在 regions 中不存在，有效区域为：${[...regionIds].join(', ')}。`
+      );
+    }
+
+    const match = comp.id.match(idPattern);
+    if (match) {
+      const idPrefix = `P${match[1]}`;
+      if (idPrefix !== comp.regionId) {
+        errors.push(
+          `顶级组件 [${comp.id}] ID 前缀 ${idPrefix} 与 regionId "${comp.regionId}" 不一致。`
+        );
+      }
+    }
+  });
+
+  return errors;
+}
+
+/**
  * 检查 HtmlComponent 的 elementIds
  */
 function checkHtmlElementIds(components) {
@@ -123,6 +168,7 @@ function selfcheck(project) {
   }
 
   const components = project.components || [];
+  const regions = project.regions || [];
 
   // 检查 ID 格式
   const formatErrors = checkIdFormat(components);
@@ -131,6 +177,10 @@ function selfcheck(project) {
   // 检查 ID 重复
   const dupError = checkDuplicateIds(components);
   if (dupError) errors.push(dupError);
+
+  // 检查顶级组件 regionId
+  const topRegionIdErrors = checkTopRegionId(components, regions);
+  errors.push(...topRegionIdErrors);
 
   // 检查 HtmlComponent elementIds
   const htmlElementIdsErrors = checkHtmlElementIds(components);

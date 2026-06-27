@@ -27,7 +27,19 @@
 - 所有组件 ID 必须**全局唯一**
 - 同一区域内的序号不可重复（如 P1-001 只能出现一次）
 
-### 3. HtmlComponent elementIds 检查
+### 3. 顶级组件 regionId 检查
+
+- 顶级组件（即 `project.components[]` 数组的直接成员）必须配置 `regionId`
+- `regionId` 必须在 `project.regions[]` 中存在
+- 组件 ID 的前缀必须与 `regionId` 一致（如 `regionId: "P1"` → ID 必须以 `P1-` 开头）
+
+| 正确 | 错误 | 原因 |
+|------|------|------|
+| `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001" }` | 顶级组件缺少 regionId |
+| `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001", regionId: "P2" }` | 组件 ID 前缀与 regionId 不一致 |
+| `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001", regionId: "X1" }` | regionId 不在 regions 中 |
+
+### 4. HtmlComponent elementIds 检查
 
 - HtmlComponent 必须配置 `content.elementIds`
 - elementIds 必须是非空对象，key 为 CSS 选择器，value 为 `{ id, start, end }` 对象

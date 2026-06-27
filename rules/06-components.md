@@ -33,7 +33,6 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 - ✅ **ID 必填**：每个组件必须有 id 字段
 - ✅ **格式 `Pxx-xxx`**：`P` + 区域编号 + `-` + 三位数字序号
-  - 区域编号必须与所在区域的 name 匹配（如区域 P1 → 组件 ID 以 P1- 开头）
   - 序号范围 001-999，必须补零（如 001、010、099）
 - ✅ **全局唯一**：整个项目内组件 ID 不可重复
 - ✅ **同区域序号不重复**：同一区域内 xxx 不可重复
@@ -44,6 +43,48 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | P2-005 | P2-05 | 序号必须三位 |
 | P10-001 | 003 | 缺少区域前缀 |
 | P3-010 | P1-010 | 区域不匹配（组件在 P3 区域） |
+
+---
+
+## R1.2 顶级组件 regionId 规则（硬规则）
+
+- ✅ **顶级组件必须配置 regionId**：直接位于 `project.components[]` 数组中的组件必须包含 `regionId` 字段
+- ✅ **regionId 格式**：`P` + 数字（如 `P1`、`P2`、`P10`）
+- ✅ **regionId 必须在 regions 中存在**：`regionId` 的值必须出现在 `project.regions[]` 数组中
+- ✅ **ID 前缀须与 regionId 一致**：组件 ID 的区域部分（如 `P1-001` 中的 `P1`）必须等于 `regionId`
+
+```json
+// ✅ 正确
+{
+  "id": "P1-001",
+  "regionId": "P1",
+  "type": "HtmlComponent",
+  ...
+}
+
+// ❌ 错误：缺少 regionId
+{
+  "id": "P1-001",
+  "type": "HtmlComponent",
+  ...
+}
+
+// ❌ 错误：ID 前缀与 regionId 不一致
+{
+  "id": "P1-001",
+  "regionId": "P2",
+  ...
+}
+
+// ❌ 错误：regionId 不在 regions 中
+{
+  "id": "P1-001",
+  "regionId": "X1",
+  ...
+}
+```
+
+> 嵌套在 `AggregateComponent.children[]` 中的子组件不需要配置 `regionId`。
 
 ---
 
@@ -96,6 +137,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ```json
 {
   "id": "P1-001",
+  "regionId": "P1",
   "type": "AggregateComponent",
   "layoutMode": "free",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
@@ -108,6 +150,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | id | string | ✅ | 组件唯一标识 |
+| regionId | string | ✅ | 顶级组件必填，所属区域 ID |
 | type | string | ✅ | 固定为 "AggregateComponent" |
 | layoutMode | string | ✅ | "free"、"auto" 或 "manual" |
 | position | object | ✅ | { x, y, w, h } |
@@ -121,6 +164,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ```json
 {
   "id": "P1-001",
+  "regionId": "P1",
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "content": {
@@ -141,6 +185,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ```json
 {
   "id": "P1-001",
+  "regionId": "P1",
   "type": "AggregateComponent",
   "layoutMode": "free",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
@@ -165,6 +210,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ```json
 {
   "id": "P1-001",
+  "regionId": "P1",
   "type": "AggregateComponent",
   "layoutMode": "auto",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
@@ -195,6 +241,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ```json
 {
   "id": "P1-001",
+  "regionId": "P1",
   "type": "AggregateComponent",
   "layoutMode": "manual",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
