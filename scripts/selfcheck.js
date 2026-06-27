@@ -122,6 +122,34 @@ function checkTopRegionId(components, regions) {
  *   - value.id 的 P{num} 部分必须等于所属区域的 regionId
  *   - value.start / value.end 必填，数字、非负、start <= end
  */
+
+/**
+ * 解析 HTML 字符串，提取所有 id 属性值
+ */
+function extractHtmlIds(html) {
+  const ids = [];
+  if (!html || typeof html !== 'string') return ids;
+  const idRegex = /\bid\s*=\s*["']([^"']+)["']/g;
+  let m;
+  while ((m = idRegex.exec(html)) !== null) {
+    ids.push(m[1]);
+  }
+  return ids;
+}
+
+/**
+ * 统计数组中每个值出现次数，过滤出 > 1 的项，返回 "[id](×count)" 列表
+ */
+function countDuplicates(items) {
+  const countMap = {};
+  items.forEach((it) => {
+    if (it) countMap[it] = (countMap[it] || 0) + 1;
+  });
+  return Object.entries(countMap)
+    .filter(([, c]) => c > 1)
+    .map(([id, c]) => `"${id}"(×${c})`);
+}
+
 function checkHtmlElementIds(components, allIds) {
   const errors = [];
   const elementIdPattern = /^P\d+-\d{3}$/;
@@ -231,6 +259,48 @@ function checkHtmlElementIds(components, allIds) {
           const more = expectedKeyMissing.length > 8 ? ` 等 ${expectedKeyMissing.length} 个` : '';
           errors.push(
             `HtmlComponent [${labelId}] elementIds 有 ${expectedKeyMissing.length} 个 key 形如 "#" 但后面没有 ID：${preview}${more}。建议：补全为 "#P{区域}-{三位数字}" 形式。`
+          );
+        }
+
+        // [交叉校验 1] HTML 中 id 重复
+        const htmlIds = extractHtmlIds(comp.content.html);
+        const dupHtmlIds = countDuplicates(htmlIds);
+        if (dupHtmlIds.length > 0) {
+          errors.push(
+            `HtmlComponent [${labelId}] HTML 中有 ${dupHtmlIds.length} 个 id 重复出现：${dupHtmlIds.join('、')}。建议：每个 id 必须在 HTML 字符串中唯一（HTML 规范），若有重复块请用 class 区分或合并 elementIds 配置。`
+          );
+        }
+
+        // [交叉校验 2] elementIds 中 id 重复（多个 key 指向同一 id）
+        const elIds = Object.values(elementIds)
+          .map((v) => (v && typeof v === 'object' ? v.id : null))
+          .filter(Boolean);
+        const dupElIds = countDuplicates(elIds);
+        if (dupElIds.length > 0) {
+          errors.push(
+            `HtmlComponent [${labelId}] elementIds 中 ${dupElIds.length} 个 id 被重复配置：${dupElIds.join('、')}。建议：elementIds 只能 1:1 对应 HTML 中的 id，重复 key 合并或删除。`
+          );
+        }
+
+        // [交叉校验 3] HTML 中有但 elementIds 未配置
+        const htmlIdSet = new Set(htmlIds);
+        const elIdSet = new Set(elIds);
+        const htmlOnlyIds = [...new Set(htmlIds)].filter((id) => !elIdSet.has(id));
+        if (htmlOnlyIds.length > 0) {
+          const preview = htmlOnlyIds.slice(0, 8).map((s) => `"${s}"`).join('、');
+          const more = htmlOnlyIds.length > 8 ? ` 等 ${htmlOnlyIds.length} 个` : '';
+          errors.push(
+            `HtmlComponent [${labelId}] HTML 中有 ${htmlOnlyIds.length} 个 id 在 elementIds 未配置：${preview}${more}。建议：①为这些 id 配置 elementIds 时间线，或②从 HTML 中删除未使用的 id。`
+          );
+        }
+
+        // [交叉校验 4] elementIds 配了但 HTML 中未找到
+        const elOnlyIds = [...elIdSet].filter((id) => !htmlIdSet.has(id));
+        if (elOnlyIds.length > 0) {
+          const preview = elOnlyIds.slice(0, 8).map((s) => `"${s}"`).join('、');
+          const more = elOnlyIds.length > 8 ? ` 等 ${elOnlyIds.length} 个` : '';
+          errors.push(
+            `HtmlComponent [${labelId}] elementIds 配置了 ${elOnlyIds.length} 个 id 在 HTML 中未找到：${preview}${more}。建议：①在 HTML 字符串中添加对应 id 的元素，或②从 elementIds 中删除该配置。`
           );
         }
       }
