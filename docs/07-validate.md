@@ -57,6 +57,9 @@ node scripts/validate.js --cwd=<Agent工作目录的绝对路径> {skillProjectI
 - 所有 HtmlComponent ID 唯一
 - 元素时间轴无重叠
 - 元素时间在区域时间范围内
+- **嵌套关系校验**：merge 后 `element ⊂ component = region`（项目级一致性）
+- **口播模式**：region.startTime/endTime 必须从 SRT 字幕范围取，component/element 时间由 `subtitles` 查 SRT 算
+- **创作模式**：component/element 时间由 `time_range` 相对 region 起点算
 - 骨架 source_design_doc 字段存在且不为空
 - 骨架 source_design_doc 引用的设计文档文件存在
 

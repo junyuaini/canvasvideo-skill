@@ -121,12 +121,21 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ## R4 HtmlComponent elementIds 规则
 
-`content.elementIds` 为对象，**key 必须是 `#ID` 形式**（`#` 后跟元素 ID），value 是 `{ id, start, end }` 对象：
+`content.elementIds` 为对象，**key 必须是 `#ID` 形式**（`#` 后跟元素 ID），value 是 `{ id, subtitles | time_range }` 对象：
 
+**口播模式**（绑字幕）：
 ```json
 "elementIds": {
-  "#P1-002": { "id": "P1-002", "start": 0, "end": 5 },
-  "#P1-003": { "id": "P1-003", "start": 0.3, "end": 5 }
+  "#P1-002": { "id": "P1-002", "subtitles": [11, 14] },
+  "#P1-003": { "id": "P1-003", "subtitles": [11] }
+}
+```
+
+**创作模式**（time_range 相对 region 起点）：
+```json
+"elementIds": {
+  "#P1-002": { "id": "P1-002", "time_range": [0, 5] },
+  "#P1-003": { "id": "P1-003", "time_range": [0.3, 5] }
 }
 ```
 
@@ -134,13 +143,21 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 |------|------|------|------|
 | key | string | ✅ | 必须是 `#ID` 形式（如 `#P1-002`） |
 | id | string | ✅ | 元素唯一标识，必须等于 `key.slice(1)`；格式 `P{区域编号}-{三位数字}`，与顶层 HtmlComponent ID 同池且全局唯一 |
-| start | number | ✅ | 元素开始显示时间（秒），有限数字，不允许 Infinity |
-| end | number | ✅ | 元素结束显示时间（秒），有限数字，不允许 Infinity |
+| subtitles | Array<number> | 口播 ✅ | 绑字幕范围（merge 查 SRT 自动算 start/end） |
+| time_range | [number, number] | 创作 ✅ | 相对 region 起点的局部时间（merge 转全局 start/end） |
+
+**merge 自动填充**（输出到 project.json 时）：
+- `element.start` = subtitles 第一字幕 start 或 time_range[0] + region.startTime
+- `element.end` = subtitles 最后字幕 end 或 time_range[1] + region.startTime
+
+**优先级**：subtitles > time_range > 旧 start/end（兼容）> 报错
 
 **关键约束**：
 - ✅ HTML 字符串里必须有对应的 `id` 属性（如 `<div id="P1-002">`），否则时间线不生效
 - ✅ 元素时间范围必须落在所属 HtmlComponent 时间范围内（`component.start ≤ element.start && element.end ≤ component.end`）
-- ✅ `0 ≤ start ≤ end`
+- ✅ `0 ≤ element.start ≤ element.end`
+- ✅ 口播模式：subtitles 范围必须在所属 region 字幕范围内
+- ✅ 创作模式：time_range 必须在 `[0, region.duration]` 范围内
 
 **作用**：
 1. 按 ↑ 键显示元素 ID 标签，方便定位和修改

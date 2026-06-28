@@ -55,7 +55,7 @@ node scripts/generate-skeleton.js --cwd=<Agent工作目录的绝对路径> {skil
 | style | 视觉风格：warm / tech / business / art |
 | emotion_curve_template | 情绪曲线类型 |
 | subtitle_count | SRT 字幕总条数 |
-| regions[].subtitle_range | 该区域包含的字幕序号范围 |
+| regions[].subtitle_range | 口播模式该区域包含的字幕序号范围（仅口播） |
 
 **脚本会自动校验**：
 

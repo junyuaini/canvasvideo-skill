@@ -266,6 +266,12 @@
 
 参考 `templates/artifacts/design-skeleton-dubbing.md`，按模板结构填充实际内容，生成设计文档。
 
+**模板结构（精简版：3 个表格）**：
+
+1. **项目配置（JSON）** — 视频基本信息
+2. **SRT 时间轴** — 字幕原文（来自步骤 1.5 产物）
+3. **区域列表** — 含"类型 / 包含字幕 / 情绪 / 内容描述"4 列（**不含"时长(秒)"列**，由脚本按 SRT 自动算）
+
 > 💡 **设计文档里的 `audio.path` 字段会被自动覆盖**——步骤 3 跑 generate-skeleton.js 时，会用 `state.voice.audioPath` 强制覆盖（防止 AI 在 MD 里写错路径）。
 
 ---
@@ -294,12 +300,15 @@
 **脚本自动校验**（生成时 warning）：
 
 - 总时长之和等于音频时长
+  - 实现：generate-skeleton.js 按 SRT 算出每个 region.duration 后累加；最后一个 region.endTime 应等于 `state.voice.duration`（音频时长）
+  - "时长(秒)"列可省略（推荐省略，避免 AI 手算误差）
 
 **AI 写完后自查**：
 
 - [I] 情绪曲线有起伏
 - [I] 90 秒以上视频有章节划分
 - [I] 字幕文本完全来自 SRT（AI 不要改写）
+- [I] "包含字幕"列的范围必须连续无重叠（例：P1:1-6, P2:7-8, P3:9-17）
 
 ---
 

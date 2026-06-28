@@ -297,35 +297,34 @@
 | 3 | 辅助内容 | 正文、解释 |
 | 4 | 装饰元素 | 图标、标签 |
 
-**4.2 出场间隔**
+**4.2 元素时间区间（time_range）**
 
-根据档位确定平均间隔上限：
+> ⚠️ **AI 填局部时间 `time_range`，merge 自动 + region.startTime 转全局**
+>
+> 创作模式没有字幕锚点，AI 按内容节奏决定每个元素的时间区间。
 
-| 档位 | 平均间隔上限 |
-|-----|-----------|
-| 快闪 | ≤0.3秒 |
-| 标准 | ≤0.6秒 |
-| 沉浸 | ≤0.8秒 |
-| 留白 | ≤1.2秒 |
+**格式**：
 
-**分配规则**：
-- 锚点必须0延迟出现（start = 区域start）
-- 其他元素按顺序依次出场
-- 相邻元素间隔 = 后元素start - 前元素start
-- 所有间隔的平均值 ≤ 档位上限
-- 间隔不固定，自由分配，平均值达标即可
+```json
+"elementIds": {
+  "#P1-002": { "id": "P1-002", "time_range": [0, 3.5] }
+}
+```
 
-**4.3 元素 end 时间分配**
+**含义**：
+- `time_range[0]` = 元素相对 region 起点的出现时间（秒，3 位小数）
+- `time_range[1]` = 元素相对 region 起点的消失时间（秒，3 位小数）
+- merge-regions.js 自动转全局：`element.start = region.startTime + time_range[0]`
 
-每个元素必须明确 `end` 时间：
+**4.3 元素时间分配建议**
 
-| 元素类型 | end 规则 |
-|---------|---------|
-| 锚点（关键信息）| end ≥ start + 2s（关键信息停留 ≥ 2s）|
-| 核心内容 | end ≥ start + 1.5s |
-| 辅助内容 | end ≥ start + 1s |
-| 装饰元素 | end ≥ start + 0.5s |
-| 末元素 | end ≤ 区域end - 0.5s（留出淡出时间）|
+| 元素类型 | 持续时间建议 |
+|---------|------------|
+| 锚点（关键信息）| ≥ 2s |
+| 核心内容 | ≥ 1.5s |
+| 辅助内容 | ≥ 1s |
+| 装饰元素 | ≥ 0.5s |
+| 末元素 | 结束留 0.3-0.5s 淡出 |
 
 **4.4 稳定期**
 
@@ -342,36 +341,34 @@
 
 **说明**：
 - 当前系统只支持元素整体出现（渐入渐出），不支持单个元素内部动画（如逐字、逐位滚动）
-- 如需复杂动画效果，使用 HtmlComponent + `content.elementIds` 控制内部元素的独立时间线（每个 HTML 子元素可独立控制出现/消失时间）
+- 如需复杂动画效果，使用 HtmlComponent + `content.elementIds` 控制内部元素的独立时间线
 
 **重要硬规则**：
 - ✅ 每个区域使用一个 HtmlComponent
 - ✅ 所有顶层 HtmlComponent 必须配置 position（至少包含 w 和 h）
+- ✅ 每个 elementIds 子项必须填 `time_range`（AI 不写 start/end 全局时间）
 
-**元素时间轴节奏**：
+**元素时间轴节奏（创作模式）**：
 
-| 项 | 创作模式 | 口播模式 |
-|----|---------|---------|
-| 末元素停留 | ≤ 1s | ≤ 2s |
-| 相邻元素间隔 | ≤ 1s | ≤ 3s |
-| 关键信息停留 | ≥ 2s | ≥ 2s |
-
-**全局绝对时间**：元素 start/end 基于骨架设计中的区域时间范围，不是相对时间。
+| 项 | 创作模式 |
+|----|---------|
+| 末元素停留 | ≤ 1s |
+| 相邻元素间隔 | ≤ 1s |
+| 关键信息停留 | ≥ 2s |
 
 **时间分配示例**（区域 0s-4s，快闪档位）：
 
-| 元素 | start | end | 说明 |
-|------|-------|-----|------|
-| 锚点（CSS 胶囊，金句风格）| 0.0s | 3.5s | 关键信息，停留3.5s |
-| 标题（h1，居中）| 0.3s | 2.5s | 核心内容 |
-| 描述（p，辅助说明）| 0.6s | 2.0s | 辅助内容 |
-| 标签（span，CSS 角标）| 1.0s | 2.5s | 装饰元素 |
+| 元素 | time_range | 说明 |
+|------|----------|------|
+| 锚点（CSS 胶囊，金句风格）| `[0, 3.5]` | 关键信息，停留3.5s |
+| 标题（h1，居中）| `[0.3, 2.5]` | 核心内容 |
+| 描述（p，辅助说明）| `[0.6, 2.0]` | 辅助内容 |
+| 标签（span，CSS 角标）| `[1.0, 2.5]` | 装饰元素 |
 
 **严禁**：
-- ❌ 元素 start < 区域 start
-- ❌ 元素 end > 区域 end
+- ❌ elementIds 不填 `time_range`（必须填，merge 自动算全局时间）
+- ❌ time_range 超出所属 region 的 duration 范围
 - ❌ 元素时间重叠冲突
-- ❌ 元素清单只写"延迟"不写 end 时间
 
 ---
 
@@ -500,12 +497,12 @@
 | `type` | 固定值 | `"HtmlComponent"` |
 | `content` | 元素清单 | `{ "html": "...", "css": "...", "elementIds": {...} }` |
 | `position` | 元素清单 | `{ "x": 0, "y": 0, "w": 780, "h": 585 }` |
-| `start` | 时间轴 | 0 |
-| `end` | 时间轴 | 5 |
+| `time_range` | 元素清单 | `[0, 3.5]`（创作模式：相对 region 起点的局部时间，merge 自动转全局） |
 
 **HtmlComponent 核心规则**
 
 - 必须配置 position（至少包含 w 和 h）
+- 必须填 `time_range`（创作模式，merge 自动算全局）
 - 不需要 customStyle，通过 content.css 控制样式
 
 **HtmlComponent 示例**：
@@ -515,15 +512,14 @@
   "regionId": "P1",
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "time_range": [0, 4],
   "content": {
     "html": "<div id='P1-002' class='card'>\n  <h2 class='title'>标题</h2>\n  <span class='badge'>徽章</span>\n</div>",
     "css": ".card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #FFFFFF; } .badge { background: #00B894; color: #FFFFFF; padding: 12px 24px; border-radius: 999px; font-size: 20px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,184,148,0.3); }",
     "elementIds": {
-      "#P1-002": { "id": "P1-002", "start": 0, "end": 3 }
+      "#P1-002": { "id": "P1-002", "time_range": [0, 3.5] }
     }
-  },
-  "start": 0,
-  "end": 3
+  }
 }
 ```
 
@@ -577,9 +573,10 @@ node scripts/validate-region.js --cwd=<Agent工作目录的绝对路径> {skillP
 ```
 
 脚本会自动检查：
-1. 元素时间是否在区域时间范围内
-2. 元素时间是否有重叠
-3. 字幕时间是否在区域时间范围内
+1. elementIds 子项必须填 `time_range`（AI 不写 start/end）
+2. time_range 必须在 region duration 范围内
+3. merge 后元素 ⊂ 组件 = 区域（嵌套关系校验）
+4. HtmlComponent 含 `background` 字段
 
 ---
 
@@ -595,21 +592,20 @@ node scripts/validate-region.js --cwd=<Agent工作目录的绝对路径> {skillP
 
 > [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-**脚本自动校验**（运行 `scripts/validate-region.js` 时检查）：
+**脚本自动校验**（merge 阶段 + selfcheck 自动校验）：
 
-- 元素时间在区域时间范围内
-- 元素时间无重叠
-- 元素 start ≥ 区域 start，end ≤ 区域 end
+- elementIds 子项必须填 `time_range`（创作模式）
+- time_range 必须在 region duration 范围内
+- merge 后元素 ⊂ 组件 = 区域（嵌套关系校验）
 - HtmlComponent 含 `background` 字段（与 `content` 平级）
 
 **AI 写完后自查**：
 
-- [E] 每个元素有完整的字段（id, type, content, position, start, end, background）
+- [E] 每个元素有完整的字段（id, type, content, position, time_range, background）
 - [E] `id` 格式正确（如 `P1-001`：`P{区域号}-{三位数字}`）
 - [W] 有唯一视觉锚点（过渡区域除外）
 - [W] 文字对比度符合 WCAG AA（≥ 4.5:1）
 - [W] `content.css` 已填写
-- [W] 字幕时间与元素内容匹配（仅配音模式）
 - [I] 出场顺序由主到次
 - [I] 相邻元素间隔平均值 ≤ 档位上限
 - [I] 有稳定期

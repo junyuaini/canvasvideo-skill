@@ -87,6 +87,16 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 - `selfcheck.js` 检查所有 HtmlComponent ID 唯一
 - `merge-regions.js` 自动按 start 排序 HtmlComponent 和字幕
 
+### 时间字段自动填充（新）
+
+| 字段 | 来源 | 说明 |
+|------|------|------|
+| `region.startTime / endTime` | 口播：从 SRT 字幕范围取；创作：累加 | merge 自动写入 |
+| `component.start / end` | subtitles（口播查 SRT）/ time_range（创作相对 region）| merge 自动写入 |
+| `elementIds[].start / end` | 同上 | merge 自动写入 |
+
+**优先级**：subtitles > time_range > 旧 start/end > fallback to region
+
 **AI 写完后自查**：
 
 - [W] 素材清单实现率 = 100%（指所有素材都被挂到 HtmlComponent 上）
