@@ -26,6 +26,7 @@ const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
 const { resolveAgentWorkdir } = require('./scaffold');
+const { savePreviewInfo } = require('./state');
 
 
 const DEFAULT_SERVER_URL = 'https://dajiulanren.top';
@@ -449,6 +450,15 @@ async function uploadWithUser(serverUrl, workdirRoot, skillProjectId, zipPath, o
 
   const { user, isFirstTime, warnings } = await getOrCreateUser(serverUrl, workdirRoot);
   const { previewToken, previewUrl } = await upload(serverUrl, skillProjectId, zipPath, user.userId, user.userToken);
+
+  // 上传成功 → 闭环写本地 state.previewToken/previewUrl/updatedAt
+  // 之前 state.js 的 savePreviewInfo 函数定义了但 uploadWithUser 没调，导致 state.json 里
+  // previewToken/previewUrl/updatedAt 永远是 null，无法做"上次预览链接"等功能。
+  try {
+    savePreviewInfo(workdirRoot, previewToken, previewUrl);
+  } catch (e) {
+    warnings.push('本地 state.json 写 previewInfo 失败（不影响线上预览）：' + e.message);
+  }
 
   return { previewToken, previewUrl, isFirstTime, user, warnings };
 }

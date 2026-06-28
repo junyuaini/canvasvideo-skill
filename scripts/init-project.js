@@ -8,20 +8,29 @@
  * 
  * 用法：node init-project.js <mode> [options]
  *   mode: creative | dubbing
- * 
+ *
  * 配置方式（二选一）：
- *   1. JSON 配置文件：--config=<filepath>
+ *   1. JSON 配置文件：--config=
  *   2. JSON 字符串（不推荐，容易引号出错）：'{"content":"AI学习"}'
- * 
+ *
+ * 项目隔离：
+ *   默认情况下，若 workdirRoot 下已有 .canvasvideo/project-state.json，则沿用老项目；
+ *   只有当 state.json 不存在时才会创建新项目 ID。
+ *   若要强制重新创建项目（新主题 / 内容完全不同 / 隔离昨天的项目），请加 --new：
+ *     node init-project.js creative --new --config=...
+ *
  * 示例：
  *   # 方式1：配置文件（推荐）
  *   node init-project.js creative --config=project-config.json
- * 
+ *
  *   # 方式2：JSON 字符串（兼容旧方式）
  *   node init-project.js creative '{"content":"AI学习","duration":15}'
- * 
+ *
  *   # 口播模式
  *   node init-project.js dubbing --config=dubbing-config.json
+ *
+ *   # 强制重新建项目（覆盖 state.json）
+ *   node init-project.js creative --new --config=new-topic.json
  */
 const fs = require('fs');
 const path = require('path');
@@ -32,7 +41,7 @@ const { getOrCreateUser, DEFAULT_SERVER_URL } = require('./upload-video');
 /**
  * 解析命令行参数
  * @param {string[]} argv - process.argv
- * @returns {Object} { workdirRoot, mode, configFile, configJson }
+ * @returns {Object} { workdirRoot, mode, configFile, configJson, forceNew }
  */
 function parseArgs(argv) {
   // --cwd 必传，从 argv 里解析出 Agent 工作目录，再拼 canvasvideo-workdir
@@ -43,14 +52,17 @@ function parseArgs(argv) {
     workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
     mode: null,   // 第一个非 -- 位置参数
     configFile: null,
-    configJson: null
+    configJson: null,
+    forceNew: false,  // --new 标志：强制重新创建项目（删除老 state.json）
   };
 
   // 从剩余参数里找 mode 和 config
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--cwd=')) continue;
-    if (arg.startsWith('--config=')) {
+    if (arg === '--new') {
+      args.forceNew = true;
+    } else if (arg.startsWith('--config=')) {
       args.configFile = arg.slice('--config='.length);
     } else if (!args.mode && !arg.startsWith('--')) {
       args.mode = arg;
@@ -111,12 +123,38 @@ function loadConfig(args) {
  */
 async function initProject(workdirRoot, mode, config = {}, options = {}) {
   const serverUrl = options.serverUrl || DEFAULT_SERVER_URL;
+  const forceNew = options.forceNew === true;
 
-  // 第一步：确保用户已注册并拿到 userId（这是新格式 skillProjectId 的前置条件）
-  // 仅在 state 不存在时才需要调；已有 state 直接跳过
+  // 第一步：决定新建 / 沿用，并打决策日志
+  //   - state.json 不存在  → 新建（🆕）
+  //   - state.json 存在    → 沿用（📌）
+  //   - state.json 存在 + --new → 删除老的再新建（🔄）
   const statePath = path.join(workdirRoot, '.canvasvideo', 'project-state.json');
+  const hasState = fs.existsSync(statePath);
+
+  if (forceNew && hasState) {
+    // 强制重建：备份老 ID 给日志看一眼，然后删 state.json
+    let oldId = null;
+    try { oldId = JSON.parse(fs.readFileSync(statePath, 'utf-8')).skillProjectId || null; } catch { /* ignore */ }
+    fs.unlinkSync(statePath);
+    console.log(`🔄 --new 标志 → 删除老 state.json，强制重建项目`);
+    if (oldId) console.log(`   老项目: ${oldId}（已弃用）`);
+  }
+
   const isNewProject = !fs.existsSync(statePath);
 
+  if (!isNewProject) {
+    // 沿用：先把老项目 ID 拿出来给日志看一眼
+    let existingId = null;
+    try { existingId = JSON.parse(fs.readFileSync(statePath, 'utf-8')).skillProjectId || null; } catch { /* ignore */ }
+    console.log(`📌 state.json 已存在 → 沿用现有项目 ${existingId || '(无法读取ID)'}`);
+    console.log(`   如需创建新项目（例如换了主题），请加 --new 标志`);
+  } else {
+    console.log(`🆕 state.json 不存在 → 创建新项目`);
+  }
+
+  // 第二步：确保用户已注册并拿到 userId（这是新格式 skillProjectId 的前置条件）
+  // 仅在 state 不存在时才需要调；已有 state 直接跳过
   let user = null;
   let isFirstTime = false;
   if (isNewProject) {
@@ -168,23 +206,28 @@ async function initProject(workdirRoot, mode, config = {}, options = {}) {
 // CLI 模式
 if (require.main === module) {
   const args = parseArgs(process.argv.slice(2));
-  
+
   if (!args.mode) {
     console.error('用法: node init-project.js --cwd=<Agent工作目录> <mode> [options]');
     console.error('');
     console.error('--cwd=<绝对路径>   Agent 工作目录的绝对路径（必传，避免 workdir 飘到奇怪地方）');
+    console.error('--new              强制创建新项目（删除老 state.json）。换主题/换内容时必加。');
     console.error('mode: creative | dubbing');
     console.error('');
     console.error('配置方式（二选一）:');
-    console.error('  1. 配置文件（推荐）: --config=<filepath>');
+    console.error('  1. 配置文件（推荐）: --config=');
     console.error('  2. JSON 字符串: \'{...}\'');
     console.error('');
     console.error('示例:');
+    console.error('  # 沿用现有项目（修改/续做）');
     console.error('  node init-project.js --cwd=/path/to/agent/workspace creative --config=project-config.json');
+    console.error('  # 强制创建新项目（换主题）');
+    console.error('  node init-project.js --cwd=/path/to/agent/workspace creative --new --config=new-topic.json');
+    console.error('  # 口播模式');
     console.error('  node init-project.js --cwd=/path/to/agent/workspace dubbing --config=dubbing-config.json');
     process.exit(1);
   }
-  
+
   if (!['creative', 'dubbing'].includes(args.mode)) {
     console.error(`[E] 无效的模式: ${args.mode}，必须是 creative 或 dubbing`);
     process.exit(1);
@@ -194,7 +237,7 @@ if (require.main === module) {
   (async () => {
     try {
       const config = loadConfig(args);
-      const result = await initProject(args.workdirRoot, args.mode, config);
+      const result = await initProject(args.workdirRoot, args.mode, config, { forceNew: args.forceNew });
 
       // 输出结果（供后续步骤使用）
       console.log('');
