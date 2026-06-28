@@ -14,6 +14,7 @@
 | R06 | 组件规则 | HtmlComponent 选型、API 调用 | [06-components.md](06-components.md) |
 | R08 | API | 服务端交互 | [08-api.md](08-api.md) |
 | R09 | 自检 | 本地检查（ID格式+重复） | [09-selfcheck.md](09-selfcheck.md) |
+| R10 | 字幕样式项目级必填 | 步骤1（init-project）config 必带 subtitle 6 字段 | [01-principles.md §R10](01-principles.md#r10-字幕样式项目级必填) |
 
 ---
 
@@ -21,6 +22,11 @@
 
 ### 设计阶段
 - HtmlComponent 选型 → [06-components.md](06-components.md)
+
+### 项目初始化
+- 新建 vs 沿用决策（`--new`） → [01-principles.md §R2](01-principles.md#r2-项目新建-vs-沿用)
+- 字幕样式必填（color/fontSize/position/weight/background/textShadow） → [01-principles.md §R10](01-principles.md#r10-字幕样式项目级必填)
+- skillProjectId 格式约束 → [01-principles.md §R6](01-principles.md#r6-skillprojectid-规范)
 
 ### API 调用
 - HtmlComponent 规范查询 → [06-components.md](06-components.md) §R1

@@ -13,6 +13,21 @@
  *   1. JSON 配置文件：--config=
  *   2. JSON 字符串（不推荐，容易引号出错）：'{"content":"AI学习"}'
  *
+ * 必填字段：
+ *   1. mode（命令行位置参数）: creative | dubbing
+ *   2. theme: 主题名（warm / white / dark 等）
+ *   3. content（creative）| audioPath + subtitlePath（dubbing）
+ *   4. **subtitle**（项目级字幕样式，6 字段全必填，AI 必须根据内容风格自己决定填什么）：
+ *      {
+ *        "color": "#FFFFFF",                       // 文字颜色，hex 或 rgba
+ *        "fontSize": "36px",                       // 字号，CSS 长度
+ *        "position": "bottom-center",              // 9 档之一：top/middle/bottom + left/center/right
+ *        "weight": 700,                            // 字重，100-900 整百
+ *        "background": "rgba(0,0,0,0.5)",          // 背景色，transparent/hex/rgba
+ *        "textShadow": "0 1px 3px rgba(0,0,0,0.8)" // 描边/阴影
+ *      }
+ *   缺失会在 generate-skeleton 阶段 fail-fast 报错；老数据无 subtitle 上传会被云端 schema 拒绝。
+ *
  * 项目隔离：
  *   默认情况下，若 workdirRoot 下已有 .canvasvideo/project-state.json，则沿用老项目；
  *   只有当 state.json 不存在时才会创建新项目 ID。

@@ -188,6 +188,18 @@ function mergeRegions(workdir, workdirRoot) {
   };
   if (skeleton.source_design_doc) project.source_design_doc = skeleton.source_design_doc;
 
+  // 项目级字幕样式（必填，6 字段）—— 从 skeleton 透传到 project
+  // schema 强约束要求 subtitle 必填；generate-skeleton 已校验 config.subtitle 存在
+  if (skeleton.subtitle && typeof skeleton.subtitle === 'object') {
+    project.subtitle = skeleton.subtitle;
+  } else {
+    throw new Error(
+      '[merge-regions] skeleton.subtitle 缺失或不是对象。' +
+      '项目级字幕样式（color/fontSize/position/weight/background/textShadow）必填，' +
+      '请在 init-project 的 config JSON 里加 subtitle 字段。'
+    );
+  }
+
   // 4. 校验缺失 region 文件
   const regionsDir = path.join(workdir, 'regions');
   const missingRegions = skeleton.regions

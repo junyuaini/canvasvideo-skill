@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
-    "node-edge-tts": "^1.2.10"
+    "node-edge-tts": "^1.2.10",
+    "sharp": "^0.35.2"
   }
 }

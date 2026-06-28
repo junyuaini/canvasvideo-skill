@@ -343,6 +343,18 @@ function generateSkeleton(workdirRoot, skillProjectId) {
     else if (projectState.voice.subtitleCount) {
       skeleton.subtitle_count = projectState.voice.subtitleCount;
     }
+
+    // 项目级字幕样式（必填，6 字段）
+    // schema 强约束要求 project.json 必须带 subtitle，AI 在 init-project 的 config 里没传就 fail-fast
+    if (!config.subtitle || typeof config.subtitle !== 'object') {
+      throw new Error(
+        '[generate-skeleton] config.subtitle 缺失或不是对象。\n' +
+        '字幕样式是项目级必填（color/fontSize/position/weight/background/textShadow）。\n' +
+        '请在 init-project 的 config JSON 里加 subtitle 字段，例如：\n' +
+        '  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
+      );
+    }
+    skeleton.subtitle = config.subtitle;
   }
 
   // 6. 保存 skeleton.json

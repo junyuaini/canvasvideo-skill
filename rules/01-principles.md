@@ -145,7 +145,7 @@ state.voice 字段被填充（source/audioPath/srtPath/duration/subtitleCount/vo
 
 ---
 
-## R8 项目新建 vs 沿用
+## R2 项目新建 vs 沿用
 
 **AI 必须根据用户本次意图，明确选择"新建项目"还是"沿用现有项目"，并通过 `--new` 标志把决策结果传给 init-project 脚本。**
 
@@ -208,4 +208,49 @@ AI 必须把脚本输出**原样转发给用户**（特别是 🔄 分支的"老
 | 用户说"做个新视频"，脚本却打 📌 沿用 | 立刻停下来提示："检测到 workdir 已有项目 xxx，本次似乎要新建。要不要加 --new？" |
 | AI 加了 `--new` 但脚本打 🆕 而不是 🔄 | state.json 已被人手动删除，正常流程，继续 |
 | 加了 `--new` 但脚本报 mode 冲突 | 用户本意是改模式，按脚本提示手动清理 workdir |
+
+---
+
+## R10 字幕样式项目级必填
+
+**AI 必须在 init-project 的 config JSON 里提供 `subtitle` 字段，6 字段全要。字幕样式从"主题控制"改为"项目级必填"。**
+
+### 字段结构
+
+```json
+"subtitle": {
+  "color":      "#FFFFFF",                       // 文字颜色，hex 或 rgba
+  "fontSize":   "36px",                           // 字号，CSS 长度
+  "position":   "bottom-center",                  // 9 档：top/middle/bottom + left/center/right
+  "weight":     700,                              // 字重，100-900 整百
+  "background": "rgba(0,0,0,0.5)",                // 背景色，transparent/hex/rgba
+  "textShadow": "0 1px 3px rgba(0,0,0,0.8)"       // 描边/阴影
+}
+```
+
+### 决策权
+
+- ✅ **AI 自己决定**（用户没指定时）：根据内容风格选值（见 [docs/01-init.md §步骤2.6](../docs/01-init.md#步骤26字幕样式必填) 推荐表）
+- ❌ **AI 不主动问用户**：除非用户明确说"字幕我要 XXX"
+
+### 校验层级（3 道防线）
+
+| 层级 | 时机 | 行为 |
+|------|------|------|
+| 1. `generate-skeleton.js` | 生成骨架时 | 缺 `config.subtitle` → fail-fast 抛错 + 给补字段示例 |
+| 2. `selfcheck.js` | 本地校验 | 6 字段缺任一 → 输出 `[必填] project.subtitle.X 缺失`；position 不在 9 档 → `[枚举]`；weight 不在 100-900 整百 → `[范围]` |
+| 3. `server validate`（schema） | 上传时 | ajv 校验失败 → 返回 400 |
+
+### 严禁
+
+- ❌ AI 在 config 里偷懒不写 subtitle（理由："主题应该会处理"）——主题**不**再控制字幕
+- ❌ 沿用老项目时省略 subtitle（schema 不兼容，老项目上传会被拒）
+- ❌ 让用户填 subtitle 字段（除非用户主动指定）
+- ❌ 改主题的 `colors.subtitle` 来"曲线救国"——前端不再从 theme 读字幕样式
+
+### 与其他规则的关系
+
+- **R10 强约束 vs R1 不打扰用户**：冲突时 R1 让步——AI 仍需自主决定 subtitle 6 字段，不打扰用户决策，但**不能省略** subtitle
+- **R10 与 R2 项目新建 vs 沿用**：新建/沿用都要带 subtitle，沿用时**不能少**；强制重置（`--new`）后也必须重新带 subtitle
+- **R10 与 docs/01-init.md §步骤2.6**：步骤2.6 是 R10 的具体执行指引（推荐表 + 9 档列表 + 校验失败说明）
 
