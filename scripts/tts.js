@@ -164,6 +164,30 @@ function validateOutputDir(outputDir) {
   return outputDir;
 }
 
+// ===== MP3 时长探测 =====
+// EdgeTTS 输出固定 audio-24khz-48kbitrate-mono-mp3 (CBR 48kbps)
+// MP3 文件 = 可选 ID3v2 头 + 音频帧 (CBR 固定比特率)
+// 用 (音频字节数 / 比特率) 反算时长，误差 < 100ms / 3 分钟
+function getMp3DurationMsFromBuffer(buf) {
+  if (!buf || !buf.length) return 0;
+  // 跳过 ID3v2 头（"ID3" + 4 字节版本 + syncsafe 整数大小）
+  let headerSize = 0;
+  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
+    const size = (buf[6] << 21) | (buf[7] << 14) | (buf[8] << 7) | buf[9];
+    headerSize = 10 + size;
+  }
+  // 跳过 ID3v1 尾（最后 128 字节以 "TAG" 开头）
+  let trailerSize = 0;
+  if (buf.length >= 128 && buf[buf.length - 128] === 0x54
+      && buf[buf.length - 127] === 0x41 && buf[buf.length - 126] === 0x47) {
+    trailerSize = 128;
+  }
+  const audioBytes = buf.length - headerSize - trailerSize;
+  // 48 kbps = 48 * 1000 / 8 = 6000 bytes/s
+  const durationMs = Math.round((audioBytes * 8) / 48);
+  return durationMs;
+}
+
 // ===== TTS 业务处理 =====
 async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
   const tmpAudio = path.join(tmpDir, `chunk_${crypto.randomBytes(4).toString('hex')}.mp3`);
@@ -189,7 +213,10 @@ async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
   const audioBuffer = await fsp.readFile(tmpAudio);
   await fsp.unlink(tmpAudio).catch(() => {});
 
-  return { audio: audioBuffer, entries };
+  // 探测真实音频时长（不再用字级 end，避免块间累积漂移）
+  const audioDurationMs = getMp3DurationMsFromBuffer(audioBuffer);
+
+  return { audio: audioBuffer, entries, audioDurationMs };
 }
 
 async function synthesizeLongText({
@@ -207,16 +234,17 @@ async function synthesizeLongText({
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       logInfo(`合成第 ${i + 1}/${chunks.length} 块（${chunk.length} 字）`);
-      const { audio, entries } = await synthesizeOneChunk(chunk, voice, rate, volume, pitch, tmpDir);
+      const { audio, entries, audioDurationMs } = await synthesizeOneChunk(chunk, voice, rate, volume, pitch, tmpDir);
       allAudio.push(audio);
       const baseEntries = groupEntriesByPunctuation(entries);
       for (const [start, end, txt] of baseEntries) {
         allEntries.push([start + offsetMs, end + offsetMs, txt]);
       }
-      if (allEntries.length > 0) {
-        offsetMs = allEntries[allEntries.length - 1][1];
-      }
-      logInfo(`第 ${i + 1}/${chunks.length} 块完成 | 字级 ${entries.length} 条 | 子句 ${baseEntries.length} 条 | 累计偏移 ${offsetMs} ms`);
+      // 改：用真实音频时长累计 offset（不再用字级 end，避免块间累积漂移）
+      // EdgeTTS 字级 end 通常比真实音频短 ~880ms/块（MP3 收尾静音 + ID3 padding）
+      // 改用 audioDurationMs 后，每块独立计时，不累积
+      offsetMs += audioDurationMs;
+      logInfo(`第 ${i + 1}/${chunks.length} 块完成 | 字级 ${entries.length} 条 | 子句 ${baseEntries.length} 条 | 块时长 ${audioDurationMs}ms | 累计偏移 ${offsetMs} ms`);
     }
   } finally {
     await fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
