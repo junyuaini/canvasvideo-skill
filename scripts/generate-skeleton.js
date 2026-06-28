@@ -85,7 +85,15 @@ function extractJsonConfig(content) {
  * @returns {Array} regions 数组
  */
 function extractRegions(content, mode) {
-  const regionSection = content.split('## 区域列表')[1];
+  // 兼容写法：## 区域列表 / ## 3. 区域列表 / ## 第 3 节 区域列表 / ##区域列表（无空格）
+  // 用正则匹配"##" 后面跟着可选的 "序号." 或 "第N节"，再跟 "区域列表"
+  const regionHeaderRe = /^##\s*(?:[\d.、]+\s*|第[一二三四五六七八九十\d]+\s*[节章节]?\s*)?区域列表\s*$/m;
+  const match = content.match(regionHeaderRe);
+  if (!match) {
+    throw new Error('未找到 "## 区域列表" 部分（兼容写法：## 3. 区域列表、## 第3节 区域列表、##区域列表）');
+  }
+  const headerEnd = match.index + match[0].length;
+  const regionSection = content.slice(headerEnd);
   if (!regionSection) {
     throw new Error('未找到 "## 区域列表" 部分');
   }

@@ -171,13 +171,15 @@ function mergeRegions(workdir, workdirRoot) {
   console.log(`[✓] region 全局时间计算完成: 末端 ${parseFloat(lastTime.toFixed(3))}s`);
 
   // 3. 初始化 project
+  // 注意：故意不写 canvas 字段。前端 schema 不允许 project.json 出现 canvas（前端已迁到
+  // HtmlComponent 模式，用 region 内 component 承载画面），写进去会触发 selfcheck/云端校验失败。
+  // 设计稿中"画布"的概念只属于 skeleton（生成阶段），不进 project.json。
   const project = {
     name: skeleton.name,
     description: skeleton.description,
     theme: skeleton.theme,
     duration: skeleton.duration,
     viewport: skeleton.viewport,
-    canvas: skeleton.canvas,
     settings: skeleton.settings,
     audio: skeleton.audio,
     regions: [],

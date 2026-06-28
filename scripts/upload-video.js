@@ -499,9 +499,19 @@ if (require.main === module) {
   //   node upload-video.js --cwd=<Agent工作目录> <skillProjectId> <zipPath>                     ← 用默认 SERVER_URL
   //   node upload-video.js --cwd=<Agent工作目录> <serverUrl>      <skillProjectId> <zipPath>    ← 显式 SERVER_URL
   const argv = process.argv.slice(2);
-  const agentWorkdir = resolveAgentWorkdir(argv);
+  const hasCwd = argv.some(a => a.startsWith('--cwd='));
+  const agentWorkdir = hasCwd ? resolveAgentWorkdir(argv) : null;
   const positional = argv.filter(a => !a.startsWith('--cwd='));
   let serverUrl, skillProjectId, zipPath;
+
+  // 先做"参数缺失分类提示"，给具体错误而不是通用 usage
+  if (!hasCwd) {
+    console.error('❌ 缺少必传参数 --cwd');
+    console.error('   用法: node upload-video.js --cwd=<Agent工作目录的绝对路径> ...');
+    console.error('   说明: --cwd 用于定位 canvasvideo-workdir/ 目录，必须是 Agent 工作目录的绝对路径。');
+    process.exit(1);
+  }
+
   if (positional.length === 2) {
     serverUrl = DEFAULT_SERVER_URL;
     skillProjectId = positional[0];
@@ -510,10 +520,27 @@ if (require.main === module) {
     serverUrl = positional[0];
     skillProjectId = positional[1];
     zipPath = positional[2];
+  } else if (positional.length === 1) {
+    console.error('❌ 缺少必传参数 <zipPath>');
+    console.error('   当前参数: skillProjectId = ' + positional[0]);
+    console.error('   缺: zipPath（zip 包的绝对路径）');
+    console.error('');
+    console.error('   用法: node upload-video.js --cwd=<Agent工作目录> [serverUrl] <skillProjectId> <zipPath>');
+    console.error('   示例: node upload-video.js --cwd=/path/to/agent/workspace cv_xxx_xxx_xxx ./dist.zip');
+    process.exit(1);
+  } else if (positional.length === 0) {
+    console.error('❌ 缺少必传参数 <skillProjectId> 和 <zipPath>');
+    console.error('');
+    console.error('   用法: node upload-video.js --cwd=<Agent工作目录> [serverUrl] <skillProjectId> <zipPath>');
+    console.error('   示例: node upload-video.js --cwd=/path/to/agent/workspace cv_xxx_xxx_xxx ./dist.zip');
+    console.error('   示例: node upload-video.js --cwd=/path/to/agent/workspace https://dajiulanren.top cv_xxx_xxx_xxx ./dist.zip');
+    process.exit(1);
   } else {
-    console.error('用法: node upload-video.js --cwd=<Agent工作目录> [serverUrl] <skillProjectId> <zipPath>');
-    console.error('  默认 serverUrl: ' + DEFAULT_SERVER_URL);
-    console.error('  必传: --cwd=<Agent工作目录的绝对路径>');
+    console.error('❌ 位置参数过多（收到 ' + positional.length + ' 个，期望 2 或 3 个）');
+    console.error('   当前参数: ' + positional.join(' '));
+    console.error('');
+    console.error('   用法: node upload-video.js --cwd=<Agent工作目录> [serverUrl] <skillProjectId> <zipPath>');
+    console.error('   注意: [serverUrl] 是可选的（不传则用默认 ' + DEFAULT_SERVER_URL + '）');
     process.exit(1);
   }
 
