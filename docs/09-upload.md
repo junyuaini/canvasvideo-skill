@@ -79,8 +79,36 @@ node scripts/upload-video.js --cwd=/path/to/agent/workspace https://custom-serve
 
 | 结果 | 说明 |
 |------|------|
-| previewUrl | 视频预览链接 |
+| previewUrl | 视频预览链接（线上） |
+| previewToken | 预览令牌（写回本地 state.json） |
 | userToken | 用户账号（首次创建时返回） |
+| **state.json 闭环** | 脚本会调用 `state.js#savePreviewInfo` 把 `previewToken` / `previewUrl` / `updatedAt` 写回 `<Agent工作目录>/canvasvideo-workdir/.canvasvideo/project-state.json` |
+
+### 本地 state.json 闭环
+
+上传成功后，**脚本会自动更新**本地 `state.json`：
+
+```diff
+{
+  "skillProjectId": "cv_a1b2c3_mqtk95pt_0b43fa53",
+  "userId": "cu-xxxxxxxxxxxx",
+  "mode": "creative",
+  "designConfirmed": true,
++ "previewToken": "pt-xxxxxxxxxxxxxxxx",
++ "previewUrl": "https://dajiulanren.top/cv/view/pt-xxxxxxxxxxxxxxxx",
++ "updatedAt": "2026-06-28T20:31:28.000Z",
+  "createdAt": "2026-06-28T18:00:00.000Z"
+}
+```
+
+这三项是"上一次成功上传"的快照，供后续操作复用：
+- **`previewToken`**：下次调 `/cv/api/projects/view/:previewToken` 用
+- **`previewUrl`**：AI 可以直接读 state 拿上次链接给用户（不用再翻聊天记录）
+- **`updatedAt`**：判断"项目是否已经上传过 / 何时上传的"
+
+**AI 不用自己写这三项**——脚本会自动落盘。如果看到 state.json 里这三项是 `null`，说明这次上传没有走通（脚本会输出警告）。
+
+**写失败不阻断上传**：如果本地 state.json 写失败（权限/磁盘满等），脚本会塞到 `warnings` 数组里输出，**不影响线上预览**——线上视频依然有效，只是下次读不到本地状态。
 
 ---
 

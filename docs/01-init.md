@@ -76,6 +76,36 @@
 
 ---
 
+### 步骤2.5：判断新建 vs 沿用
+
+**这一步是 init-project 跑之前必须做的决策**，对应 [rules/01-principles.md §R2](rules/01-principles.md#r2-项目新建-vs-沿用)。
+
+先看 `<Agent工作目录>/canvasvideo-workdir/.canvasvideo/project-state.json` 是否存在：
+
+| state.json | 用户意图 | AI 决策 | 命令 |
+|------------|---------|---------|------|
+| 不存在 | 任何意图 | **新建项目**（不用加 `--new`，默认行为就是新建） | 普通命令 |
+| 存在 | **新主题 / 新内容** | **新建项目** | 命令加 `--new` |
+| 存在 | **修改当前项目** | **沿用项目** | 普通命令（不加 `--new`） |
+| 存在 | **意图模糊** | **停下来澄清** | 不调脚本，先问用户 |
+
+**关键词快速判断**（仅作辅助，必须结合上下文）：
+
+- 新建：`"做个新的"`、`"再做个"`、`"下一个"`、`"换个主题"`、`"今天录了个音频"`、`"新的视频"`
+- 沿用：`"改一下"`、`"调整"`、`"换个颜色"`、`"加个结尾"`、`"缩短一点"`、`"第三段重做"`
+- 模糊：`"帮我处理一下视频"`、`"接着搞"`、`"继续"`——**必须问用户**
+
+**严禁**：AI 自己猜"应该是要新建"或"应该是要沿用"——猜错了会覆盖昨天的项目。
+
+**脚本报错回看**：如果脚本输出 `📌 沿用现有项目 cv_xxx` 但用户语义明显是新建，立刻停下来提示：
+```
+⚠️ 检测到 workdir 已有项目 cv_xxx，但本次意图像是新主题。
+   要新建项目请加 --new 标志（会删除老项目 cv_xxx）。
+   要继续沿用请回复"沿用"。
+```
+
+---
+
 ### 步骤3：初始化项目
 
 运行初始化脚本：
@@ -85,21 +115,56 @@
 先创建配置文件：
 
 ```bash
-# 创作模式配置示例
+# 创作模式 - 新建项目（推荐，状态文件不存在时默认就是新建）
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --config=project-config.json
 
-# 口播模式配置示例
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --config=project-config.json
+# 创作模式 - 强制新建项目（已有项目时加 --new，会删除老 state.json）
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --new --config=project-config.json
+
+# 创作模式 - 沿用现有项目（修改/迭代当前视频）
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --config=project-config.json
+
+# 口播模式 - 新建项目
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --config=dubbing-config.json
+
+# 口播模式 - 强制新建项目
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --new --config=dubbing-config.json
 ```
 
 **方式2：JSON 字符串（兼容旧方式）**
 
 ```bash
-# 创作模式
+# 创作模式 - 新建
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative '{"content":"视频主题","duration":15}'
+
+# 创作模式 - 强制新建
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --new '{"content":"新主题","duration":15}'
 
 # 口播模式
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
+```
+
+**`--new` 标志说明**：
+
+- **作用**：删除 `<Agent工作目录>/canvasvideo-workdir/.canvasvideo/project-state.json`，强制生成新的 `skillProjectId`
+- **何时用**：用户语义是"新主题 / 新内容 / 新视频"，且 workdir 下已有项目
+- **何时不用**：用户是修改当前项目；或 state.json 本来就不存在
+- **决策参考**：[rules/01-principles.md §R2](rules/01-principles.md#r2-项目新建-vs-沿用)
+
+脚本会输出三选一日志，AI 必须**原样转发给用户**：
+
+```
+# 沿用现有项目
+📌 state.json 已存在 → 沿用现有项目 cv_a1b2c3_mqtk95pt_0b43fa53
+   如需创建新项目（例如换了主题），请加 --new 标志
+
+# 新建项目
+🆕 state.json 不存在 → 创建新项目
+
+# 强制重建
+🔄 --new 标志 → 删除老 state.json，强制重建项目
+   老项目: cv_a1b2c3_mqtk95pt_0b43afa2（已弃用）
+🆕 state.json 不存在 → 创建新项目
 ```
 
 > **说明**：

@@ -111,6 +111,8 @@ sequenceDiagram
 
 4. **固定 skillProjectId**：同一项目多次上传使用相同 ID，服务器复用 previewToken
 
+   **何时换 ID**：用户要做新主题/新内容时，由 AI 加 `--new` 标志显式切换，详见 [rules/01-principles.md §R2](rules/01-principles.md#r2-项目新建-vs-沿用)。脚本会打 📌 / 🆕 / 🔄 三种日志明确决策结果，AI 必须原样转发给用户。
+
 5. **首次注册无感**：用户不需要主动注册，由 `getOrCreateUser` 自动完成（init-project 时即触发）
 
 6. **首次告知必须强调**：⚠️ + 代码块 + 存放路径 + 风险提示，缺一不可
