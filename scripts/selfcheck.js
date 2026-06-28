@@ -529,6 +529,16 @@ function selfcheck(project) {
   const components = project.components || [];
   const regions = project.regions || [];
 
+  // [禁止设置] project.canvas 字段不允许手动设置
+  // 画布尺寸由前后端按 viewport × 10 自动计算（前端 LayoutEngine.calculateCanvasAuto / 服务端兜底）
+  // 强制手填反而易错（容易误填成 viewport 尺寸而非画布尺寸）
+  if (project.canvas !== undefined && project.canvas !== null) {
+    errors.push(
+      '[禁止设置] project.canvas 字段不允许手动设置：画布尺寸由前后端按 viewport × 10 自动计算。' +
+      '请删除 project.json 顶层的 canvas 字段，并在 viewport 中正确填写视频窗口尺寸（如 780×585）。'
+    );
+  }
+
   // 检查 ID 格式
   const formatErrors = checkIdFormat(components);
   errors.push(...formatErrors);
