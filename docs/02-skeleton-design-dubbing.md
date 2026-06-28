@@ -1,6 +1,6 @@
 # 步骤2：骨架设计（口播模式）
 
-> 前置步骤：[步骤1：初始化](01-init.md)
+> 前置步骤：[步骤1：初始化](01-init.md) + [步骤1.5：音频与字幕准备](01.5-voice-prepare.md)
 > 下一步：[步骤3：生成骨架JSON](03-skeleton-build.md)
 
 ---
@@ -17,8 +17,10 @@
 
 | 来源 | 说明 |
 |------|------|
-| 用户输入 | 音频文件路径(.mp3/.wav/.m4a) + SRT字幕文件路径 |
-| 引用规则 | — |
+| 用户输入 | 音频文件 + SRT字幕文件（由 [步骤 1.5](01.5-voice-prepare.md) 复制到 `assets/voice/voice.mp3` 和 `assets/subtitles/subtitle.srt`） |
+| 状态文件 | `state.voice` 字段（由 prepare-voice.js 写入，含 audioPath/srtPath/duration/subtitleCount） |
+
+> 💡 **步骤 1.5 是口播模式的硬性前置**：未跑 prepare-voice.js 就跑步骤 2，状态文件 `state.voice` 为空，步骤 3 生成 skeleton.json 时会直接报错（详见 [generate-skeleton.js:252](file:///D:/TRAE%20SOLO/%E8%A7%86%E9%A2%91%E5%88%B6%E4%BD%9C/CanvasVideo-All/canvasvideo-skill/scripts/generate-skeleton.js#L252)）。
 
 ---
 
@@ -90,14 +92,16 @@
 
 ### 步骤2：SRT 时间轴总览
 
+> 字幕文件已由步骤 1.5 复制到 `assets/subtitles/subtitle.srt`，AI 直接读 `state.voice.srtPath` 路径即可。
+
 | 序号 | 开始 | 结束 | 时长 | 字幕内容 |
 |------|------|------|------|----------|
 | 1 | 0.000 | 3.500 | 3.5s | ... |
 | 2 | 3.500 | 6.200 | 2.7s | ... |
 | ... | ... | ... | ... | ... |
 
-**总时长**：{音频时长} 秒
-**字幕条数**：{N} 条
+**总时长**：{state.voice.duration} 秒
+**字幕条数**：{state.voice.subtitleCount} 条
 
 ---
 
@@ -256,60 +260,22 @@
 
 ---
 
-### 步骤7：区域布局
-
-**viewport 与区域排布**：
-
-| 项 | 规则 | 值 |
-|---|---|---|
-| 默认 viewport | 用户未指定时用 | 780×585 |
-| 区域排布 | 每行4个，超4换行 | — |
-| 行间距 | 固定 | 55px |
-| 列间距 | 固定 | 30px |
-| 区域 margin | 固定 | 20px |
-
-**区域布局坐标**（每行4列）：
-
-| 区域索引 | 行/列 | x | y |
-|---|---|---|---|
-| P1 | 行1·列1 | 120 | 50 |
-| P2 | 行1·列2 | 900 | 50 |
-| P3 | 行1·列3 | 1680 | 50 |
-| P4 | 行1·列4 | 2460 | 50 |
-| P5 | 行2·列1 | 120 | 635 |
-
-**canvas 尺寸**：
-
-| 区域数 | 行数 | 推荐 canvas |
-|---|---|---|
-| 1-4 | 1 行 | `width: 3300, height: 700` |
-| 5-8 | 2 行 | `width: 3300, height: 1285` |
-| 9-12 | 3 行 | `width: 3300, height: 1870` |
-| 13-16 | 4 行 | `width: 3300, height: 2455` |
-
-**严禁**：
-- ❌ 每行5-6个区域
-- ❌ 行间距不固定
-- ❌ 区域 margin 不一致
-
 ---
 
 ### 步骤8：生成设计文档
 
 参考 `templates/artifacts/design-skeleton-dubbing.md`，按模板结构填充实际内容，生成设计文档。
 
+> 💡 **设计文档里的 `audio.path` 字段会被自动覆盖**——步骤 3 跑 generate-skeleton.js 时，会用 `state.voice.audioPath` 强制覆盖（防止 AI 在 MD 里写错路径）。
+
 ---
 
 ### 步骤9：保存文件
 
-运行保存脚本：
-
-```bash
-node scripts/save-project.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} design-skeleton-dubbing.md "{设计文档内容}"
-```
-
-或直接使用文件系统保存到：
+直接使用文件系统保存到：
 `{workdir}/{skillProjectId}/design-skeleton-dubbing.md`
+
+> 注：之前文档提到的 `save-project.js ... design-skeleton-dubbing.md` 描述有误，save-project.js 仅处理 project.json，不接受 MD 输入。
 
 ---
 
@@ -325,22 +291,15 @@ node scripts/save-project.js --cwd=<Agent工作目录的绝对路径> {skillProj
 
 > [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-- [E] 字幕文本100%来自SRT，未改写
-- [E] 总时长等于音频时长
-- [E] 每区域至少1条字幕
-- [E] viewport 和 canvas 尺寸合理
-- [W] 每区域时长3-8秒
-- [W] 语义边界处切分（不在句子中间）
-- [W] 区域类型不重复超过2次
-- [W] 相邻区域类型不同
-- [W] 有Hook或CTA至少其一
-- [W] 开头情绪不是"低"
-- [W] 结尾情绪不是"高"
-- [I] 情绪曲线有起伏，不是平线
-- [I] 类型选择符合决策树（内容目的×情绪位置×风格）
-- [I] 90秒以上视频有章节划分
-- [I] 长视频章节内使用了微循环模板
-- [I] 章节间过渡区域设置合理
+**脚本自动校验**（生成时 warning）：
+
+- 总时长之和等于音频时长
+
+**AI 写完后自查**：
+
+- [I] 情绪曲线有起伏
+- [I] 90 秒以上视频有章节划分
+- [I] 字幕文本完全来自 SRT（AI 不要改写）
 
 ---
 

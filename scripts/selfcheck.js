@@ -24,7 +24,7 @@ function checkIdFormat(components) {
 
   components.forEach(c => {
     if (c.id && !idPattern.test(c.id)) {
-      errors.push(`组件 ID "${c.id}" 格式错误，应为 P{数字}-{三位数字}，如 P1-001、P3-005`);
+      errors.push(`HtmlComponent ID "${c.id}" 格式错误，应为 P{数字}-{三位数字}，如 P1-001、P3-005`);
     }
   });
 
@@ -38,14 +38,14 @@ function checkDuplicateIds(components) {
   const ids = components.map(c => c.id).filter(Boolean);
   const duplicates = ids.filter((item, index) => ids.indexOf(item) !== index);
   if (duplicates.length > 0) {
-    return `组件ID重复: ${[...new Set(duplicates)].join(', ')}`;
+    return `HtmlComponent ID 重复: ${[...new Set(duplicates)].join(', ')}`;
   }
   return null;
 }
 
 /**
  * 检查 region schema 必填字段（与后端 schema 对齐）
- * - id 必填、字符串、非空（与组件 ID 前缀对应）
+ * - id 必填、字符串、非空（与 HtmlComponent ID 前缀对应）
  * - name 必填、字符串、非空（仅用于日志展示）
  * - duration 必填校验由 checkTimeHierarchy 处理，不重复
  */
@@ -56,7 +56,7 @@ function checkRegionSchema(regions) {
     if (!region || typeof region !== 'object') return;
     if (!region.id || typeof region.id !== 'string' || region.id.trim() === '') {
       errors.push(
-        `regions[${index}] 缺少必填字段 'id'。建议：给每个 region 加一个唯一 ID（如 "P1"），并保证与组件 ID 前缀一致。`
+        `regions[${index}] 缺少必填字段 'id'。建议：给每个 region 加一个唯一 ID（如 "P1"），并保证与 HtmlComponent ID 前缀对应。`
       );
     }
     if (!region.name || typeof region.name !== 'string' || region.name.trim() === '') {
@@ -69,10 +69,85 @@ function checkRegionSchema(regions) {
 }
 
 /**
+ * 检查所有 HtmlComponent 的 background 必填字段（与 content 平级）
+ * - background 是 HtmlComponent 的两个基本属性之一（另一个是 content）
+ * - background.html 必填、字符串、非空（一般是单个根 div，承载 SVG/渐变/装饰）
+ * - background.css 必填、字符串、非空（建议 position: absolute + inset: 0 让背景填满 video-frame）
+ * - 非 HtmlComponent（如 AggregateComponent）不强制要求 background
+ * - 递归检查 children
+ */
+function checkHtmlComponentBackground(components) {
+  const errors = [];
+  if (!Array.isArray(components)) return errors;
+
+  function checkRecursive(comps, pathPrefix) {
+    comps.forEach((comp, idx) => {
+      if (!comp || typeof comp !== 'object') return;
+      const pathStr = pathPrefix ? `${pathPrefix}.children[${idx}]` : `components[${idx}]`;
+      const compLabel = `[${comp.id || `index ${idx}`}]`;
+
+      if (comp.type === 'HtmlComponent') {
+        const bg = comp.background;
+
+        if (!bg || typeof bg !== 'object') {
+          errors.push(
+            `${pathStr} HtmlComponent ${compLabel} 缺少 'background' 字段（与 content 平级）。HtmlComponent 必须同时携带 background 和 content 作为两个基本属性，例：{ "background": { "html": "<div class='region-bg'></div>", "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(...); }" } }。详见 docs/04-region-design-creative.md。`
+          );
+        } else {
+          if (!bg.html || typeof bg.html !== 'string' || bg.html.trim() === '') {
+            errors.push(
+              `${pathStr} HtmlComponent ${compLabel} background.html 必填且为非空字符串。建议：写一个根 div，例如 "<div class='region-bg'></div>"，内部可嵌套 SVG/渐变/几何装饰。`
+            );
+          }
+          if (!bg.css || typeof bg.css !== 'string' || bg.css.trim() === '') {
+            errors.push(
+              `${pathStr} HtmlComponent ${compLabel} background.css 必填且为非空字符串。建议：position: absolute + inset: 0 让背景填满 video-frame，再加 background: ... / 动画 / 装饰样式。`
+            );
+          }
+        }
+      }
+
+      // 递归 children
+      if (Array.isArray(comp.children) && comp.children.length > 0) {
+        checkRecursive(comp.children, pathStr);
+      }
+    });
+  }
+
+  checkRecursive(components, null);
+  return errors;
+}
+
+/**
+ * 检查顶级组件 type 白名单
+ * - 后端 / Skill 只允许 HtmlComponent
+ * - 与后端 schemas/project.schema.json 的 component.type enum 保持一致
+ */
+function checkTopComponentType(components) {
+  const errors = [];
+  const ALLOWED_TYPES = new Set(['HtmlComponent']);
+  if (!Array.isArray(components)) return errors;
+  components.forEach((comp, index) => {
+    if (!comp || typeof comp !== 'object') return;
+    const label = comp.id ? `[${comp.id}]` : `[index ${index}]`;
+    if (!comp.type || typeof comp.type !== 'string') {
+      // type 必填校验交给 schema / checkIdFormat 之类的其他函数，这里只检查白名单
+      return;
+    }
+    if (!ALLOWED_TYPES.has(comp.type)) {
+      errors.push(
+        `顶级组件 ${label} type="${comp.type}" 不被允许。workdir 的 project.json 顶层组件只接受 HtmlComponent，请改写为 HtmlComponent 并用 content.html + content.css 实现所需视觉效果。详见 rules/06-components.md §R2。`
+      );
+    }
+  });
+  return errors;
+}
+
+/**
  * 检查顶级组件 regionId 必填
  * - 顶级组件（顶层数组成员）必须配置 regionId
  * - regionId 必须在 regions 中存在
- * - 组件 ID 前缀必须与 regionId 一致
+ * - HtmlComponent ID 前缀必须与 regionId 一致
  */
 function checkTopRegionId(components, regions) {
   const errors = [];
@@ -174,7 +249,7 @@ function checkHtmlElementIds(components, allIds) {
           return;
         }
 
-        // [归并] 同一组件内"key 不是 #ID 形式"的 key 收集起来，最后归并为一条错误
+        // [归并] 同一 HtmlComponent 内"key 不是 #ID 形式"的 key 收集起来，最后归并为一条错误
         const invalidKeys = [];
         const expectedKeyMissing = []; // key 是 # 但 # 后没内容
 
@@ -237,10 +312,10 @@ function checkHtmlElementIds(components, allIds) {
             typeof value.end === 'number' && Number.isFinite(value.end)
           ) {
             if (value.start < comp.start) {
-              errors.push(`[层级 3 / element] HtmlComponent [${labelId}] elementIds["${key}"].start=${value.start} 早于所属组件开始时间 ${comp.start}（组件范围 [${comp.start}, ${comp.end}]）。建议：将 elementIds start 改为 ${comp.start}。`);
+              errors.push(`[层级 3 / element] HtmlComponent [${labelId}] elementIds["${key}"].start=${value.start} 早于所属 HtmlComponent 开始时间 ${comp.start}（HtmlComponent 范围 [${comp.start}, ${comp.end}]）。建议：将 elementIds start 改为 ${comp.start}。`);
             }
             if (value.end > comp.end) {
-              errors.push(`[层级 3 / element] HtmlComponent [${labelId}] elementIds["${key}"].end=${value.end} 超出所属组件结束时间 ${comp.end}（组件范围 [${comp.start}, ${comp.end}]）。建议：将 elementIds end 改为 ${comp.end} 或更小。`);
+              errors.push(`[层级 3 / element] HtmlComponent [${labelId}] elementIds["${key}"].end=${value.end} 超出所属 HtmlComponent 结束时间 ${comp.end}（HtmlComponent 范围 [${comp.start}, ${comp.end}]）。建议：将 elementIds end 改为 ${comp.end} 或更小。`);
             }
           }
         });
@@ -486,9 +561,17 @@ function selfcheck(project) {
   const regionSchemaErrors = checkRegionSchema(regions);
   errors.push(...regionSchemaErrors);
 
+  // 检查所有 HtmlComponent 的 background 必填（html + css，与 content 平级）
+  const htmlCompBgErrors = checkHtmlComponentBackground(components);
+  errors.push(...htmlCompBgErrors);
+
   // 检查顶级组件 regionId
   const topRegionIdErrors = checkTopRegionId(components, regions);
   errors.push(...topRegionIdErrors);
+
+  // 检查顶级组件 type 白名单（后端 / Skill 只允许 HtmlComponent）
+  const topTypeErrors = checkTopComponentType(components);
+  errors.push(...topTypeErrors);
 
   // [时间层次校验] project → region → component → element
   const timeHierarchyErrors = checkTimeHierarchy(project);

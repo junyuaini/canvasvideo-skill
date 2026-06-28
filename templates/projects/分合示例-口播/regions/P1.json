@@ -1,0 +1,38 @@
+{
+  "id": "P1",
+  "name": "开头",
+  "subtitles": [
+    {
+      "start": 0,
+      "end": 2.5,
+      "text": "今天我们来聊聊 AI 时代的核心竞争力"
+    }
+  ],
+  "components": [
+    {
+      "id": "P1-001",
+      "regionId": "P1",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "background": {
+        "html": "<div class='region-bg region-bg--bright'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; } .region-bg--bright { background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.25) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.22) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
+      },
+      "content": {
+        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span>",
+        "css": ".title { position: absolute; left: 20px; top: 200px; width: 740px; height: 80px; margin: 0; font-size: 64px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 240px; top: 310px; width: 300px; height: 60px; padding: 12px 32px; border-radius: 999px; font-size: 28px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; }",
+        "elementIds": {
+          "#P1-002": { "id": "P1-002", "start": 0, "end": 3 },
+          "#P1-003": { "id": "P1-003", "start": 1.5, "end": 3 }
+        }
+      },
+      "start": 0,
+      "end": 3
+    }
+  ]
+}

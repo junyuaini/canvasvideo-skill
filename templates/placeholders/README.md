@@ -4,7 +4,7 @@
 
 ## Picsum 在线图（推荐）
 
-通过 API 获取，需用 AggregateComponent 叠水印。
+通过 API 获取，在 HtmlComponent 的 `<img>` 上叠加 CSS 水印。
 
 ```
 https://picsum.photos/seed/{seed}/{width}/{height}

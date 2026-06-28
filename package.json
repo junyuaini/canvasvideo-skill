@@ -1,0 +1,14 @@
+{
+  "name": "canvasvideo-skill",
+  "version": "1.0.0",
+  "description": "CanvasVideo Skill - 生成画布视频（H5 动画视频）的 AI 工具包",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "node-edge-tts": "^1.2.10"
+  }
+}

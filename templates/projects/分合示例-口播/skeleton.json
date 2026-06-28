@@ -1,7 +1,7 @@
 {
-  "name": "AI时代如何学习",
-  "description": "5秒短视频示例：展示分而治之的工作流程",
-  "theme": "black",
+  "name": "口播模式示例",
+  "description": "5秒口播短视频示例：演示 SRT 字幕 + 配音音频 + 画面同步",
+  "theme": "white",
   "duration": 5,
   "viewport": {
     "width": 780,
@@ -18,19 +18,20 @@
     "postFullViewDuration": 0.4
   },
   "audio": {
-    "path": "assets/placeholders/bgm/tech-pulse.mp3",
-    "loop": true,
-    "fadeIn": 1,
-    "fadeOut": 2
+    "path": "assets/placeholders/voiceover/sample.mp3",
+    "loop": false,
+    "fadeIn": 0,
+    "fadeOut": 0.3
   },
-  "source_design_doc": "./design-skeleton-creative.md",
   "regions": [
     {
-      "name": "P1",
+      "id": "P1",
+      "name": "开头",
       "duration": 3
     },
     {
-      "name": "P2",
+      "id": "P2",
+      "name": "结尾",
       "duration": 2
     }
   ]

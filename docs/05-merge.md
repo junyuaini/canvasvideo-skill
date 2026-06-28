@@ -1,6 +1,6 @@
 # 步骤5：合并
 
-> 前置步骤：[步骤4：区域设计与生成JSON](04-region-design-creative.md) / [步骤4：区域设计（口播模式）](04-region-design-dubbing.md)
+> 前置步骤：[步骤4：区域设计与生成JSON](04-region-design-creative.md) / [步骤4：区域设计与生成JSON（口播模式）](04-region-design-dubbing.md)
 > 下一步：[步骤6：素材处理](06-assets.md)
 
 ---
@@ -20,8 +20,7 @@
 | 脚本 | `scripts/merge-regions.js` | — |
 | 引用规则 | `rules/09-selfcheck.md` | — |
 
-> ⚠️ **硬规则**：合并前必须检查 `regions/` 目录下的 JSON 文件数量是否等于 `skeleton.json` 中 `regions` 数组的长度。
-> 如果不一致，必须回到步骤4-5补全缺失的区域。
+> ℹ️ **运行时检查**：`merge-regions.js` 会自动检查所有 region JSON 是否齐全。缺失会直接报错，提示回到 Step 4 补全。
 
 ---
 
@@ -48,20 +47,20 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 检查脚本输出的合并结果：
 
-- 组件总数 = 所有区域组件数之和
+- HtmlComponent 总数 = 所有区域 HtmlComponent 数之和
 - 字幕总数 = 所有区域字幕数之和
-- 所有组件 ID 唯一
-- 组件按 start 时间排序
+- 所有 HtmlComponent ID 唯一
+- HtmlComponent 按 start 时间排序
 - 字幕按 start 排序
 
 ### 第 4 步：素材清单引用
 
-把 design.md 素材清单中**所有非空状态的素材**，挂到 `ImageComponent.content.image`：
+把 `design-skeleton-{creative\|dubbing}.md` 素材清单中**所有非空状态的素材**，挂到 HtmlComponent 的 `<img>` 上：
 
-| design.md 状态 | project.json 写法 |
+| design-skeleton 状态 | project.json 写法 |
 |---|---|
-| `[已具备]` | `"image": "./assets/images/{file}"`（真实路径） |
-| `[AI 自动生成 - 占位]` | Picsum URL + AggregateComponent 叠水印（详见 `templates/placeholders/README.md`） |
+| `[已具备]` | `<img src="./assets/images/{file}">`（真实路径） |
+| `[AI 自动生成 - 占位]` | Picsum URL + CSS 叠水印（详见 `templates/placeholders/README.md`） |
 | `[待用户提供]` | 也用占位图，备注列写"用户提供后替换" |
 
 **素材清单实现率必须 = 100%**。
@@ -78,15 +77,19 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 ## 自检
 
-> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+> [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-- [E] project.json 是合法 JSON
-- [E] 包含所有全局字段（name, theme, duration, viewport, canvas, regions, settings, audio, components, source_design_doc）
-- [E] components 数组不为空
-- [E] 所有组件 ID 唯一
-- [W] 素材清单实现率 = 100%
-- [I] 组件按 start 排序
-- [I] 字幕按 start 排序
+**脚本自动校验**：
+
+- `merge-regions.js` 检查所有 region JSON 是否齐全（缺失即报错）
+- `merge-regions.js` 检查骨架设计文档存在性
+- `selfcheck.js` 检查所有全局字段齐全（name, theme, duration, viewport, canvas, regions, settings, audio, components, source_design_doc）
+- `selfcheck.js` 检查所有 HtmlComponent ID 唯一
+- `merge-regions.js` 自动按 start 排序 HtmlComponent 和字幕
+
+**AI 写完后自查**：
+
+- [W] 素材清单实现率 = 100%（指所有素材都被挂到 HtmlComponent 上）
 
 ---
 

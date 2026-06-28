@@ -1,0 +1,118 @@
+{
+  "name": "口播模式示例",
+  "description": "5秒口播短视频示例：演示 SRT 字幕 + 配音音频 + 画面同步",
+  "theme": "white",
+  "duration": 5,
+  "viewport": {
+    "width": 780,
+    "height": 585
+  },
+  "settings": {
+    "autoPlay": false,
+    "loop": false,
+    "minScale": 0.01,
+    "maxScale": 5,
+    "ease": 0.08,
+    "contentZoomRatio": 1,
+    "preFullViewDuration": 0.4,
+    "postFullViewDuration": 0.4
+  },
+  "audio": {
+    "path": "assets/placeholders/voiceover/sample.mp3",
+    "loop": false,
+    "fadeIn": 0,
+    "fadeOut": 0.3
+  },
+  "regions": [
+    {
+      "id": "P1",
+      "name": "开头",
+      "duration": 3
+    },
+    {
+      "id": "P2",
+      "name": "结尾",
+      "duration": 2
+    }
+  ],
+  "components": [
+    {
+      "id": "P1-001",
+      "regionId": "P1",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "content": {
+        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span>",
+        "css": ".title { position: absolute; left: 20px; top: 200px; width: 740px; height: 80px; margin: 0; font-size: 64px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 240px; top: 310px; width: 300px; height: 60px; padding: 12px 32px; border-radius: 999px; font-size: 28px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; }",
+        "elementIds": {
+          "#P1-002": {
+            "id": "P1-002",
+            "start": 0,
+            "end": 3
+          },
+          "#P1-003": {
+            "id": "P1-003",
+            "start": 1.5,
+            "end": 3
+          }
+        }
+      },
+      "start": 0,
+      "end": 3,
+      "background": {
+        "html": "<div class='region-bg region-bg--bright'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; } .region-bg--bright { background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.25) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.22) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
+      }
+    },
+    {
+      "id": "P2-001",
+      "regionId": "P2",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "content": {
+        "html": "<span id='P2-002' class='badge'>KEY POINT</span><h2 id='P2-003' class='subtitle'>持续学习的能力</h2>",
+        "css": ".badge { position: absolute; left: 290px; top: 180px; width: 200px; height: 40px; padding: 10px 24px; border-radius: 8px; font-size: 18px; font-weight: 800; color: #FFFFFF; background: #F59E0B; display: flex; align-items: center; justify-content: center; } .subtitle { position: absolute; left: 20px; top: 250px; width: 740px; height: 80px; margin: 0; font-size: 56px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; }",
+        "elementIds": {
+          "#P2-002": {
+            "id": "P2-002",
+            "start": 3,
+            "end": 5
+          },
+          "#P2-003": {
+            "id": "P2-003",
+            "start": 3.5,
+            "end": 5
+          }
+        }
+      },
+      "start": 3,
+      "end": 5,
+      "background": {
+        "html": "<div class='region-bg region-bg--accent'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; } .region-bg--accent { background: radial-gradient(circle at 50% 40%, rgba(245,158,11,0.30) 0%, transparent 60%), radial-gradient(circle at 75% 80%, rgba(239,68,68,0.22) 0%, transparent 65%), linear-gradient(135deg, #fff7ed 0%, #fef3c7 60%, #fffbeb 100%); }"
+      }
+    }
+  ],
+  "subtitles": [
+    {
+      "start": 0,
+      "end": 2.5,
+      "text": "今天我们来聊聊 AI 时代的核心竞争力"
+    },
+    {
+      "start": 2.5,
+      "end": 5,
+      "text": "是持续学习的能力"
+    }
+  ]
+}

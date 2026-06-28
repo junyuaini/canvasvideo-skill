@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 合并 skeleton + regions 为完整的 project.json
  * 用法：node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]
  *   workdir: 包含 skeleton.json 和 regions/ 目录的工作目录
@@ -14,18 +14,14 @@ const { resolveAgentWorkdir } = require('./scaffold');
  * @param {Object} skeleton - skeleton.json 解析后的对象
  */
 function validateSkeletonSource(workdir, skeleton) {
-  // 检查 source_design_doc 字段
-  if (!skeleton.source_design_doc || skeleton.source_design_doc.trim() === '') {
-    throw new Error('[E] skeleton.json 缺少 source_design_doc 字段，必须记录设计文档来源');
+  // source_design_doc 字段为可选项：仅在指定了路径时校验文件存在性
+  if (skeleton.source_design_doc && skeleton.source_design_doc.trim() !== '') {
+    const designDocPath = path.join(workdir, skeleton.source_design_doc);
+    if (!fs.existsSync(designDocPath)) {
+      throw new Error(`[E] 骨架设计文档不存在: ${skeleton.source_design_doc}，请确认步骤2已完成`);
+    }
+    console.log(`[✓] 骨架设计文档来源验证通过: ${skeleton.source_design_doc}`);
   }
-
-  // 检查设计文档文件是否存在
-  const designDocPath = path.join(workdir, skeleton.source_design_doc);
-  if (!fs.existsSync(designDocPath)) {
-    throw new Error(`[E] 骨架设计文档不存在: ${skeleton.source_design_doc}，请确认步骤2已完成`);
-  }
-
-  console.log(`[✓] 骨架设计文档来源验证通过: ${skeleton.source_design_doc}`);
 }
 
 /**
@@ -52,6 +48,7 @@ function mergeRegions(workdir) {
     theme: skeleton.theme,
     duration: skeleton.duration,
     viewport: skeleton.viewport,
+    canvas: skeleton.canvas,  // 保留骨架的 canvas
     settings: skeleton.settings,
     audio: skeleton.audio,
     regions: [], // 将在下面填充
@@ -59,35 +56,46 @@ function mergeRegions(workdir) {
     subtitles: []
   };
 
-  // 保留骨架的 source_design_doc
-  project.source_design_doc = skeleton.source_design_doc;
+  // 保留骨架的 source_design_doc（如有）
+  if (skeleton.source_design_doc) {
+    project.source_design_doc = skeleton.source_design_doc;
+  }
 
   // 步骤2：验证并合并区域文件
   const regionsDir = path.join(workdir, 'regions');
 
-  for (const skeletonRegion of skeleton.regions) {
-    const regionFile = path.join(regionsDir, `${skeletonRegion.name}.json`);
+  // 必传：所有 region 都必须有 JSON（docs/05 硬规则）
+  const missingRegions = skeleton.regions
+    .filter(r => !fs.existsSync(path.join(regionsDir, `${r.id}.json`)))
+    .map(r => r.id);
+  if (missingRegions.length > 0) {
+    throw new Error(`[E] 缺失区域文件：${missingRegions.map(id => `${id}.json`).join(', ')}。请回到 Step 4 补全所有区域的 JSON 后再合并。`);
+  }
 
-    if (!fs.existsSync(regionFile)) {
-      console.warn(`警告: 区域文件不存在 ${regionFile}`);
-      continue;
-    }
+  for (const skeletonRegion of skeleton.regions) {
+    // region 文件名基于 id（P1.json / P2.json），不是 name（"开场" / "结尾"）
+    const regionFile = path.join(regionsDir, `${skeletonRegion.id}.json`);
 
     const regionData = JSON.parse(fs.readFileSync(regionFile, 'utf8'));
 
-    // 验证 regionName 匹配
-    if (regionData.regionName !== skeletonRegion.name) {
-      console.warn(`警告: regionName 不匹配 ${regionData.regionName} !== ${skeletonRegion.name}`);
+    // 验证区域 id 匹配（兼容 regionName 旧字段名）
+    const regionDataId = regionData.id || regionData.regionName;
+    if (regionDataId !== skeletonRegion.id) {
+      console.warn(`警告: 区域 id 不匹配 ${regionDataId} !== ${skeletonRegion.id}`);
     }
 
-    // 将区域信息添加到 project.regions（不再包含 source_design_doc 检查）
-    project.regions.push({
+    // 将区域信息添加到 project.regions
+    const regionEntry = {
+      id: skeletonRegion.id,
       name: skeletonRegion.name,
+      duration: skeletonRegion.duration,
       x: skeletonRegion.x,
       y: skeletonRegion.y
-    });
+    };
 
-    // 合并组件
+    project.regions.push(regionEntry);
+
+    // 合并 HtmlComponent
     if (Array.isArray(regionData.components)) {
       project.components.push(...regionData.components);
     }
@@ -133,7 +141,7 @@ if (require.main === module) {
     fs.writeFileSync(finalOutputPath, JSON.stringify(project, null, 2));
     console.log(`合并完成: ${finalOutputPath}`);
     console.log(`  区域数: ${project.regions.length}`);
-    console.log(`  组件数: ${project.components.length}`);
+    console.log(`  HtmlComponent 数: ${project.components.length}`);
     console.log(`  字幕数: ${project.subtitles.length}`);
     process.exit(0);
   } catch (err) {

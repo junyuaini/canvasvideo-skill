@@ -20,9 +20,11 @@ const path = require('path');
 const { ensurePlaceholders, ensureBgm, resolveAgentWorkdir } = require('./scaffold');
 
 function parseArgs(argv) {
+  // argv 去掉 node 路径和脚本路径
+  const userArgs = argv.slice(2);
   // workdir 在 parseArgs 头部已通过 resolveAgentWorkdir 解析
   // 严禁再走 process.cwd()，避免 workdir 飘到脚本运行时目录
-  const workdirRoot = path.join(resolveAgentWorkdir(argv), 'canvasvideo-workdir');
+  const workdirRoot = path.join(resolveAgentWorkdir(userArgs), 'canvasvideo-workdir');
 
   const args = {
     workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
@@ -31,8 +33,8 @@ function parseArgs(argv) {
     bgm: null
   };
 
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
+  for (let i = 0; i < userArgs.length; i++) {
+    const arg = userArgs[i];
     if (arg.startsWith('--cwd=')) continue;
     if (arg.startsWith('--theme=')) {
       args.theme = arg.slice('--theme='.length);

@@ -1,0 +1,112 @@
+{
+  "name": "AI时代如何学习",
+  "description": "5秒短视频示例：展示分而治之的工作流程（创作模式 · 无字幕）",
+  "theme": "black",
+  "duration": 5,
+  "viewport": {
+    "width": 780,
+    "height": 585
+  },
+  "settings": {
+    "autoPlay": false,
+    "loop": false,
+    "minScale": 0.01,
+    "maxScale": 5,
+    "ease": 0.08,
+    "contentZoomRatio": 1,
+    "preFullViewDuration": 0.4,
+    "postFullViewDuration": 0.4
+  },
+  "regions": [
+    {
+      "id": "P1",
+      "name": "开场",
+      "duration": 3
+    },
+    {
+      "id": "P2",
+      "name": "结尾",
+      "duration": 2
+    }
+  ],
+  "audio": {
+    "path": "assets/placeholders/bgm/tech-pulse.mp3",
+    "loop": true,
+    "fadeIn": 1,
+    "fadeOut": 2
+  },
+  "components": [
+    {
+      "id": "P1-001",
+      "regionId": "P1",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "content": {
+        "html": "<h1 id='P1-002' class='title'>AI时代，学习即提问</h1><span id='P1-003' class='shock'>善用工具，持续迭代</span>",
+        "css": ".title { position: absolute; left: 20px; top: 30px; width: 740px; height: 70px; margin: 0; font-size: 48px; font-weight: 900; color: #FFFFFF; line-height: 1.1; text-align: center; } .shock { position: absolute; left: 120px; top: 120px; width: 540px; height: 80px; padding: 16px 32px; border-radius: 16px; border: none; font-size: 36px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #06B6D4 0%, #A855F7 100%); box-shadow: 0 4px 16px rgba(6,182,212,0.3); display: flex; align-items: center; justify-content: center; }",
+        "elementIds": {
+          "#P1-002": {
+            "id": "P1-002",
+            "start": 0,
+            "end": 3
+          },
+          "#P1-003": {
+            "id": "P1-003",
+            "start": 1.5,
+            "end": 3
+          }
+        }
+      },
+      "start": 0,
+      "end": 3,
+      "background": {
+        "html": "<div class='region-bg region-bg--cool'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; } .region-bg--cool { background: radial-gradient(circle at 30% 40%, rgba(6,182,212,0.45) 0%, transparent 60%), radial-gradient(circle at 75% 65%, rgba(168,85,247,0.40) 0%, transparent 62%), linear-gradient(135deg, #0a1530 0%, #1a1a40 50%, #0f0f2a 100%); }"
+      }
+    },
+    {
+      "id": "P2-001",
+      "regionId": "P2",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "content": {
+        "html": "<span id='P2-002' class='badge'>AI LEARNING</span><img id='P2-003' class='cover' src='./assets/placeholders/dark/tech.svg' /><p id='P2-004' class='caption'>专业人士必读</p>",
+        "css": ".badge { position: absolute; left: 310px; top: 220px; width: 160px; height: 40px; padding: 10px 24px; border-radius: 999px; background: #F59E0B; color: #0B0719; font-size: 18px; font-weight: 800; box-shadow: 0 4px 12px rgba(245,158,11,0.4); display: flex; align-items: center; justify-content: center; } .cover { position: absolute; left: 20px; top: 280px; width: 740px; height: 250px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); } .caption { position: absolute; left: 240px; top: 540px; width: 300px; height: 40px; margin: 0; font-size: 16px; color: #9CA3AF; line-height: 1.4; text-align: center; }",
+        "elementIds": {
+          "#P2-002": {
+            "id": "P2-002",
+            "start": 3,
+            "end": 5
+          },
+          "#P2-003": {
+            "id": "P2-003",
+            "start": 4,
+            "end": 5
+          },
+          "#P2-004": {
+            "id": "P2-004",
+            "start": 4.5,
+            "end": 5
+          }
+        }
+      },
+      "start": 3,
+      "end": 5,
+      "background": {
+        "html": "<div class='region-bg region-bg--warm'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; } .region-bg--warm { background: radial-gradient(circle at 50% 40%, rgba(245,158,11,0.42) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(239,68,68,0.35) 0%, transparent 65%), linear-gradient(135deg, #1a1a2e 0%, #2a1a3a 60%, #1a1a2e 100%); }"
+      }
+    }
+  ],
+  "subtitles": []
+}

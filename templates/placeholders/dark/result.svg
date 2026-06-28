@@ -1,30 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0B1628"/>
-      <stop offset="100%" stop-color="#0F1B36"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1C1917"/>
+      <stop offset="100%" stop-color="#0C0A09"/>
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#bg)"/>
 
-  <g transform="translate(640,360)">
-    <rect x="-260" y="-50" width="80" height="180" fill="#3B82F6"/>
-    <rect x="-130" y="-110" width="80" height="240" fill="#06B6D4"/>
-    <rect x="0" y="-160" width="80" height="290" fill="#22D3EE"/>
-    <rect x="130" y="-200" width="80" height="330" fill="#A78BFA"/>
-    <line x1="-300" y1="130" x2="240" y2="130" stroke="#475569" stroke-width="3"/>
-    <text x="-220" y="-65" text-anchor="middle" font-size="24" font-weight="900" fill="#93C5FD">42%</text>
-    <text x="-90" y="-125" text-anchor="middle" font-size="24" font-weight="900" fill="#67E8F9">68%</text>
-    <text x="40" y="-175" text-anchor="middle" font-size="24" font-weight="900" fill="#A5F3FC">85%</text>
-    <text x="170" y="-215" text-anchor="middle" font-size="24" font-weight="900" fill="#DDD6FE">96%</text>
+  <!-- 网格底 -->
+  <g stroke="#FBBF24" stroke-width="1" opacity="0.18">
+    <line x1="0" y1="180" x2="1280" y2="180"/>
+    <line x1="0" y1="280" x2="1280" y2="280"/>
+    <line x1="0" y1="380" x2="1280" y2="380"/>
+    <line x1="0" y1="480" x2="1280" y2="480"/>
+    <line x1="0" y1="580" x2="1280" y2="580"/>
   </g>
 
-  <!-- 中央水印（居中 + 半透明，裁剪也可见） -->
-  <g opacity="0.45">
-    <text x="640" y="360" text-anchor="middle"
+  <!-- 上升柱状图（金色发光） -->
+  <g>
+    <rect x="320" y="380" width="80" height="120" rx="6" fill="#FBBF24" opacity="0.85"/>
+    <rect x="430" y="320" width="80" height="180" rx="6" fill="#F59E0B" opacity="0.9"/>
+    <rect x="540" y="260" width="80" height="240" rx="6" fill="#F59E0B"/>
+    <rect x="650" y="200" width="80" height="300" rx="6" fill="#D97706"/>
+    <rect x="760" y="140" width="80" height="360" rx="6" fill="#B45309"/>
+  </g>
+
+  <!-- 上升折线 + 箭头 -->
+  <polyline points="360,360 470,300 580,240 690,180 800,120" fill="none" stroke="#FBBF24" stroke-width="3.5" opacity="0.85"/>
+  <polygon points="800,120 824,98 800,86" fill="#FBBF24" opacity="0.85"/>
+
+  <!-- 奖杯/星标 -->
+  <g transform="translate(960 220)" fill="#FBBF24" opacity="0.95">
+    <polygon points="0,-40 12,-12 42,-12 18,8 28,38 0,20 -28,38 -18,8 -42,-12 -12,-12"/>
+  </g>
+
+  <!-- 散落亮点 -->
+  <g fill="#FBBF24" opacity="0.85">
+    <circle cx="200" cy="200" r="5"/>
+    <circle cx="1080" cy="380" r="4"/>
+    <circle cx="160" cy="420" r="4"/>
+  </g>
+
+  <!-- 中央水印 -->
+  <g opacity="0.6">
+    <text x="640" y="600" text-anchor="middle"
           font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-          font-size="42" font-weight="700" fill="#E2E8F0" letter-spacing="3">
-      ※ 演示图片 请替换
+          font-size="44" font-weight="700" fill="#FDE68A" letter-spacing="2">
+      我是占位图 · 赶紧换我
     </text>
   </g>
 </svg>

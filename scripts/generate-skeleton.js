@@ -14,46 +14,71 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveAgentWorkdir } = require('./scaffold');
+const { getProjectState } = require('./state');
 
 /**
- * 检测设计文档模式并返回文件路径
+ * 检测设计文档模式并返回文件路径（优先读 state.mode）
+ * @param {string} workdirRoot - 工作根目录
  * @param {string} workdir - 工作目录
  * @returns {Object} { mode, designPath }
  */
-function detectMode(workdir) {
+function detectMode(workdirRoot, workdir) {
+  // 1. 优先读 state.mode（state.json 由 init-project 写入，最权威）
+  try {
+    const state = getProjectState(workdirRoot);
+    if (state && state.mode === 'creative') {
+      const p = path.join(workdir, 'design-skeleton-creative.md');
+      if (fs.existsSync(p)) return { mode: 'creative', designPath: p };
+    }
+    if (state && state.mode === 'dubbing') {
+      const p = path.join(workdir, 'design-skeleton-dubbing.md');
+      if (fs.existsSync(p)) return { mode: 'dubbing', designPath: p };
+    }
+  } catch (e) {
+    // state 读不到，fallback 到文件名匹配
+  }
+
+  // 2. fallback: 看哪个 MD 文件存在
   const creativePath = path.join(workdir, 'design-skeleton-creative.md');
   const dubbingPath = path.join(workdir, 'design-skeleton-dubbing.md');
-
-  if (fs.existsSync(creativePath)) {
-    return { mode: 'creative', designPath: creativePath };
-  }
-  if (fs.existsSync(dubbingPath)) {
-    return { mode: 'dubbing', designPath: dubbingPath };
-  }
+  if (fs.existsSync(creativePath)) return { mode: 'creative', designPath: creativePath };
+  if (fs.existsSync(dubbingPath)) return { mode: 'dubbing', designPath: dubbingPath };
 
   throw new Error('未找到设计文档，请确认以下文件之一存在：\n  - design-skeleton-creative.md\n  - design-skeleton-dubbing.md');
 }
 
 /**
- * 从 Markdown 中提取 JSON 代码块
+ * 从 Markdown 中提取 JSON 配置代码块
+ * 优先匹配"项目配置（JSON）"标题下的 JSON 块；找不到再 fallback 到第一个 JSON
  * @param {string} content - Markdown 内容
  * @returns {Object|null} 解析后的 JSON 对象
  */
 function extractJsonConfig(content) {
-  const match = content.match(/```json\s*([\s\S]*?)\s*```/);
-  if (!match) {
-    throw new Error('未找到 JSON 配置代码块（```json ... ```）');
+  // 1. 优先匹配"## 项目配置（JSON）"标题下的第一个 ```json``` 块
+  const titleMatch = content.match(/##\s*项目配置[（(]JSON[）)]\s*\n+```json\s*([\s\S]*?)\s*```/);
+  if (titleMatch) {
+    try {
+      return JSON.parse(titleMatch[1].trim());
+    } catch (e) {
+      throw new Error(`项目配置 JSON 解析失败: ${e.message}`);
+    }
   }
 
+  // 2. fallback: 抓第一个 JSON 块（兼容老 MD）
+  const fallback = content.match(/```json\s*([\s\S]*?)\s*```/);
+  if (!fallback) {
+    throw new Error('未找到 JSON 配置代码块（```json ... ```）');
+  }
+  console.warn('[W] 未找到"项目配置（JSON）"标题，使用第一个 JSON 块（兼容模式）');
   try {
-    return JSON.parse(match[1].trim());
+    return JSON.parse(fallback[1].trim());
   } catch (e) {
     throw new Error(`JSON 配置解析失败: ${e.message}`);
   }
 }
 
 /**
- * 从 Markdown 中提取区域列表表格
+ * 从 Markdown 中提取区域列表表格（按表头找列名）
  * @param {string} content - Markdown 内容
  * @param {string} mode - 模式：creative 或 dubbing
  * @returns {Array} regions 数组
@@ -64,48 +89,73 @@ function extractRegions(content, mode) {
     throw new Error('未找到 "## 区域列表" 部分');
   }
 
-  const regions = [];
   const lines = regionSection.split('\n');
 
+  // 1. 找表头行（包含"名称"或"序号"的行）
+  let header = null;
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('|') && (t.includes('名称') || t.includes('序号'))) {
+      header = t.split('|').map(c => c.trim()).filter(c => c);
+      break;
+    }
+  }
+
+  if (!header) {
+    throw new Error('区域列表未找到表头（应包含"名称"或"序号"列）');
+  }
+
+  // 2. 列名 -> 列索引（支持模糊匹配：包含即可）
+  const colIdx = (...names) => {
+    for (const n of names) {
+      const i = header.findIndex(h => h === n || h.includes(n));
+      if (i !== -1) return i;
+    }
+    return -1;
+  };
+  const idIdx = colIdx('区域 ID', 'ID');
+  const humanNameIdx = colIdx('区域名称');
+  const legacyNameIdx = colIdx('名称', '序号');  // 兼容旧 MD
+  const durationIdx = colIdx('时长');
+  const typeIdx = colIdx('类型');
+  const subtitleRangeIdx = colIdx('包含字幕');
+
+  if (durationIdx === -1) {
+    throw new Error(`区域列表表头缺少必填列：时长。当前表头：${header.join(', ')}`);
+  }
+  if (idIdx === -1 && legacyNameIdx === -1) {
+    throw new Error(`区域列表表头缺少必填列：区域 ID 或 名称。当前表头：${header.join(', ')}`);
+  }
+
+  // 3. 解析数据行
+  const regions = [];
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('|--')) {
-      continue;
+    if (!trimmed.startsWith('|') || trimmed.startsWith('|--')) continue;
+
+    const cells = trimmed.split('|').map(c => c.trim()).filter(c => c);
+    if (cells.length < header.length - 1) continue;
+
+    // id: 优先取"区域 ID"列；旧 MD 没有该列时回退到"名称"列
+    const idCell = idIdx !== -1 ? cells[idIdx] : cells[legacyNameIdx];
+    if (!idCell || idCell.startsWith('--')) continue;
+
+    // name: 优先取"区域名称"列；缺失时回退到 id（不友好但兼容）
+    let nameCell = humanNameIdx !== -1 ? cells[humanNameIdx] : '';
+    if (!nameCell) nameCell = idCell;
+
+    const durationStr = cells[durationIdx].replace(/[a-zA-Z\s秒]/g, '');
+    const duration = parseInt(durationStr, 10);
+    if (isNaN(duration)) continue;
+
+    const region = { id: idCell, name: nameCell, duration };
+    if (mode === 'dubbing' && subtitleRangeIdx !== -1 && cells[subtitleRangeIdx]) {
+      region.subtitle_range = cells[subtitleRangeIdx];
     }
-
-    if (trimmed.startsWith('|')) {
-      const cells = trimmed.split('|').map(c => c.trim()).filter(c => c);
-
-      // 跳过表头行（包含"名称"或"序号"）
-      if (cells[0] === '名称' || cells[0] === '序号') {
-        continue;
-      }
-
-      let name, duration, x, y, subtitleRange;
-
-      if (mode === 'dubbing') {
-        // 口播模式列：名称(0) 类型(1) 时间段(2) 时长(3) 包含字幕(4) 核心信息(5) 情绪(6) 位置(7)
-        if (cells.length >= 8) {
-          name = cells[0];
-          duration = parseInt(cells[3], 10);
-          subtitleRange = cells[4];
-        }
-      } else {
-        // 创作模式列：名称(0) 类型(1) 时间段(2) 时长(3) 核心信息(4) 情绪(5) 位置(6)
-        if (cells.length >= 7) {
-          name = cells[0];
-          duration = parseInt(cells[3], 10);
-        }
-      }
-
-      if (name && !isNaN(duration)) {
-        const region = { name, duration };
-        if (mode === 'dubbing' && subtitleRange) {
-          region.subtitle_range = subtitleRange;
-        }
-        regions.push(region);
-      }
+    if (typeIdx !== -1 && cells[typeIdx]) {
+      region.type = cells[typeIdx];
     }
+    regions.push(region);
   }
 
   if (regions.length === 0) {
@@ -127,8 +177,19 @@ function generateSkeleton(workdirRoot, skillProjectId) {
 
   const workdir = path.join(workdirRoot, skillProjectId);
 
-  // 检测模式
-  const { mode, designPath } = detectMode(workdir);
+  // 从 state.json 读取项目级默认配置（fallback 源）
+  let projectState = {};
+  try {
+    projectState = getProjectState(workdirRoot) || {};
+  } catch (e) {
+    // state.json 不存在也不阻塞（兼容老 workdir）
+  }
+
+  // 检测模式 + 一致性校验
+  const { mode, designPath } = detectMode(workdirRoot, workdir);
+  if (projectState.mode && projectState.mode !== mode) {
+    throw new Error(`模式不匹配：state.mode=${projectState.mode}，但 MD 是 ${mode}。请确认 MD 模板正确，或删除 workdir 重建项目。`);
+  }
   console.log(`[i] 检测到模式: ${mode}`);
 
   // 读取设计文档
@@ -159,8 +220,8 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   const skeleton = {
     name: config.name || '',
     description: config.description || '',
-    theme: config.theme || 'white',
-    duration: config.duration || totalDuration,
+    theme: config.theme || projectState.theme || 'white',
+    duration: config.duration || projectState.duration || totalDuration,
     viewport: config.viewport || { width: 780, height: 585 },
     canvas: { width: canvasWidth, height: canvasHeight },
     settings: {
@@ -180,17 +241,34 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   // 模式特有字段
   if (mode === 'creative') {
     skeleton.audio = {
-      path: `./assets/placeholders/bgm/${config.bgm || 'corporate'}.mp3`,
+      path: `./assets/placeholders/bgm/${config.bgm || projectState.bgmStyle || 'corporate'}.mp3`,
       loop: true,
       fadeIn: 1,
       fadeOut: 2
     };
   } else {
-    // dubbing 模式
-    skeleton.audio = config.audio || { path: './assets/voice.mp3' };
+    // dubbing 模式 —— 强制用 state.voice.audioPath 覆盖 MD 里写的 audio.path
+    // 理由：MD 是 AI 写的，路径可能写错；prepare-voice.js 才是 source of truth
+    if (!projectState.voice || !projectState.voice.audioPath) {
+      throw new Error(
+        '口播模式必须先执行步骤 1.5（prepare-voice.js）准备配音音频和字幕。\n' +
+        '当前 state.voice 为空，请参考 docs/01.5-voice-prepare.md。'
+      );
+    }
+    skeleton.audio = config.audio && config.audio.path
+      ? { ...config.audio, path: projectState.voice.audioPath }  // 保留 fadeIn/loop 等
+      : { path: projectState.voice.audioPath };
+    // 用 state.voice.duration 覆盖（如果 MD 里 duration 缺失或不准）
+    if (!config.duration && projectState.voice.duration) {
+      skeleton.duration = projectState.voice.duration;
+    }
     if (config.style) skeleton.style = config.style;
+    else skeleton.style = 'warm';  // dubbing fallback 默认 warm
     if (config.emotion_curve_template) skeleton.emotion_curve_template = config.emotion_curve_template;
     if (config.subtitle_count) skeleton.subtitle_count = config.subtitle_count;
+    else if (projectState.voice.subtitleCount) {
+      skeleton.subtitle_count = projectState.voice.subtitleCount;
+    }
   }
 
   // 6. 保存 skeleton.json

@@ -1,10 +1,10 @@
 /**
  * 区域时间范围验证脚本
- * 
+ *
  * 功能：
- *  - 检查区域组件时间是否在区域时间范围内
- *  - 检查区域组件时间是否重叠
- * 
+ *  - 检查区域 HtmlComponent 时间是否在区域时间范围内
+ *  - 检查区域 HtmlComponent 时间是否重叠
+ *
  * 用法：node validate-region.js --cwd=<Agent工作目录> <skillProjectId> <regionName>
  *
  * 示例：
@@ -62,25 +62,25 @@ function validateRegion(skeleton, regionData, regionName) {
   const regionStart = calculateRegionStart(skeleton, regionIndex);
   const regionEnd = calculateRegionEnd(skeleton, regionIndex);
   
-  // 检查每个组件的时间范围
+  // 检查每个 HtmlComponent 的时间范围
   if (Array.isArray(regionData.components)) {
     regionData.components.forEach((comp, index) => {
       if (comp.start < regionStart || comp.end > regionEnd) {
-        errors.push(`[E] ${comp.id || `组件${index}`} 时间 ${comp.start}-${comp.end} 超出区域范围 ${regionStart.toFixed(1)}-${regionEnd.toFixed(1)}`);
+        errors.push(`[E] ${comp.id || `HtmlComponent#${index}`} 时间 ${comp.start}-${comp.end} 超出区域范围 ${regionStart.toFixed(1)}-${regionEnd.toFixed(1)}`);
       }
-      
+
       // 检查时间合理性
       if (comp.start >= comp.end) {
-        errors.push(`[E] ${comp.id || `组件${index}`} start(${comp.start}) 必须小于 end(${comp.end})`);
+        errors.push(`[E] ${comp.id || `HtmlComponent#${index}`} start(${comp.start}) 必须小于 end(${comp.end})`);
       }
     });
-    
-    // 检查组件时间重叠（同区域内）
+
+    // 检查 HtmlComponent 时间重叠（同区域内）
     for (let i = 0; i < regionData.components.length; i++) {
       for (let j = i + 1; j < regionData.components.length; j++) {
         const compA = regionData.components[i];
         const compB = regionData.components[j];
-        
+
         // 检查是否有重叠
         if (compA.start < compB.end && compB.start < compA.end) {
           warnings.push(`[W] ${compA.id} 和 ${compB.id} 时间重叠 (${compA.start}-${compA.end} vs ${compB.start}-${compB.end})`);

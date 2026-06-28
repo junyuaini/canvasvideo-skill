@@ -1,28 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0F1F1A"/>
-      <stop offset="100%" stop-color="#0E2E22"/>
+      <stop offset="0%" stop-color="#022C22"/>
+      <stop offset="100%" stop-color="#000000"/>
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#bg)"/>
 
-  <g transform="translate(640,290)">
-    <line x1="-280" y1="0" x2="280" y2="0" stroke="#10B981" stroke-width="4" stroke-dasharray="8 8"/>
-    <circle cx="-280" cy="0" r="56" fill="#34D399"/>
-    <text x="-280" y="10" text-anchor="middle" font-size="36" font-weight="900" fill="#0F1F1A">1</text>
-    <circle cx="0" cy="0" r="56" fill="#10B981"/>
-    <text x="0" y="10" text-anchor="middle" font-size="36" font-weight="900" fill="#0F1F1A">2</text>
-    <circle cx="280" cy="0" r="56" fill="#059669"/>
-    <text x="280" y="10" text-anchor="middle" font-size="36" font-weight="900" fill="#FFFFFF">3</text>
+  <!-- 中央齿轮（深绿+发光） -->
+  <g transform="translate(640 280)">
+    <g fill="#10B981" opacity="0.9">
+      <circle r="100"/>
+    </g>
+    <g fill="#022C22">
+      <rect x="-12" y="-128" width="24" height="28" rx="3"/>
+      <rect x="-12" y="100" width="24" height="28" rx="3"/>
+      <rect x="-128" y="-12" width="28" height="24" rx="3"/>
+      <rect x="100" y="-12" width="28" height="24" rx="3"/>
+      <rect x="-12" y="-128" width="24" height="28" rx="3" transform="rotate(45)"/>
+      <rect x="-12" y="-128" width="24" height="28" rx="3" transform="rotate(90)"/>
+      <rect x="-12" y="-128" width="24" height="28" rx="3" transform="rotate(135)"/>
+    </g>
+    <circle r="40" fill="#022C22"/>
+    <circle r="20" fill="#10B981"/>
   </g>
 
-  <!-- 中央水印（居中 + 半透明，裁剪也可见） -->
-  <g opacity="0.45">
-    <text x="640" y="360" text-anchor="middle"
+  <!-- 网格背景（深绿半透明） -->
+  <g stroke="#10B981" stroke-width="1" opacity="0.12">
+    <line x1="0" y1="180" x2="1280" y2="180"/>
+    <line x1="0" y1="380" x2="1280" y2="380"/>
+    <line x1="0" y1="580" x2="1280" y2="580"/>
+    <line x1="320" y1="0" x2="320" y2="720"/>
+    <line x1="640" y1="0" x2="640" y2="720"/>
+    <line x1="960" y1="0" x2="960" y2="720"/>
+  </g>
+
+  <!-- 网络拓扑 -->
+  <g stroke="#10B981" stroke-width="2" fill="#10B981" opacity="0.7">
+    <line x1="240" y1="200" x2="540" y2="240" stroke-dasharray="4 6"/>
+    <line x1="220" y1="540" x2="540" y2="320" stroke-dasharray="4 6"/>
+    <line x1="1040" y1="200" x2="740" y2="240" stroke-dasharray="4 6"/>
+    <line x1="1060" y1="540" x2="740" y2="320" stroke-dasharray="4 6"/>
+    <circle cx="240" cy="200" r="8"/>
+    <circle cx="220" cy="540" r="8"/>
+    <circle cx="1040" cy="200" r="8"/>
+    <circle cx="1060" cy="540" r="8"/>
+  </g>
+
+  <!-- 中央水印 -->
+  <g opacity="0.6">
+    <text x="640" y="480" text-anchor="middle"
           font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-          font-size="42" font-weight="700" fill="#E2E8F0" letter-spacing="3">
-      ※ 演示图片 请替换
+          font-size="44" font-weight="700" fill="#A7F3D0" letter-spacing="2">
+      我是占位图 · 赶紧换我
     </text>
   </g>
 </svg>

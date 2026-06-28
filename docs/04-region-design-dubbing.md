@@ -1,18 +1,18 @@
-# 步骤4：区域设计（口播模式）
+﻿# 步骤4：区域设计与生成JSON（口播模式）
 
 > 前置步骤：[步骤3：生成骨架JSON](03-skeleton-build.md)
-> 下一步：[步骤5：生成区域JSON](05-region-build.md)
+> 下一步：[步骤5：合并](05-merge.md) 或继续下一个区域
 
 ---
 
 ## 目标
 
-为骨架中的**单个区域**生成设计文档 `design-P{n}.md`。
+为骨架中的**单个区域**完成设计，并直接生成 `regions/P{n}.json`。
 
 > ⚠️ **硬规则**：
-> - 必须为骨架中的**每个区域**单独生成一份 `design-P{n}.md`
+> - 必须为骨架中的**每个区域**单独生成一份 `regions/P{n}.json`
 > - 严禁跳过任何区域
-> - 严禁将多个区域合并到一份设计文档中
+> - 严禁将多个区域合并到一份JSON中
 >
 > **核心原则**：字幕是系统自动显示的前提条件，画面是字幕的**视觉翻译**，不是重复。
 
@@ -24,7 +24,7 @@
 
 - [ ] `skeleton.json` 已存在
 - [ ] `skeleton.json` 中的 `regions` 数组不为空
-- [ ] 当前区域的 `design-P{n}.md` **不存在**（如存在则跳过）
+- [ ] 当前区域的 `regions/P{n}.json` **不存在**（如存在则跳过）
 
 **如果不满足**：回到 [步骤3：生成骨架JSON](03-skeleton-build.md)
 
@@ -59,35 +59,16 @@
 | {n} | {start}-{end} | ... |
 | ... | ... | ... |
 
----
-
-### 步骤2：确定 AggregateComponent layoutMode
-
-**必须规则**：
-- ✅ 顶层组件优先使用 HtmlComponent（简洁、自由度高）
-- ✅ 顶层组件也支持 AggregateComponent（需组合非 Html 组件时使用）
-- ✅ 其他组件（TitleComponent、CardComponent 等）必须嵌套在 AggregateComponent.children 中
-- ✅ 所有顶层组件必须配置 position（至少包含 w 和 h）
-
-**layoutMode 选择**：
-
-| 模式 | 子组件需要 position？ | 适用场景 |
-|------|----------------------|---------|
-| **free（默认推荐）** | ❌ 不需要，通过 content.css 控制 | HtmlComponent 自定义布局，最大自由度 |
-| **auto** | ❌ 不需要 | 简单布局（标题+图形、单列等），flex 自动居中排列 |
-| **manual** | ✅ 必须 | 复杂布局、需要精确控制每个元素位置 |
-
-**推荐选择**：优先用 free + HtmlComponent，可最大自由度控制布局和样式。简单排列场景可用 auto，精确定位场景用 manual。
-
-**补充说明**：每个区域可以配置多个 AggregateComponent。
+> ⚠️ **字幕文本 100% 来自用户提供的 SRT，严禁 LLM 自行改写**。
+> 画面元素只是字幕的**视觉翻译**，不能与字幕语义冲突。
 
 ---
 
-### 步骤3：选择布局模式
+### 步骤2：选择布局模式
 
 区域类型由骨架决策树确定，区域设计以骨架输出为准，不再重新选择类型。
 
-**基础布局**（只描述空间结构，不涉及具体组件）：
+**基础布局**（只描述空间结构，不涉及具体元素）：
 
 | 布局 | 空间结构 | 适用场景 |
 |------|---------|---------|
@@ -141,9 +122,36 @@
 
 ---
 
-### 步骤4：确定组件数量和出场节奏
+### 步骤2.5：确定 HtmlComponent
 
-**4.1 情绪决定节奏**
+**每个区域使用一个 HtmlComponent**：
+
+| 模式 | 推荐度 | 适用场景 |
+|------|--------|---------|
+| **HtmlComponent** | ✅ 唯一推荐 | 所有布局 |
+
+通过 `content.html` + `content.css` + `content.elementIds` 控制所有布局、样式和元素时间线。
+
+**约束**：
+- 必须配置 position（至少包含 w 和 h）
+- 每个区域配置 1 个 HtmlComponent 即可承载该区域所有视觉内容
+
+> 📖 详情查看 [rules/06-components.md](../rules/06-components.md)（HtmlComponent schema、elementIds 规则、API 调用规范）
+#### 组件 background 字段（与 content 平级）
+
+> **硬规则**：所有 HtmlComponent 都必须携带 ackground 字段（与 content 平级）。这是 HtmlComponent 的两个基本属性之一。
+
+字段结构与详细说明见 [04-region-design-creative.md](04-region-design-creative.md) §"组件 background 字段（与 content 平级）" 与 [rules/06-components.md](../rules/06-components.md) §R3。
+
+**校验**：selfcheck.js 校验所有 HtmlComponent 必须有 ackground.html + ackground.css，缺一报错；后端 projectValidator.collectErrors 在上传时也会强制校验，缺 background 直接 400 拒绝。
+
+> 💡 口播场景下的 background 写法建议：因为口播强调"画面是字幕的视觉翻译"，背景色调可以选用与字幕氛围呼应的低饱和度渐变，避免抢戏；具体配色方案见步骤6。
+
+---
+
+### 步骤3：确定元素数量和出场节奏
+
+**3.1 情绪决定节奏**
 
 | 情绪 | 节奏档位 | 平均出场间隔 | 画面感受 |
 |-----|---------|------------|---------|
@@ -160,12 +168,12 @@
 - 数据、介绍 → 标准
 - 极强冲击、Hook → 快闪
 
-**4.2 计算组件数量**
+**3.2 计算元素数量**
 
 ```
-组件数量 = ceil(时长 ÷ 平均出场间隔)
+元素数量 = ceil(时长 ÷ 平均出场间隔)
 
-出场间隔 = 组件2出场时间 - 组件1出场时间
+出场间隔 = 元素2出场时间 - 元素1出场时间
 ```
 
 **查表**：
@@ -177,16 +185,16 @@
 | 8秒 | 7个 | 10个 | 13个 | 27个 |
 
 **说明**：
-- 平均出场间隔 = 新组件出现的平均时间间隔上限
+- 平均出场间隔 = 新元素出现的平均时间间隔上限
 - 实际间隔可以浮动，但平均值不能超过上限
 - 画面不能静止超过平均间隔
-- 验证：平均出场间隔 = 时长 ÷ 组件数量，应 ≤ 档位对应值
+- 验证：平均出场间隔 = 时长 ÷ 元素数量，应 ≤ 档位对应值
 
 ---
 
-### 步骤5：确定视觉锚点并排列组件位置
+### 步骤4：确定视觉锚点并排列元素位置
 
-**5.1 确定视觉锚点**
+**4.1 确定视觉锚点**
 
 每个区域必须有且只有一个锚点：
 
@@ -199,12 +207,12 @@
 
 **规则**：
 - 锚点必须0延迟出现
-- 过渡区域可以没有锚点，或锚点就是唯一的文字组件
-- 锚点出现后至少0.3秒再出下一个组件
+- 过渡区域可以没有锚点，或锚点就是唯一的文字元素
+- 锚点出现后至少0.3秒再出下一个元素
 
-**5.2 在选定布局中排列组件位置**
+**4.2 在选定布局中排列元素位置**
 
-根据布局的空间结构，安排锚点和其他组件的位置：
+根据布局的空间结构，安排锚点和其他元素的位置：
 
 **单点聚焦**：
 - 锚点：画面中心偏上（避开底部字幕区）
@@ -296,20 +304,20 @@
 
 ---
 
-### 步骤6：分配组件出场顺序和间隔
+### 步骤5：分配元素出场顺序和间隔
 
-**6.1 出场顺序**
+**5.1 出场顺序**
 
 按优先级排序：
 
-| 优先级 | 组件类型 | 说明 |
+| 优先级 | 元素类型 | 说明 |
 |--------|---------|------|
-| 1 | 锚点 | 核心组件，0延迟出现 |
+| 1 | 锚点 | 核心元素，0延迟出现 |
 | 2 | 核心内容 | 标题、主要信息 |
 | 3 | 辅助内容 | 正文、解释 |
 | 4 | 装饰元素 | 图标、标签 |
 
-**6.2 出场间隔**
+**5.2 出场间隔**
 
 根据档位确定平均间隔上限：
 
@@ -322,26 +330,26 @@
 
 **分配规则**：
 - 锚点必须0延迟出现（start = 区域start）
-- 其他组件按顺序依次出场
-- 相邻组件间隔 = 后组件start - 前组件start
+- 其他元素按顺序依次出场
+- 相邻元素间隔 = 后元素start - 前元素start
 - 所有间隔的平均值 ≤ 档位上限
 - 间隔不固定，自由分配，平均值达标即可
 
-**6.3 组件 end 时间分配**
+**5.3 元素 end 时间分配**
 
-每个组件必须明确 `end` 时间：
+每个元素必须明确 `end` 时间：
 
-| 组件类型 | end 规则 |
+| 元素类型 | end 规则 |
 |---------|---------|
 | 锚点（关键信息）| end ≥ start + 2s（关键信息停留 ≥ 2s）|
 | 核心内容 | end ≥ start + 1.5s |
 | 辅助内容 | end ≥ start + 1s |
 | 装饰元素 | end ≥ start + 0.5s |
-| 末组件 | end ≤ 区域end - 0.5s（留出淡出时间）|
+| 末元素 | end ≤ 区域end - 0.5s（留出淡出时间）|
 
-**6.4 稳定期**
+**5.4 稳定期**
 
-所有组件出场后，留稳定期：
+所有元素出场后，留稳定期：
 
 | 档位 | 最短稳定期 |
 |-----|-----------|
@@ -353,37 +361,43 @@
 区域结束前0.5秒开始淡出。
 
 **说明**：
-- 当前系统只支持组件整体出现（渐入渐出），不支持单个组件内部动画（如逐字、逐位滚动）
-- 如需复杂动画效果，使用AggregateComponent（聚合组件），内部子组件可单独控制
+- 当前系统只支持元素整体出现（渐入渐出），不支持单个元素内部动画（如逐字、逐位滚动）
+- 如需复杂动画效果，使用 HtmlComponent + `content.elementIds` 控制内部元素的独立时间线（每个 HTML 子元素可独立控制出现/消失时间）
 
-**组件时间轴节奏**：
+**重要硬规则**：
+- ✅ 每个区域使用一个 HtmlComponent
+- ✅ 所有顶层 HtmlComponent 必须配置 position（至少包含 w 和 h）
 
-| 项 | 创作模式 | 口播模式 |
-|----|---------|---------|
-| 末组件停留 | ≤ 1s | ≤ 2s |
-| 相邻组件间隔 | ≤ 1s | ≤ 3s |
-| 关键信息停留 | ≥ 2s | ≥ 2s |
+**元素时间轴节奏（口播模式）**：
 
-**全局绝对时间**：组件 start/end 基于骨架设计中的区域时间范围，不是相对时间。
+| 项 | 规则 |
+|----|------|
+| 末元素停留 | ≤ 2s |
+| 相邻元素间隔 | ≤ 3s |
+| 关键信息停留 | ≥ 2s |
+| 字幕同步 | 元素 start/end 必须覆盖对应字幕时间段，画面是字幕的视觉翻译 |
+
+**全局绝对时间**：元素 start/end 基于骨架设计中的区域时间范围，不是相对时间。
 
 **时间分配示例**（区域 5s-10s，标准档位）：
 
-| 组件 | start | end | 说明 |
+| 元素 | start | end | 说明 |
 |------|-------|-----|------|
-| TitleComponent（锚点）| 5.0s | 9.5s | 关键信息，停留4.5s |
-| TextComponent | 5.5s | 8.5s | 辅助内容 |
-| ImageComponent | 6.0s | 9.0s | 核心内容 |
-| BadgeComponent | 7.0s | 8.0s | 装饰元素 |
+| 锚点（CSS 胶囊，金句风格）| 5.0s | 9.5s | 关键信息，停留4.5s |
+| 辅助文字 | 5.5s | 8.5s | 辅助内容 |
+| 核心图片 | 6.0s | 9.0s | 核心内容 |
+| 装饰角标 | 7.0s | 8.0s | 装饰元素 |
 
 **严禁**：
-- ❌ 组件 start < 区域 start
-- ❌ 组件 end > 区域 end
-- ❌ 组件时间重叠冲突
-- ❌ 组件清单只写"延迟"不写 end 时间
+- ❌ 元素 start < 区域 start
+- ❌ 元素 end > 区域 end
+- ❌ 元素时间重叠冲突
+- ❌ 元素清单只写"延迟"不写 end 时间
+- ❌ 画面内容与字幕语义不一致
 
 ---
 
-### 步骤7：配色方案
+### 步骤6：配色方案
 
 **6.1 选择配色方案**
 
@@ -428,7 +442,7 @@
 | tech | B-荧光 | #00b894 | #0984e3 | #6c5ce7 | #7b7b8b | #2d2d3a | 现代前卫 |
 | tech | C-深蓝 | #2471a3 | #2e86c1 | #17a589 | #6b6b7b | #1a1a2e | 稳重科技 |
 | business | A-经典 | #1e3799 | #27ae60 | #2c3e50 | #6b6b7b | #1a1a2e | 权威可信 |
-| business | B-现代 | #c0392b | #2980b9 | #27ae60 | #7b7b8b | #2d2d3a | 创新突破 |
+| business | B-现代 | #c0392b | #2980b9 | #2ecc71 | #7b7b8b | #2d2d3a | 创新突破 |
 | business | C-高级 | #d4ac0d | #7d3c98 | #2c3e50 | #8b8b9b | #1a1a2e | 奢华品味 |
 | art | A-大胆 | #e67e22 | #d35400 | #7d3c98 | #6b6b7b | #1a1a2e | 浓烈先锋 |
 | art | B-清新 | #1abc9c | #3498db | #9b59b6 | #7b7b8b | #2d2d3a | 明快艺术 |
@@ -445,7 +459,7 @@
 
 ---
 
-### 步骤8：图片策略
+### 步骤7：图片策略
 
 | 图片类型 | 位置 | 大小 | 样式 |
 |---------|------|------|------|
@@ -464,33 +478,151 @@
 
 ---
 
-### 步骤9：字幕与画面同步检查
+### 步骤8：生成区域JSON
 
-| 检查项 | 规则 |
-|--------|------|
-| 时间覆盖 | 画面组件的 start/end 必须覆盖对应字幕的时间段 |
-| 语义一致 | 画面内容与字幕语义一致 |
-| 关键信息 | 字幕中的关键信息在画面中有视觉强调 |
+> ⚠️ **注意**：此步骤由大模型自行编写代码/逻辑生成 JSON，没有自动化脚本。
 
----
+**输入**：
+- 骨架配置：`skeleton.json`（获取 viewport、theme）
+- 字幕来源：用户提供的 SRT 文件（该区域的字幕片段）
+- 引用规则：`rules/06-components.md`
 
-### 步骤10：生成设计文档
+#### 第 1 步：查询 HtmlComponent 规范（建议）
 
-参考 `templates/artifacts/design-region-dubbing.md`，按模板结构填充实际内容，生成设计文档。
+> ℹ️ **说明**：推荐调用 `queryComponentSpecBatch` 接口获取最新 HtmlComponent 字段规范（避免记忆偏差）。详见 `rules/06-components.md` §R1。
+>
+> ```js
+> typeVariants = [
+>   { type: 'HtmlComponent', variant: 'default' }
+> ]
+> ```
+>
+> **降级策略**：如果 API 不可用（网络失败 / 5xx），可使用以下参考 schema（与当前 API 一致）：
+>
+> ```js
+> {
+>   id: 'P1-001',           // 格式: P{区域号}-{三位数字}
+>   type: 'HtmlComponent',
+>   regionId: 'P1',
+>   start: 0, end: 5,
+>   position: { x: 0, y: 0, w: 780, h: 585 },
+>   background: { html, css },  // 必填
+>   content: { html, css, elementIds }
+> }
+> ```
 
----
+#### 第 2 步：生成 HtmlComponent
 
-### 步骤11：保存文件
+根据前面步骤中的设计，结合 API 返回的 HtmlComponent 规范，生成 HtmlComponent JSON。
 
-```js
-const fs = require('fs');
-const path = require('path');
+**基础字段**：
 
-fs.writeFileSync(
-  path.join(workdirRoot, skillProjectId, `design-${regionName}.md`),
-  designContent
-);
+| 字段 | 来源 | 示例 |
+|------|------|------|
+| `id` | 元素清单 | "P1-001" （格式：P{区域号}-{三位数字}，如 P1-001、P3-005） |
+| `type` | 固定值 | `"HtmlComponent"` |
+| `content` | 元素清单 | `{ "html": "...", "css": "...", "elementIds": {...} }` |
+| `position` | 元素清单 | `{ "x": 0, "y": 0, "w": 780, "h": 585 }` |
+| `start` | 时间轴 | 0 |
+| `end` | 时间轴 | 5 |
+
+**HtmlComponent 核心规则**
+
+- 必须配置 position（至少包含 w 和 h）
+- 不需要 customStyle，通过 content.css 控制样式
+
+**HtmlComponent 示例**：
+```json
+{
+  "id": "P1-001",
+  "regionId": "P1",
+  "type": "HtmlComponent",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "content": {
+    "html": "<div id='P1-002' class='card'>\n  <h2 class='title'>标题</h2>\n  <span class='badge'>徽章</span>\n</div>",
+    "css": ".card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #FFFFFF; } .badge { background: #00B894; color: #FFFFFF; padding: 12px 24px; border-radius: 999px; font-size: 20px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,184,148,0.3); }",
+    "elementIds": {
+      "#P1-002": { "id": "P1-002", "start": 0, "end": 3 }
+    }
+  },
+  "start": 0,
+  "end": 3
+}
 ```
+
+**position 坐标计算**
+
+`position` 是 HtmlComponent**在所属区域内的相对坐标**：
+
+```
+position: { x: <区域内左上x>, y: <区域内左上y>, w: <宽度>, h: <高度> }
+```
+
+约束：
+- `w` ≤ `viewport.width - 40`
+- 区域内 HtmlComponent `h` 总和 + 间距 ≤ `viewport.height - 20`
+- 强调类元素（CSS 金句胶囊 / 角标 / CTA 样式）单独出现时应在区域内**水平居中**
+- `position.w` / `position.h` 必须**显式填写**
+
+#### 第 3 步：生成字幕（必填，来自 SRT）
+
+字幕是口播模式必填字段，**100% 来自用户提供的 SRT，严禁 LLM 自行生成或改写**。
+
+```json
+[
+  { "start": 0, "end": 2.5, "text": "原 SRT 字幕文本" }
+]
+```
+
+**字幕与画面同步硬规则**：
+- 字幕 start/end 必须在所属区域 [start, end] 范围内
+- 画面元素的 start/end 必须覆盖对应字幕的时间段
+- 画面内容与字幕语义必须一致（不允许"说东画西"）
+
+#### 第 4 步：保存区域 JSON
+
+将提取的信息保存为区域 JSON 文件：
+
+**文件路径**：`{workdir}/{skillProjectId}/regions/{regionId}.json`
+
+**JSON 结构**：
+
+```json
+{
+  "regionId": "P1",
+  "subtitles": [
+    { "start": 0, "end": 2.5, "text": "原 SRT 字幕文本" }
+  ],
+  "components": [
+    {
+      "id": "P1-001",
+      "regionId": "P1",
+      "type": "HtmlComponent",
+      "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+      "content": {
+        "html": "...",
+        "css": "...",
+        "elementIds": { "#P1-002": { "id": "P1-002", "start": 0, "end": 3 } }
+      },
+      "start": 0,
+      "end": 3
+    }
+  ]
+}
+```
+
+#### 第 5 步：验证区域时间范围
+
+运行区域时间验证脚本：
+
+```bash
+node scripts/validate-region.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} {regionId}
+```
+
+脚本会自动检查：
+1. 元素时间是否在区域时间范围内
+2. 元素时间是否有重叠
+3. 字幕时间是否在区域时间范围内
 
 ---
 
@@ -498,30 +630,43 @@ fs.writeFileSync(
 
 | 文件 | 路径 | 说明 |
 |------|------|------|
-| design-P{n}.md | `{workdir}/{skillProjectId}/design-P{n}.md` | 区域设计文档 |
+| regions/P{n}.json | `{workdir}/{skillProjectId}/regions/P{n}.json` | 区域配置（含 subtitles + components） |
 
 ---
 
 ## 自检
 
-> [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+> [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-- [E] 字幕文本100%来自SRT，未改写
-- [E] 画面组件时间覆盖对应字幕时间
-- [E] 组件 start ≥ 区域 start，end ≤ 区域 end
+**脚本自动校验**（运行 `scripts/validate-region.js` 时检查）：
+
+- 元素时间在区域时间范围内
+- 元素时间无重叠
+- 元素 start ≥ 区域 start，end ≤ 区域 end
+- 字幕时间在区域时间范围内
+- HtmlComponent 含 `background` 字段
+
+**AI 写完后自查**：
+
+- [E] 字幕文本 100% 来自 SRT，未改写
+- [E] 每个元素有完整的字段（id, type, content, position, start, end, background）
+- [E] `id` 格式正确（如 `P1-001`：`P{区域号}-{三位数字}`）
+- [E] 画面元素时间覆盖对应字幕时间
 - [E] 画面内容与字幕语义一致
 - [W] 有唯一视觉锚点（过渡区域除外）
 - [W] 文字对比度符合 WCAG AA（≥ 4.5:1）
+- [W] `content.css` 已填写
 - [I] 出场顺序由主到次
-- [I] 相邻组件间隔平均值 ≤ 档位上限
+- [I] 相邻元素间隔平均值 ≤ 档位上限
 - [I] 有稳定期
 - [I] 配色不超过4色
 - [I] 图片有裁切/透明度处理
-- [I] 全屏沉浸布局图片有暗化/蒙版
 - [I] 图片风格与全局风格一致
+- [I] 元素总数符合档位表
 
 ---
 
 ## 下一步
 
-进入 [步骤5：生成区域JSON](05-region-build.md)
+- 还有区域？→ 返回 [步骤4：区域设计与生成JSON（口播模式）](04-region-design-dubbing.md)
+- 全部完成？→ 进入 [步骤5：合并](05-merge.md)

@@ -27,10 +27,11 @@
 | 规则 | 说明 |
 |------|------|
 | 设计文档仅在本地 | 不上传服务器 |
-| 设计确认后才上传 | `assertDesignConfirmed()` 拦截 |
+| 设计确认后才上传 | 由 AI 流程自行保证（不通过脚本硬拦） |
 | 视频生成后不回设计 | 所有迭代直接改 project.json |
 | 固定 skillProjectId | 同一项目多次上传使用相同 ID |
 | 首次注册无感 | 由 `getOrCreateUser` 自动完成 |
+| skillProjectId 必须走脚本 | 严禁 LLM 自编 ID（详见 R6） |
 
 ---
 
@@ -42,7 +43,6 @@
 | 非首次不再展示账号 | 严禁在迭代或非首次场景输出 userToken |
 | 查询账号只读本地 | 绝不调用服务端接口 |
 | 不主动重置账号 | 用户要重置时引导手动删除 `.user.json` |
-| 严禁打印损坏文件原始内容 | — |
 
 ---
 
@@ -53,3 +53,93 @@
 | 能机器读的不要让人读 | 详细日志藏到 `.canvasvideo/error.log`，对话只给一句话总结 |
 | 能恢复的不要让人重做 | 自动重试1次再报错；保留中间产物供下次复用 |
 | 能本地解决的不要联网 | 账号查询、状态读取、设计文档等只读本地 |
+
+---
+
+## R6 skillProjectId 规范
+
+**严禁 LLM 自编 skillProjectId** —— 必须由 `state.js#generateSkillProjectId(userId)` 生成。
+
+### 格式
+
+```
+cv_{userShort6}_{timestamp_base36}_{random8_hex}
+   │      │              │                │
+   │      │              │                └─ 8 位小写 hex（防同毫秒撞车）
+   │      │              └─ 13 位 base36 毫秒时间戳
+   │      └─ 6 位小写 hex（userId 前 6 位，区分用户）
+   └─ 固定前缀
+```
+
+示例：`cv_a1b2c3_mqtk95pt_0b43fa53`
+
+### 为什么必须这样
+
+- **避免用户撞车**：服务端以 `skillProjectId` 作为项目主键存盘。旧版 `cv_{ts}_{rand}` 没有用户区分，不同用户偶然撞到同一 ID 会直接互相覆盖。`userShort6` 物理上把每个用户的 ID 空间隔开。
+- **防止 LLM 自编**：旧版正则 `/^[a-zA-Z0-9_-]+$/` 几乎是全字符集，LLM 经常自编 `cv_test_001` / `cv_demo_abc` 之类的 ID 通过校验。新格式必须由脚本生成，LLM 拿不到 userId 就编不出来。
+- **服务端严格校验**：服务端正则 `^cv_[a-z0-9]{6}_[a-z0-9]+_[a-z0-9]+$`，不通过直接 400 拒绝。
+
+### 严禁
+
+- ❌ 硬编码任何 skillProjectId 到 prompt / 文档 / 示例代码里
+- ❌ 让用户手填 skillProjectId
+- ❌ 用 `cv_test_001` / `cv_demo` / `cv_xxx` 等"看起来对"的占位 ID
+- ❌ 旧格式（`cv_{ts}_{rand}`，2 段下划线）—— 已被服务端拒绝
+
+### 出错时怎么办
+
+服务端返回 400 + "skillProjectId 格式不合法" → 删掉 `canvasvideo-workdir/.canvasvideo/project-state.json` 和 `canvasvideo-workdir/{旧ID}/` 目录，重新执行 Step 1（`init-project`），脚本会自动用本地 `.user.json` 里的 userId 生成新格式 ID。
+
+---
+
+## R7 口播模式前置条件
+
+**口播模式（dubbing）必须先执行步骤 1.5（prepare-voice.js）才能继续**。
+
+### 强制链
+
+```
+state.mode === 'dubbing'
+   ↓
+跑 prepare-voice.js（用户素材 / TTS 生成二选一）
+   ↓
+state.voice 字段被填充（source/audioPath/srtPath/duration/subtitleCount/voiceName）
+   ↓
+跑 generate-skeleton.js（步骤3）
+   ↓
+脚本自动校验 state.voice 存在，否则直接报错
+   ↓
+继续后续步骤
+```
+
+### 缺一不可
+
+| 字段 | 必须由 | 否则 |
+|------|--------|------|
+| `state.voice` | `prepare-voice.js` 写入 | `generate-skeleton.js:252` 报错阻断 |
+| `assets/voice/voice.mp3` | `prepare-voice.js` 复制 | 视频无声 |
+| `assets/subtitles/subtitle.srt` | `prepare-voice.js` 复制 | 视频无字幕 |
+| `skeleton.audio.path` | `generate-skeleton.js` 用 `state.voice.audioPath` 覆盖 | AI 在 MD 里写错路径会导致无声 |
+
+### 双重保险
+
+- **脚本层**：[generate-skeleton.js:252](file:///D:/TRAE%20SOLO/%E8%A7%86%E9%A2%91%E5%88%B6%E4%BD%9C/CanvasVideo-All/canvasvideo-skill/scripts/generate-skeleton.js#L252) 强制校验 state.voice 存在
+- **路径层**：`audio.path` 不再依赖 MD 模板里的字面量，**强制用 `state.voice.audioPath` 覆盖**（防止 AI 在 MD 里写错路径）
+
+### 严禁
+
+- ❌ 口播模式跳过步骤 1.5，直接跑步骤 2-3
+- ❌ 把 MP3/SRT 放到非标准路径（如 `assets/voice.mp3` / `assets/voiceover/xxx.mp3`）
+- ❌ 用 FFmpeg / Whisper 之类的工具替代 prepare-voice.js 处理音频（当前不支持）
+- ❌ 在 MD 模板里写 `audio.path: "./assets/voice.mp3"`（旧版字面量），正确写法由脚本自动覆盖
+
+### 调整口径
+
+| 情况 | 处理 |
+|------|------|
+| 用户只给 MP3，没 SRT | 报错：口播模式必须有字幕；提示用 Whisper 或自动生成 |
+| 用户只给 SRT，没 MP3 | 报错：口播模式必须有配音；提示用 TTS 或自己录 |
+| TTS 网络失败 | 报错，**不**生成空文件；提示重试 |
+| 音频时长 ≠ SRT 总时长 | warning（不阻断），让用户决定是否调整 |
+| 多次跑 prepare-voice | 覆盖（与 setup-assets 一致） |
+

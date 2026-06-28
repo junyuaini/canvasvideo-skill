@@ -27,6 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const { ensureProjectWorkdir, resolveAgentWorkdir } = require('./scaffold');
 const { loadOrCreateProject, saveProjectState } = require('./state');
+const { getOrCreateUser, DEFAULT_SERVER_URL } = require('./upload-video');
 
 /**
  * 解析命令行参数
@@ -99,45 +100,69 @@ function loadConfig(args) {
  * @param {string} workdirRoot - 工作根目录
  * @param {string} mode - 'creative' | 'dubbing'
  * @param {Object} config - 用户配置
- * @returns {Object} { skillProjectId, workdir, state }
+ * @param {Object} [options] - 额外参数
+ * @param {string} [options.serverUrl] - 服务端 URL，默认 DEFAULT_SERVER_URL
+ * @returns {Promise<Object>} { skillProjectId, workdir, state, user, isFirstTime }
+ *
+ * 关键变化（v2.x 起）：
+ *  - 必须在创建 state 之前先调 getOrCreateUser，确保拿到 userId
+ *  - 新格式 skillProjectId 内嵌 userShort6（来自 userId），需要 userId 才能生成
+ *  - 这意味着 init-project 阶段就需要联网注册账号（与原来的"上传时再注册"不同）
  */
-function initProject(workdirRoot, mode, config = {}) {
-  // 创建工作目录
-  const state = loadOrCreateProject(workdirRoot);
+async function initProject(workdirRoot, mode, config = {}, options = {}) {
+  const serverUrl = options.serverUrl || DEFAULT_SERVER_URL;
+
+  // 第一步：确保用户已注册并拿到 userId（这是新格式 skillProjectId 的前置条件）
+  // 仅在 state 不存在时才需要调；已有 state 直接跳过
+  const statePath = path.join(workdirRoot, '.canvasvideo', 'project-state.json');
+  const isNewProject = !fs.existsSync(statePath);
+
+  let user = null;
+  let isFirstTime = false;
+  if (isNewProject) {
+    const result = await getOrCreateUser(serverUrl, workdirRoot);
+    user = result.user;
+    isFirstTime = result.isFirstTime;
+  }
+
+  // 第二步：加载或创建 state（创建时把 userId 传进去生成新格式 ID）
+  const state = loadOrCreateProject(workdirRoot, user ? user.userId : undefined);
   const skillProjectId = state.skillProjectId;
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
-  
-  // 设置模式
+
+  // 模式一致性检查：避免跨模式 init 导致 state 脏数据
+  if (state.mode && state.mode !== mode) {
+    throw new Error(`项目模式冲突：当前 state.mode=${state.mode}，本次传入 mode=${mode}。如需切换模式，请删除 workdir 目录后重新 init。`);
+  }
   state.mode = mode;
-  
-  // 保存配置
+
   if (mode === 'creative') {
     state.content = config.content || '';
     state.duration = config.duration || 15;
-    state.audience = config.audience || '大众用户';
     state.theme = config.theme || 'white';
-    state.aspect = config.aspect || '4:3';
-    state.style = config.style || 'warm';
-    state.bgm = config.bgm !== false; // 默认 true
-    if (state.bgm && config.bgmStyle) {
-      state.bgmStyle = config.bgmStyle;
-    }
+    state.bgmStyle = config.bgmStyle || 'corporate';
   } else if (mode === 'dubbing') {
-    state.audioPath = config.audioPath || '';
-    state.subtitlePath = config.subtitlePath || '';
-    state.theme = config.theme || 'white';
-    state.aspect = config.aspect || '4:3';
+    // dubbing 模式不收集配置字段
+    // 配音音频和 SRT 字幕由步骤 1.5（prepare-voice.js）准备
+    // 参考文档：docs/01.5-voice-prepare.md
+    state.voice = null;  // 由 prepare-voice.js 填充（含 source/audioPath/srtPath/duration/subtitleCount/voiceName）
   }
-  
+
   // 保存状态
   saveProjectState(workdirRoot, state);
-  
+
   console.log(`[✓] 项目初始化完成`);
   console.log(`  项目ID: ${skillProjectId}`);
   console.log(`  模式: ${mode}`);
   console.log(`  工作目录: ${workdir}`);
-  
-  return { skillProjectId, workdir, state };
+  if (isFirstTime) {
+    console.log(`  ⚠️ 已为你创建 CanvasVideo 账号（userId 嵌入到了项目ID里）`);
+    console.log(`  userId:    ${user.userId}`);
+    console.log(`  userToken: ${user.userToken}`);
+    console.log(`  凭证已保存到本地：${path.join(workdirRoot, '.user.json')}`);
+  }
+
+  return { skillProjectId, workdir, state, user, isFirstTime };
 }
 
 // CLI 模式
@@ -164,22 +189,25 @@ if (require.main === module) {
     console.error(`[E] 无效的模式: ${args.mode}，必须是 creative 或 dubbing`);
     process.exit(1);
   }
-  
-  try {
-    const config = loadConfig(args);
-    const result = initProject(args.workdirRoot, args.mode, config);
-    
-    // 输出结果（供后续步骤使用）
-    console.log('');
-    console.log('输出:');
-    console.log(`  skillProjectId: ${result.skillProjectId}`);
-    console.log(`  workdir: ${result.workdir}`);
-    
-    process.exit(0);
-  } catch (err) {
-    console.error('初始化失败:', err.message);
-    process.exit(1);
-  }
+
+  // initProject 是 async —— 因为新格式 ID 需要先联网注册账号拿到 userId
+  (async () => {
+    try {
+      const config = loadConfig(args);
+      const result = await initProject(args.workdirRoot, args.mode, config);
+
+      // 输出结果（供后续步骤使用）
+      console.log('');
+      console.log('输出:');
+      console.log(`  skillProjectId: ${result.skillProjectId}`);
+      console.log(`  workdir: ${result.workdir}`);
+
+      process.exit(0);
+    } catch (err) {
+      console.error('初始化失败:', err.message);
+      process.exit(1);
+    }
+  })();
 }
 
 module.exports = { initProject };

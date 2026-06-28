@@ -1,30 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0F0F1E"/>
-      <stop offset="100%" stop-color="#1A1A2E"/>
-    </linearGradient>
-    <radialGradient id="halo" cx="50%" cy="40%" r="55%">
-      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.35"/>
-      <stop offset="60%" stop-color="#A78BFA" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#1A1A2E" stop-opacity="0"/>
+    <radialGradient id="bg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#1F2937"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#F97316" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#DC2626" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#bg)"/>
   <rect width="1280" height="720" fill="url(#halo)"/>
 
-  <g opacity="0.85">
-    <circle cx="640" cy="290" r="160" fill="none" stroke="#06B6D4" stroke-width="3"/>
-    <circle cx="640" cy="290" r="110" fill="none" stroke="#A78BFA" stroke-width="3"/>
-    <circle cx="640" cy="290" r="60" fill="#06B6D4" opacity="0.35"/>
+  <!-- 斜向冲击光束 -->
+  <g opacity="0.32">
+    <polygon points="180,80 320,80 700,640 560,640" fill="#F97316"/>
+    <polygon points="960,80 1100,80 720,640 580,640" fill="#EF4444"/>
   </g>
 
-  <!-- 中央水印（居中 + 半透明，裁剪也可见） -->
-  <g opacity="0.45">
+  <!-- 中央冲击点 -->
+  <g>
+    <circle cx="640" cy="280" r="240" fill="none" stroke="#F97316" stroke-width="2" opacity="0.25"/>
+    <circle cx="640" cy="280" r="180" fill="none" stroke="#EF4444" stroke-width="2" opacity="0.35"/>
+    <circle cx="640" cy="280" r="120" fill="none" stroke="#F97316" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="640" cy="280" r="60" fill="#F97316" opacity="0.4"/>
+    <circle cx="640" cy="280" r="24" fill="#EF4444"/>
+  </g>
+
+  <!-- 散落亮点 -->
+  <g fill="#F97316" opacity="0.7">
+    <circle cx="220" cy="180" r="4"/>
+    <circle cx="300" cy="120" r="3"/>
+    <circle cx="980" cy="160" r="4"/>
+    <circle cx="1060" cy="220" r="3"/>
+    <circle cx="180" cy="500" r="3"/>
+    <circle cx="1100" cy="500" r="4"/>
+  </g>
+
+  <!-- 中央水印 -->
+  <g opacity="0.6">
     <text x="640" y="360" text-anchor="middle"
           font-family="-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"
-          font-size="42" font-weight="700" fill="#E2E8F0" letter-spacing="3">
-      ※ 演示图片 请替换
+          font-size="44" font-weight="700" fill="#FED7AA" letter-spacing="2">
+      我是占位图 · 赶紧换我
     </text>
   </g>
 </svg>

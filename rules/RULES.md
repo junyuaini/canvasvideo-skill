@@ -10,7 +10,7 @@
 | 编号 | 规则 | 适用场景 | 文档 |
 |------|------|---------|------|
 | R01 | 基本原则 | 所有交互 | [01-principles.md](01-principles.md) |
-| R06 | 组件 | 组件选型、API 调用 | [06-components.md](06-components.md) |
+| R06 | 组件规则 | HtmlComponent 选型、API 调用 | [06-components.md](06-components.md) |
 | R08 | API | 服务端交互 | [08-api.md](08-api.md) |
 | R09 | 自检 | 本地检查（ID格式+重复） | [09-selfcheck.md](09-selfcheck.md) |
 
@@ -19,10 +19,10 @@
 ## 快速引用
 
 ### 设计阶段
-- 组件选型 → [06-components.md](06-components.md)
+- HtmlComponent 选型 → [06-components.md](06-components.md)
 
 ### API 调用
-- 组件规范查询 → [06-components.md](06-components.md) §R1
+- HtmlComponent 规范查询 → [06-components.md](06-components.md) §R1
 - 服务端端点 → [08-api.md](08-api.md) §R1
 - 用户体系 → [08-api.md](08-api.md) §R2
 

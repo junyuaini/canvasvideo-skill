@@ -11,8 +11,8 @@
 **格式**：`P{区域编号}-{三位数字}`，如 `P1-001`、`P3-005`、`P10-001`
 
 规则：
-- ID 为必填字段，每个组件必须有 id
-- `P` 后的数字必须与所在区域的 name 匹配（如区域 name 为 P1，则组件 ID 必须以 P1- 开头）
+- ID 为必填字段，每个 HtmlComponent 必须有 id
+- `P` 后的数字必须与所在区域的 id 匹配（如区域 id 为 P1，则 HtmlComponent ID 必须以 P1- 开头）
 - 三位数字范围 001-999，不可省略前导零
 
 | 正确 | 错误 | 原因 |
@@ -24,19 +24,19 @@
 
 ### 2. ID 唯一性检查
 
-- 所有组件 ID 必须**全局唯一**
+- 所有 HtmlComponent ID 必须**全局唯一**
 - 同一区域内的序号不可重复（如 P1-001 只能出现一次）
 
 ### 3. 顶级组件 regionId 检查
 
 - 顶级组件（即 `project.components[]` 数组的直接成员）必须配置 `regionId`
 - `regionId` 必须在 `project.regions[]` 中存在
-- 组件 ID 的前缀必须与 `regionId` 一致（如 `regionId: "P1"` → ID 必须以 `P1-` 开头）
+- HtmlComponent ID 的前缀必须与 `regionId` 一致（如 `regionId: "P1"` → ID 必须以 `P1-` 开头）
 
 | 正确 | 错误 | 原因 |
 |------|------|------|
 | `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001" }` | 顶级组件缺少 regionId |
-| `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001", regionId: "P2" }` | 组件 ID 前缀与 regionId 不一致 |
+| `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001", regionId: "P2" }` | HtmlComponent ID 前缀与 regionId 不一致 |
 | `{ id: "P1-001", regionId: "P1" }` | `{ id: "P1-001", regionId: "X1" }` | regionId 不在 regions 中 |
 
 ### 4. 时间层次约束（project → region → component → element）
@@ -47,7 +47,7 @@
 
 - `project.duration` **必填**，且必须为有限数字（不允许 `Infinity`）
 - `project.duration` 必须 > 0.1 秒
-- 所有 `region.duration` **累计之和必须严格等于** `project.duration`（**不允许留白**）
+- 所有 `region.duration` 累计之和应等于 `project.duration`（**generate-skeleton.js 容差 2 秒，超出会 warning**）
 
 #### 4.2 层级 1.5 / region
 
@@ -75,7 +75,7 @@
 [层级 1 / project] project.duration 必填且为有限数字（如 9），不能是 Infinity 或缺失。建议：在 project.json 顶层加 "duration": 9。
 [层级 1.5 / project] regions 时长累计 (12 秒) 超过 project.duration (9 秒)，超出 3.00 秒。建议：①将 project.duration 改为 12  ②缩短部分 region。
 [层级 2 / component] [P1-001] end=10 超出所属 region "P1" 结束时间 3（region 范围 [0, 3]）。建议：将 end 改为 3 或更小。
-[层级 3 / element] HtmlComponent [P1-001] elementIds["#P1-002"].end=10 超出所属组件结束时间 8（组件范围 [0, 8]）。建议：将 elementIds end 改为 8 或更小。
+[层级 3 / element] HtmlComponent [P1-001] elementIds["#P1-002"].end=10 超出所属 HtmlComponent 结束时间 8（HtmlComponent 范围 [0, 8]）。建议：将 elementIds end 改为 8 或更小。
 ```
 
 > **修复指引**：错误信息按 `[层级 N / 来源] 描述 + 建议：` 格式组织，建议值直接给出，AI 可机械替换。
@@ -90,7 +90,7 @@
 - 每个元素的 `id` 格式必须为 `P{区域编号}-{三位数字}`（如 `P1-002`、`P1-003`），与顶级组件 ID 规则统一，且全局唯一
 - 元素 `id` 必须以所属区域的 `regionId` 为前缀（如区域为 P1，则 id 必须以 P1- 开头）
 - `start` 和 `end` 必填（**有限**数字、非负），且 `start <= end`（**不允许 Infinity**）
-- 元素时间范围必须落在所属组件时间范围内（见第 4 节）
+- 元素时间范围必须落在所属 HtmlComponent 时间范围内（见第 4 节）
 
 ---
 
@@ -99,8 +99,8 @@
 ```json
 "duration": 9,
 "regions": [
-  { "name": "P1", "duration": 3 },
-  { "name": "P2", "duration": 5 }
+  { "id": "P1", "name": "开头", "duration": 3 },
+  { "id": "P2", "name": "结尾", "duration": 5 }
 ]
 
 // ✅ 正确

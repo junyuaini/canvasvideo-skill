@@ -32,6 +32,17 @@ function checkMissingAssets(workdir) {
       const audioPath = path.join(workdir, project.audio.path.replace(/^\.\//, ''));
       if (!fs.existsSync(audioPath)) {
         missing.push(`audio: ${project.audio.path} (文件不存在)`);
+      } else {
+        // 检查 mp3 文件大小：合法 mp3 至少有几百 KB（占位模板都是 0.3MB ~ 6.6MB）。
+        // < 50KB 的通常是"空壳 mp3"（只有 MPEG header 没有音频帧），浏览器 audio.play() 会触发 error 事件导致无声。
+        const stat = fs.statSync(audioPath);
+        const MIN_MP3_SIZE = 50 * 1024; // 50KB
+        if (stat.size < MIN_MP3_SIZE) {
+          missing.push(
+            `audio: ${project.audio.path} (文件大小仅 ${stat.size} 字节 < ${MIN_MP3_SIZE} 字节，疑似空壳 mp3：` +
+            `只有 MPEG header 没有实际音频数据，浏览器将无法播放。请重新从 templates/bgm/ 拷贝正常 mp3。)`
+          );
+        }
       }
     }
     

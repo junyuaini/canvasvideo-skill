@@ -1,0 +1,38 @@
+{
+  "name": "AI时代如何学习",
+  "description": "5秒短视频示例：展示分而治之的工作流程",
+  "theme": "black",
+  "duration": 5,
+  "viewport": {
+    "width": 780,
+    "height": 585
+  },
+  "settings": {
+    "autoPlay": false,
+    "loop": false,
+    "minScale": 0.01,
+    "maxScale": 5,
+    "ease": 0.08,
+    "contentZoomRatio": 1,
+    "preFullViewDuration": 0.4,
+    "postFullViewDuration": 0.4
+  },
+  "audio": {
+    "path": "assets/placeholders/bgm/tech-pulse.mp3",
+    "loop": true,
+    "fadeIn": 1,
+    "fadeOut": 2
+  },
+  "regions": [
+    {
+      "id": "P1",
+      "name": "开场",
+      "duration": 3
+    },
+    {
+      "id": "P2",
+      "name": "结尾",
+      "duration": 2
+    }
+  ]
+}

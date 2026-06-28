@@ -4,14 +4,14 @@
  * 封装所有后端 API 调用，LLM 直接调脚本，禁止自己敲 curl。
  *
  * 用法（CLI）：
- *   node query-api.js spec-batch <typeVariants.json路径>  # 批量查组件字段（需传入 type+variant）
- *   node query-api.js spec <type> <variant>                # 单查组件字段
+ *   node query-api.js spec-batch <typeVariants.json路径>  # 批量查 HtmlComponent 字段（需传入 type+variant）
+ *   node query-api.js spec <type> <variant>                # 单查 HtmlComponent 字段
  *   node query-api.js validate <project.json路径>          # 预校验 project.json
  *   node query-api.js health                               # 健康检查
  *
  * 程序化导出：
- *   - queryComponentSpecBatch(typeVariants)  → 批量查组件字段（传入 [{type, variant}, ...]）
- *   - queryComponentSpec(type, variant)       → 单查组件字段
+ *   - queryComponentSpecBatch(typeVariants)  → 批量查 HtmlComponent 字段（传入 [{type, variant}, ...]）
+ *   - queryComponentSpec(type, variant)       → 单查 HtmlComponent 字段
  *   - validateProjectJson(projectOrPath)      → 预校验 project.json
  *   - healthCheck()                           → 健康检查
  */
@@ -101,12 +101,12 @@ function buildRequestOptions(baseUrl, apiPath, body, extraHeaders, method = 'POS
   };
 }
 
-// ---------- 组件字段查询 ----------
+// ---------- HtmlComponent 字段查询 ----------
 
 /**
- * 批量查询组件字段规范
- * @param {Array<{type: string, variant: string}>} typeVariants - 组件类型+变种列表
- *   示例: [{ type: 'TitleComponent', variant: 'level1' }, { type: 'CardComponent', variant: 'image-text' }]
+ * 批量查询 HtmlComponent 字段规范
+ * @param {Array<{type: string, variant: string}>} typeVariants - 类型+变种列表
+ *   示例: [{ type: 'HtmlComponent', variant: 'default' }]
  * @param {string} [serverUrl]
  * @returns {Promise<Object>} - { success, data: { components: { Type.variant: {...} } } }
  */
@@ -115,7 +115,7 @@ async function queryComponentSpecBatch(typeVariants, serverUrl) {
     throw new Error('typeVariants 必须是非空数组');
   }
   if (typeVariants.length > 20) {
-    throw new Error('批量查询最多 20 个组件');
+    throw new Error('批量查询最多 20 个类型');
   }
 
   // 调用者必须传入 { type, variant }，不再使用默认 variant
@@ -139,9 +139,9 @@ async function queryComponentSpecBatch(typeVariants, serverUrl) {
 }
 
 /**
- * 单查组件字段规范
- * @param {string} type - 组件类型，如 'GraphicComponent'
- * @param {string} variant - 变体，如 'comparison'
+ * 单查 HtmlComponent 字段规范
+ * @param {string} type - 类型，如 'HtmlComponent'
+ * @param {string} variant - 变体，如 'default'
  * @param {string} [serverUrl]
  * @returns {Promise<Object>} - { success, spec: {...} }
  */
@@ -234,13 +234,13 @@ async function healthCheck(serverUrl) {
 
 function printUsage() {
   console.log('用法：');
-  console.log('  node query-api.js spec <type> <variant>                       单查组件字段');
-  console.log('  node query-api.js spec-batch <typeVariants.json路径>           批量查组件字段');
+  console.log('  node query-api.js spec <type> <variant>                       单查 HtmlComponent 字段');
+  console.log('  node query-api.js spec-batch <typeVariants.json路径>           批量查 HtmlComponent 字段');
   console.log('  node query-api.js spec-batch --json \'[{...}]\'                 直接传 JSON 字符串');
   console.log('  node query-api.js validate <project.json路径>                 预校验 project.json');
   console.log('  node query-api.js health                                      健康检查');
   console.log('');
-  console.log('typeVariants.json 格式：[{ "type": "TitleComponent", "variant": "level1" }, ...]');
+  console.log('typeVariants.json 格式：[{ "type": "HtmlComponent", "variant": "default" }, ...]');
 }
 
 function parseTypeVariantsArg(argv) {

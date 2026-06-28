@@ -1,4 +1,4 @@
-# 步骤1：初始化
+﻿# 步骤1：初始化
 
 > 前置步骤：无（用户首次提出需求）
 > 下一步：[步骤2：骨架设计](02-skeleton-design-creative.md)（创作模式）或 [02-skeleton-design-dubbing.md](02-skeleton-design-dubbing.md)（口播模式）
@@ -15,7 +15,7 @@
 
 | 模式 | 用户提供 | 字幕 | AI负责 |
 |------|---------|------|--------|
-| 创作模式 | 主题/时长/受众等文本 | ❌ 不生成 | 自动生成画面、组件、占位素材；配BGM |
+| 创作模式 | 主题/时长/受众等文本 | ❌ 不生成 | 自动生成画面、HtmlComponent、占位素材；配BGM |
 | 口播模式 | 音频(.mp3/.wav/.m4a) + SRT字幕 | ✅ 必须有 | 严格按音频/SRT排版 |
 
 ---
@@ -52,42 +52,26 @@
 |--------|------|---------|------------|
 | `content` | 视频内容/主题 | **必填** | 描述视频要讲什么 |
 | `duration` | 预计时长（秒） | 非必填 | 默认 `15`，建议给用户选项如 `15s/30s/60s/90s` |
-| `audience` | 目标受众 | 非必填 | 默认 `大众用户`，建议给用户选项如 `开发者/大学生/企业用户/大众` |
-| `theme` | 背景主题 | 非必填 | 默认 `white`（`white` \| `black`）|
-| `aspect` | 视频比例 | 非必填 | 默认 `4:3`（`4:3` \| `16:9` \| `1:1` \| `9:16`）|
-| `style` | 风格调性 | 非必填 | 默认 `warm`（`warm` \| `tech` \| `business` \| `art`）|
-| `bgm` | 是否配BGM | 非必填 | 默认 `true`（`true` \| `false`）|
 
-> **备注**：给用户选项时，根据用户提出的主题内容，AI 自行判断给出合理选项，不写死。
-
-**向用户确认默认方案**：
+**向用户确认**（只问 content/duration）：
 ```
 已获取您的内容：{简要复述}
-默认按以下方案创作，您看是否需要调整？
-- 时长：15秒
-- 受众：大众用户
-- 风格：warm
-- 背景：white
-- BGM：配
+- 时长：{用户选的秒数}秒
 如无需调整，直接回复"可以"即可。
 ```
+
+> 其它字段（theme/BGM 等）在 Step 2 设计文档的 MD 模板中填写，或省略（使用默认值）。
 
 #### 口播模式
 
-| 字段名 | 描述 | 是否必填 | 规则/默认值 |
-|--------|------|---------|------------|
-| `audio` | 音频文件路径 | **必填** | `.mp3/.wav/.m4a` 格式 |
-| `subtitle` | SRT字幕文件路径 | **必填** | `.srt` 格式 |
-| `theme` | 背景主题 | 非必填 | 默认 `white`（`white` \| `black`）|
-| `aspect` | 视频比例 | 非必填 | 默认 `4:3`（`4:3` \| `16:9` \| `1:1` \| `9:16`）|
+> 口播模式 init-project 不收集任何配置字段（音频/字幕/style 等全部在 Step 2 MD 模板中写）。
 
-**向用户确认默认方案**：
+**向用户确认**：
 ```
-已获取您的音频和字幕文件。
-默认按以下方案处理，您看是否需要调整？
-- 背景：white
-- 视频比例：4:3
-如无需调整，直接回复"可以"即可。
+已选择口播模式。请提供：
+- 音频文件路径（如 ./voice.mp3）
+- SRT 字幕路径（如 ./subtitle.srt）
+后续在 Step 2 设计文档中写入。
 ```
 
 ---
@@ -105,14 +89,14 @@
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --config=project-config.json
 
 # 口播模式配置示例
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --config=dubbing-config.json
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --config=project-config.json
 ```
 
 **方式2：JSON 字符串（兼容旧方式）**
 
 ```bash
 # 创作模式
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative '{"content":"视频主题","duration":15,"audience":"大众用户","theme":"white","aspect":"4:3","style":"warm","bgm":true}'
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative '{"content":"视频主题","duration":15}'
 
 # 口播模式
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
@@ -122,14 +106,16 @@ node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing '{
 > - `<Agent工作目录的绝对路径>` 必须传 AI 当前所在工作目录的绝对路径
 > - workdir 固定 = `<Agent工作目录>/canvasvideo-workdir/`
 > - 不要传相对路径，不要用 `.` 或 `..`
+> - **首次执行需要联网**：脚本会先调用 `getOrCreateUser` 远程注册账号（无感），拿到 `userId` 后再用其短哈希生成新格式 `skillProjectId`
 
 脚本会自动完成：
-1. 创建工作目录结构
-2. 生成 `skillProjectId`
-3. 保存项目配置到 `state.json`
-4. 输出项目ID和工作目录路径
+1. **远程注册/读取账号**（仅首次需联网，本地有 `.user.json` 则跳过）
+2. 用 userId 的短哈希生成 `skillProjectId`（新格式：`cv_{userShort6}_{timestamp}_{random8}`，如 `cv_a1b2c3_mqtk95pt_0b43fa53`）
+3. 创建工作目录结构
+4. 保存项目配置到 `state.json`（含 `userId`）
+5. 输出项目ID、工作目录路径，**首次创建会同时输出 userId/userToken**
 
-> 注意：脚本输出的 `skillProjectId` 需要记录，后续步骤会用到。
+> 注意：脚本输出的 `skillProjectId` 需要记录，后续步骤会用到。**严禁 LLM 自编或硬编码 skillProjectId**——详见 [rules/01-principles.md §R6](../rules/01-principles.md#r6-skillprojectid-规范)。
 
 ---
 

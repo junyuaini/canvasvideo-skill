@@ -541,8 +541,8 @@ if (require.main === module) {
       console.log('      （项目目录：' + path.join(workdirRoot, skillProjectId) + '/assets/images/）');
       console.log('   2. 告诉我："把 P3-004 替换成 my-photo.png"');
       console.log('');
-      console.log('🛠️ 调整组件样式：');
-      console.log('   1. 播放视频时按 ↑ 键，显示所有组件 ID');
+      console.log('🛠️ 调整 HTML 元素样式：');
+      console.log('   1. 播放视频时按 ↑ 键，显示所有元素 ID');
       console.log('   2. 告诉我调整需求，例如：');
       console.log('      - "P4-001 字体调大"');
       console.log('      - "P3-003 改成红色"');
@@ -561,7 +561,7 @@ if (require.main === module) {
       }
 
       // 4. 基本操作
-      console.log('🎮 快捷键：空格=播放/暂停 · ←→=快进快退 · 双击空格=全景 · ↑↓=显示/隐藏组件 ID');
+      console.log('🎮 快捷键：空格=播放/暂停 · ←→=快进快退 · 双击空格=全景 · ↑↓=显示/隐藏元素 ID');
       console.log('');
 
       // 5. 分享引导
