@@ -1,20 +1,84 @@
 ﻿/**
  * 合并 skeleton + regions 为完整的 project.json
+ *
+ * 自动转换（新约定）：
+ *   - component.subtitles → component.start/end（查 SRT）
+ *   - elementIds["#X"].subtitles → elementIds["#X"].start/end（查 SRT）
+ *
+ * 兼容旧约定（fallback）：
+ *   - component.start/end 直接使用
+ *   - elementIds["#X"].start/end 直接使用
+ *
  * 用法：node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]
- *   workdir: 包含 skeleton.json 和 regions/ 目录的工作目录
- *   输出路径: 默认为 workdir/project.json
  */
 const fs = require('fs');
 const path = require('path');
 const { resolveAgentWorkdir } = require('./scaffold');
+const { getProjectState } = require('./state');
+const { parseSrt } = require('./srt-parser');
 
 /**
- * 验证 skeleton.json 来源
- * @param {string} workdir - 工作目录
- * @param {Object} skeleton - skeleton.json 解析后的对象
+ * 把"字幕绑定"转换为"start/end 时间"
+ * @param {number|Array<number>} subs - 字幕 ID 或 ID 列表（如 [9, 17]）
+ * @param {Array} srtList - parseSrt 返回的字幕数组
+ * @returns {{start:number, end:number}|null}
+ */
+function resolveSubtitles(subs, srtList) {
+  if (subs == null) return null;
+  if (typeof subs === 'number') subs = [subs];
+  if (!Array.isArray(subs) || subs.length === 0) return null;
+  const ids = [...new Set(subs)].sort((a, b) => a - b);
+  const startId = ids[0];
+  const endId = ids[ids.length - 1];
+  const startSub = srtList[startId - 1];
+  const endSub = srtList[endId - 1];
+  if (!startSub || !endSub) {
+    throw new Error(`字幕范围 [${startId}${ids.length > 1 ? `-${endId}` : ''}] 超出 SRT 字幕数 (${srtList.length} 条)`);
+  }
+  return {
+    start: parseFloat(startSub.start.toFixed(3)),
+    end: parseFloat(endSub.end.toFixed(3))
+  };
+}
+
+/**
+ * 检测模式（dubbing / creative）
+ */
+function detectMode(workdir, workdirRoot) {
+  try {
+    const state = getProjectState(workdirRoot);
+    if (state && state.mode) return state.mode;
+  } catch (e) {}
+  if (fs.existsSync(path.join(workdir, 'design-skeleton-creative.md'))) return 'creative';
+  if (fs.existsSync(path.join(workdir, 'design-skeleton-dubbing.md'))) return 'dubbing';
+  return null;
+}
+
+/**
+ * 校验"元素 ⊂ 组件 ⊂ 区域"嵌套关系
+ * @param {Object} elem - elementIds["#X"] 值
+ * @param {Object} comp - component
+ * @param {Object} region - skeleton region
+ * @param {string} elemKey - "#P3-002" 形式
+ */
+function checkHierarchy(elem, comp, region, elemKey) {
+  const eps = 0.001;
+  if (elem.start < comp.start - eps || elem.end > comp.end + eps) {
+    throw new Error(
+      `[层级 3 / element] elementIds["${elemKey}"] 时间范围 [${elem.start}, ${elem.end}] 超出所属组件 [${comp.start}, ${comp.end}]`
+    );
+  }
+  if (comp.start < region.startTime - eps || comp.end > region.endTime + eps) {
+    throw new Error(
+      `[层级 2 / component] 组件 ${comp.id} 时间范围 [${comp.start}, ${comp.end}] 超出所属 region ${region.id} [${region.startTime}, ${region.endTime}]`
+    );
+  }
+}
+
+/**
+ * 验证骨架来源
  */
 function validateSkeletonSource(workdir, skeleton) {
-  // source_design_doc 字段为可选项：仅在指定了路径时校验文件存在性
   if (skeleton.source_design_doc && skeleton.source_design_doc.trim() !== '') {
     const designDocPath = path.join(workdir, skeleton.source_design_doc);
     if (!fs.existsSync(designDocPath)) {
@@ -27,86 +91,180 @@ function validateSkeletonSource(workdir, skeleton) {
 /**
  * 合并区域文件为完整 project.json
  * @param {string} workdir - 工作目录路径
+ * @param {string} workdirRoot - canvasvideo-workdir 根目录
  * @returns {Object} 合并后的 project 对象
  */
-function mergeRegions(workdir) {
+function mergeRegions(workdir, workdirRoot) {
   const skeletonPath = path.join(workdir, 'skeleton.json');
-
   if (!fs.existsSync(skeletonPath)) {
     throw new Error('工作目录缺少 skeleton.json');
   }
-
   const skeleton = JSON.parse(fs.readFileSync(skeletonPath, 'utf8'));
-
-  // 步骤1：验证骨架来源
   validateSkeletonSource(workdir, skeleton);
 
-  // 初始化 project（保留骨架的 source_design_doc）
+  // 1. 检测模式 + 加载 SRT（口播模式必读）
+  const mode = detectMode(workdir, workdirRoot);
+  let srtList = [];
+  if (mode === 'dubbing') {
+    try {
+      const state = getProjectState(workdirRoot);
+      if (state && state.voice && state.voice.srtPath) {
+        const srtAbs = path.isAbsolute(state.voice.srtPath)
+          ? state.voice.srtPath
+          : path.join(workdir, state.voice.srtPath);
+        srtList = parseSrt(srtAbs);
+        console.log(`[✓] 加载 SRT: ${srtList.length} 条字幕`);
+      } else {
+        console.warn('[W] 口播模式但 state.voice.srtPath 缺失，元素字幕绑定无法解析');
+      }
+    } catch (e) {
+      console.warn(`[W] SRT 加载失败: ${e.message}，元素字幕绑定无法解析`);
+    }
+  }
+
+  // 2. 计算每个 region 的全局起止时间
+//    - 口播模式：直接从 SRT 取（每个 region 的字幕段首尾 = region 全局起止，与 component 字幕绑定完全对齐）
+//    - 创作模式：按骨架顺序累加（无字幕锚点）
+  const regionTimes = {};
+  if (mode === 'dubbing' && srtList.length > 0) {
+    for (const r of skeleton.regions) {
+      if (r.subtitle_range) {
+        const match = r.subtitle_range.match(/(\d+)\s*[-–]\s*(\d+)/);
+        if (match) {
+          const startId = parseInt(match[1], 10);
+          const endId = parseInt(match[2], 10);
+          const startSub = srtList[startId - 1];
+          const endSub = srtList[endId - 1];
+          if (startSub && endSub) {
+            regionTimes[r.id] = {
+              id: r.id,
+              duration: parseFloat((endSub.end - startSub.start).toFixed(3)),
+              startTime: parseFloat(startSub.start.toFixed(3)),
+              endTime: parseFloat(endSub.end.toFixed(3))
+            };
+            continue;
+          }
+        }
+      }
+      // fallback：累加
+      regionTimes[r.id] = {
+        id: r.id,
+        duration: r.duration,
+        startTime: 0,
+        endTime: r.duration
+      };
+    }
+  } else {
+    let accTime = 0;
+    for (const r of skeleton.regions) {
+      regionTimes[r.id] = {
+        id: r.id,
+        duration: r.duration,
+        startTime: parseFloat(accTime.toFixed(3)),
+        endTime: parseFloat((accTime + r.duration).toFixed(3))
+      };
+      accTime += r.duration;
+    }
+  }
+  const lastRegion = skeleton.regions[skeleton.regions.length - 1];
+  const lastTime = regionTimes[lastRegion.id]?.endTime || 0;
+  console.log(`[✓] region 全局时间计算完成: 末端 ${parseFloat(lastTime.toFixed(3))}s`);
+
+  // 3. 初始化 project
   const project = {
     name: skeleton.name,
     description: skeleton.description,
     theme: skeleton.theme,
     duration: skeleton.duration,
     viewport: skeleton.viewport,
-    canvas: skeleton.canvas,  // 保留骨架的 canvas
+    canvas: skeleton.canvas,
     settings: skeleton.settings,
     audio: skeleton.audio,
-    regions: [], // 将在下面填充
+    regions: [],
     components: [],
     subtitles: []
   };
+  if (skeleton.source_design_doc) project.source_design_doc = skeleton.source_design_doc;
 
-  // 保留骨架的 source_design_doc（如有）
-  if (skeleton.source_design_doc) {
-    project.source_design_doc = skeleton.source_design_doc;
-  }
-
-  // 步骤2：验证并合并区域文件
+  // 4. 校验缺失 region 文件
   const regionsDir = path.join(workdir, 'regions');
-
-  // 必传：所有 region 都必须有 JSON（docs/05 硬规则）
   const missingRegions = skeleton.regions
     .filter(r => !fs.existsSync(path.join(regionsDir, `${r.id}.json`)))
     .map(r => r.id);
   if (missingRegions.length > 0) {
-    throw new Error(`[E] 缺失区域文件：${missingRegions.map(id => `${id}.json`).join(', ')}。请回到 Step 4 补全所有区域的 JSON 后再合并。`);
+    throw new Error(`[E] 缺失区域文件：${missingRegions.map(id => `${id}.json`).join(', ')}`);
   }
 
+  // 5. 处理每个 region
   for (const skeletonRegion of skeleton.regions) {
-    // region 文件名基于 id（P1.json / P2.json），不是 name（"开场" / "结尾"）
     const regionFile = path.join(regionsDir, `${skeletonRegion.id}.json`);
-
     const regionData = JSON.parse(fs.readFileSync(regionFile, 'utf8'));
 
-    // 验证区域 id 匹配（兼容 regionName 旧字段名）
-    const regionDataId = regionData.id || regionData.regionName;
-    if (regionDataId !== skeletonRegion.id) {
-      console.warn(`警告: 区域 id 不匹配 ${regionDataId} !== ${skeletonRegion.id}`);
-    }
-
-    // 将区域信息添加到 project.regions
     const regionEntry = {
       id: skeletonRegion.id,
       name: skeletonRegion.name,
       duration: skeletonRegion.duration,
       x: skeletonRegion.x,
-      y: skeletonRegion.y
+      y: skeletonRegion.y,
+      startTime: regionTimes[skeletonRegion.id].startTime,
+      endTime: regionTimes[skeletonRegion.id].endTime
     };
-
     project.regions.push(regionEntry);
 
-    // 合并 HtmlComponent
+    // 6. 处理 components：自动转换 subtitles → start/end
     if (Array.isArray(regionData.components)) {
-      project.components.push(...regionData.components);
+      for (const comp of regionData.components) {
+        // 6.1 决定 component.start/end
+        let compTime = null;
+        if (comp.subtitles != null && srtList.length > 0) {
+          compTime = resolveSubtitles(comp.subtitles, srtList);
+        } else if (Array.isArray(comp.time_range)) {
+          compTime = resolveTimeRange(comp.time_range, regionEntry.startTime);
+        } else if (typeof comp.start === 'number' && typeof comp.end === 'number') {
+          compTime = { start: comp.start, end: comp.end };
+        } else {
+          compTime = { start: regionEntry.startTime, end: regionEntry.endTime };
+        }
+        comp.start = compTime.start;
+        comp.end = compTime.end;
+
+        // 6.2 处理 elementIds：自动转换 subtitles/time_range/start-end
+        if (comp.content && comp.content.elementIds) {
+          const resolvedElementIds = {};
+          for (const [key, value] of Object.entries(comp.content.elementIds)) {
+            if (!value || typeof value !== 'object') continue;
+            let elemTime = null;
+            if (value.subtitles != null && srtList.length > 0) {
+              elemTime = resolveSubtitles(value.subtitles, srtList);
+            } else if (Array.isArray(value.time_range)) {
+              elemTime = resolveTimeRange(value.time_range, regionEntry.startTime);
+            } else if (typeof value.start === 'number' && typeof value.end === 'number') {
+              elemTime = { start: value.start, end: value.end };
+            }
+            if (elemTime) {
+              checkHierarchy({ start: elemTime.start, end: elemTime.end }, comp, regionEntry, key);
+              resolvedElementIds[key] = {
+                id: value.id || key.slice(1),
+                start: elemTime.start,
+                end: elemTime.end
+              };
+            } else {
+              console.warn(`[W] elementIds["${key}"] 既无 subtitles/time_range，也无 start/end，保留原样`);
+              resolvedElementIds[key] = value;
+            }
+          }
+          comp.content.elementIds = resolvedElementIds;
+        }
+
+        project.components.push(comp);
+      }
     }
 
-    // 合并字幕
     if (Array.isArray(regionData.subtitles)) {
       project.subtitles.push(...regionData.subtitles);
     }
   }
 
-  // 按 start 时间排序
   project.components.sort((a, b) => a.start - b.start);
   project.subtitles.sort((a, b) => a.start - b.start);
 
@@ -124,12 +282,6 @@ if (require.main === module) {
 
   if (!skillProjectId) {
     console.error('用法: node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]');
-    console.error('');
-    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
-    console.error('');
-    console.error('示例:');
-    console.error('  node merge-regions.js --cwd=/path/to/agent/workspace cv_abc123');
-    console.error('  node merge-regions.js --cwd=/path/to/agent/workspace cv_abc123 ./output/project.json');
     process.exit(1);
   }
 
@@ -137,7 +289,7 @@ if (require.main === module) {
   const finalOutputPath = outputPath || path.join(workdir, 'project.json');
 
   try {
-    const project = mergeRegions(workdir);
+    const project = mergeRegions(workdir, workdirRoot);
     fs.writeFileSync(finalOutputPath, JSON.stringify(project, null, 2));
     console.log(`合并完成: ${finalOutputPath}`);
     console.log(`  区域数: ${project.regions.length}`);
@@ -150,4 +302,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { mergeRegions };
+module.exports = { mergeRegions, resolveSubtitles, resolveTimeRange };

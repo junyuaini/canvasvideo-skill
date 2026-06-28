@@ -14,6 +14,7 @@
         "w": 780,
         "h": 585
       },
+      "time_range": [3, 5],
       "background": {
         "html": "<div class='region-bg region-bg--warm'></div>",
         "css": ".region-bg { position: absolute; inset: 0; } .region-bg--warm { background: radial-gradient(circle at 50% 40%, rgba(245,158,11,0.42) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(239,68,68,0.35) 0%, transparent 65%), linear-gradient(135deg, #1a1a2e 0%, #2a1a3a 60%, #1a1a2e 100%); }"
@@ -22,13 +23,11 @@
         "html": "<span id='P2-002' class='badge'>AI LEARNING</span><img id='P2-003' class='cover' src='./assets/placeholders/dark/tech.svg' /><p id='P2-004' class='caption'>专业人士必读</p>",
         "css": ".badge { position: absolute; left: 310px; top: 220px; width: 160px; height: 40px; padding: 10px 24px; border-radius: 999px; background: #F59E0B; color: #0B0719; font-size: 18px; font-weight: 800; box-shadow: 0 4px 12px rgba(245,158,11,0.4); display: flex; align-items: center; justify-content: center; } .cover { position: absolute; left: 20px; top: 280px; width: 740px; height: 250px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); } .caption { position: absolute; left: 240px; top: 540px; width: 300px; height: 40px; margin: 0; font-size: 16px; color: #9CA3AF; line-height: 1.4; text-align: center; }",
         "elementIds": {
-          "#P2-002": { "id": "P2-002", "start": 3, "end": 5 },
-          "#P2-003": { "id": "P2-003", "start": 4, "end": 5 },
-          "#P2-004": { "id": "P2-004", "start": 4.5, "end": 5 }
+          "#P2-002": { "id": "P2-002", "time_range": [0, 2] },
+          "#P2-003": { "id": "P2-003", "time_range": [1, 2] },
+          "#P2-004": { "id": "P2-004", "time_range": [1.5, 2] }
         }
-      },
-      "start": 3,
-      "end": 5
+      }
     }
   ]
 }

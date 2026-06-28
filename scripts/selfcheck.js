@@ -420,51 +420,31 @@ function checkTimeHierarchy(project) {
   }
 
   // [层级 1.5] 累计 region 时长校验
-  if (typeof project.duration === 'number' && Number.isFinite(project.duration)) {
-    let regionTotal = 0;
-    let regionDurationError = false;
-    regions.forEach((region, index) => {
-      const label = region && region.id ? ` [${region.id}]` : ` [index ${index}]`;
-      if (typeof region.duration !== 'number' || !Number.isFinite(region.duration)) {
+  // 总时长直接读 project.regions 最后一个 endTime（口播=最后一帧字幕 end；创作=最后一个 region 的 endTime）
+  // region 实际时长 = endTime - startTime（不依赖累加）
+  const regionRanges = new Map();
+  let lastEndTime = 0;
+  if (Array.isArray(regions)) {
+    for (const region of regions) {
+      if (!region || !region.id) continue;
+      if (typeof region.startTime !== 'number' || typeof region.endTime !== 'number') {
         errors.push(
-          `[层级 1.5 / region]${label} duration 必填且为有限数字（如 3），不能是 Infinity。建议：补一个具体的秒数。`
+          `[层级 1.5 / region] [${region.id}] startTime/endTime 必填（merge-regions.js 已自动写入）。建议：重新跑 merge-regions.js。`
         );
-        regionDurationError = true;
-      } else if (region.duration < 0.1) {
-        errors.push(
-          `[层级 1.5 / region]${label} duration=${region.duration} 太小，必须 ≥ 0.1 秒。建议：合并到相邻 region 或调整时长。`
-        );
-        regionDurationError = true;
-      } else {
-        regionTotal += region.duration;
+        continue;
       }
-    });
-
-    if (!regionDurationError) {
-      if (Math.abs(regionTotal - project.duration) > 0.001) {
-        const diff = regionTotal - project.duration;
-        if (diff > 0) {
-          errors.push(
-            `[层级 1.5 / project] regions 时长累计 (${regionTotal} 秒) 超过 project.duration (${project.duration} 秒)，超出 ${diff.toFixed(2)} 秒。建议：①将 project.duration 改为 ${regionTotal}  ②缩短部分 region。`
-          );
-        } else {
-          errors.push(
-            `[层级 1.5 / project] regions 时长累计 (${regionTotal} 秒) 小于 project.duration (${project.duration} 秒)，留白 ${(-diff).toFixed(2)} 秒（不允许留白）。建议：①将 project.duration 改为 ${regionTotal}  ②增加 region 或延长 region.duration。`
-          );
-        }
-      }
+      regionRanges.set(region.id, { startTime: region.startTime, endTime: region.endTime });
+      if (region.endTime > lastEndTime) lastEndTime = region.endTime;
     }
   }
 
-  // 计算每个 region 的隐式 startTime / endTime
-  const regionRanges = new Map();
-  let cursor = 0;
-  regions.forEach((region) => {
-    if (region && region.id && typeof region.duration === 'number' && Number.isFinite(region.duration)) {
-      regionRanges.set(region.id, { startTime: cursor, endTime: cursor + region.duration });
-      cursor += region.duration;
+  if (typeof project.duration === 'number' && Number.isFinite(project.duration)) {
+    if (Math.abs(lastEndTime - project.duration) > 0.001) {
+      errors.push(
+        `[层级 1.5 / project] project.duration=${project.duration} 与 regions 实际末端时间 ${lastEndTime} 不一致（差 ${Math.abs(lastEndTime - project.duration).toFixed(3)} 秒）。建议：重新跑 generate-skeleton.js / merge-regions.js 让 project.duration 与 regions 末端对齐。`
+      );
     }
-  });
+  }
 
   // [层级 2] component 时间范围校验
   function checkComponentTimeRecursive(comps) {

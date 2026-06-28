@@ -1,8 +1,8 @@
 {
   "name": "口播模式示例",
-  "description": "5秒口播短视频示例：演示 SRT 字幕 + 配音音频 + 画面同步",
+  "description": "27秒口播短视频示例：演示 8 条 SRT 字幕 + 配音音频 + 画面同步",
   "theme": "white",
-  "duration": 5,
+  "duration": 27,
   "viewport": {
     "width": 780,
     "height": 585
@@ -24,95 +24,61 @@
     "fadeOut": 0.3
   },
   "regions": [
-    {
-      "id": "P1",
-      "name": "开头",
-      "duration": 3
-    },
-    {
-      "id": "P2",
-      "name": "结尾",
-      "duration": 2
-    }
+    {"id": "P1", "name": "开头引入", "duration": 13, "startTime": 0,  "endTime": 13},
+    {"id": "P2", "name": "四步方法", "duration": 14, "startTime": 13, "endTime": 27}
   ],
   "components": [
     {
       "id": "P1-001",
       "regionId": "P1",
       "type": "HtmlComponent",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 780,
-        "h": 585
-      },
-      "content": {
-        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span>",
-        "css": ".title { position: absolute; left: 20px; top: 200px; width: 740px; height: 80px; margin: 0; font-size: 64px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 240px; top: 310px; width: 300px; height: 60px; padding: 12px 32px; border-radius: 999px; font-size: 28px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; }",
-        "elementIds": {
-          "#P1-002": {
-            "id": "P1-002",
-            "start": 0,
-            "end": 3
-          },
-          "#P1-003": {
-            "id": "P1-003",
-            "start": 1.5,
-            "end": 3
-          }
-        }
-      },
+      "position": {"x": 0, "y": 0, "w": 780, "h": 585},
       "start": 0,
-      "end": 3,
+      "end": 13,
       "background": {
         "html": "<div class='region-bg region-bg--bright'></div>",
         "css": ".region-bg { position: absolute; inset: 0; } .region-bg--bright { background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.25) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.22) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
+      },
+      "content": {
+        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span><p id='P1-004' class='lead'>不是技术本身<br/>而是<span class='hl'>学习的能力</span></p>",
+        "css": ".title { position: absolute; left: 20px; top: 90px; width: 740px; height: 80px; margin: 0; font-size: 56px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 290px; top: 190px; width: 200px; height: 40px; padding: 8px 22px; border-radius: 999px; font-size: 18px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; } .lead { position: absolute; left: 40px; top: 280px; width: 700px; height: 200px; margin: 0; font-size: 36px; font-weight: 700; color: #1F2937; line-height: 1.4; text-align: center; letter-spacing: 1px; } .lead .hl { font-size: 42px; font-weight: 900; color: #3B82F6; text-shadow: 0 2px 12px rgba(59,130,246,0.3); }",
+        "elementIds": {
+          "#P1-002": {"id": "P1-002", "start": 0,    "end": 6.4},
+          "#P1-003": {"id": "P1-003", "start": 6.4,  "end": 9.8},
+          "#P1-004": {"id": "P1-004", "start": 9.8,  "end": 13}
+        }
       }
     },
     {
       "id": "P2-001",
       "regionId": "P2",
       "type": "HtmlComponent",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 780,
-        "h": 585
-      },
-      "content": {
-        "html": "<span id='P2-002' class='badge'>KEY POINT</span><h2 id='P2-003' class='subtitle'>持续学习的能力</h2>",
-        "css": ".badge { position: absolute; left: 290px; top: 180px; width: 200px; height: 40px; padding: 10px 24px; border-radius: 8px; font-size: 18px; font-weight: 800; color: #FFFFFF; background: #F59E0B; display: flex; align-items: center; justify-content: center; } .subtitle { position: absolute; left: 20px; top: 250px; width: 740px; height: 80px; margin: 0; font-size: 56px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; }",
-        "elementIds": {
-          "#P2-002": {
-            "id": "P2-002",
-            "start": 3,
-            "end": 5
-          },
-          "#P2-003": {
-            "id": "P2-003",
-            "start": 3.5,
-            "end": 5
-          }
-        }
-      },
-      "start": 3,
-      "end": 5,
+      "position": {"x": 0, "y": 0, "w": 780, "h": 585},
+      "start": 13,
+      "end": 27,
       "background": {
         "html": "<div class='region-bg region-bg--accent'></div>",
         "css": ".region-bg { position: absolute; inset: 0; } .region-bg--accent { background: radial-gradient(circle at 50% 40%, rgba(245,158,11,0.30) 0%, transparent 60%), radial-gradient(circle at 75% 80%, rgba(239,68,68,0.22) 0%, transparent 65%), linear-gradient(135deg, #fff7ed 0%, #fef3c7 60%, #fffbeb 100%); }"
+      },
+      "content": {
+        "html": "<span id='P2-002' class='badge'>FOUR STEPS</span><div id='P2-003' class='steps'><div class='step'><span class='num'>1</span><span class='txt'>明确目标</span></div><div class='step'><span class='num'>2</span><span class='txt'>最佳实践</span></div><div class='step'><span class='num'>3</span><span class='txt'>试错迭代</span></div><div class='step'><span class='num'>4</span><span class='txt'>持续优化</span></div></div><p id='P2-004' class='quote'>持续学习，才是核心竞争力</p>",
+        "css": ".badge { position: absolute; left: 290px; top: 60px; width: 200px; height: 36px; padding: 8px 22px; border-radius: 8px; font-size: 16px; font-weight: 800; color: #FFFFFF; background: #F59E0B; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; } .steps { position: absolute; left: 40px; top: 130px; width: 700px; height: 280px; display: grid; grid-template-columns: 1fr 1fr; grid-gap: 24px; padding: 0 20px; } .step { display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-radius: 14px; background: rgba(255,255,255,0.7); border: 1px solid rgba(245,158,11,0.3); box-shadow: 0 2px 8px rgba(245,158,11,0.1); } .step .num { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); color: #FFFFFF; font-size: 24px; font-weight: 900; } .step .txt { font-size: 24px; font-weight: 800; color: #111827; letter-spacing: 2px; } .quote { position: absolute; left: 40px; top: 450px; width: 700px; height: 60px; margin: 0; font-size: 32px; font-weight: 900; color: #111827; line-height: 1.2; text-align: center; letter-spacing: 2px; text-shadow: 0 2px 8px rgba(245,158,11,0.3); }",
+        "elementIds": {
+          "#P2-002": {"id": "P2-002", "start": 13,   "end": 27},
+          "#P2-003": {"id": "P2-003", "start": 13,   "end": 23.5},
+          "#P2-004": {"id": "P2-004", "start": 23.5, "end": 27}
+        }
       }
     }
   ],
   "subtitles": [
-    {
-      "start": 0,
-      "end": 2.5,
-      "text": "今天我们来聊聊 AI 时代的核心竞争力"
-    },
-    {
-      "start": 2.5,
-      "end": 5,
-      "text": "是持续学习的能力"
-    }
+    {"start": 0,     "end": 3.2,   "text": "今天我们来聊聊 AI 时代的核心竞争力"},
+    {"start": 3.2,   "end": 6.4,   "text": "很多人以为是技术本身"},
+    {"start": 6.4,   "end": 9.8,   "text": "但真正让 AI 改变世界的"},
+    {"start": 9.8,   "end": 13,    "text": "是学习的能力"},
+    {"start": 13,    "end": 16.5,  "text": "第一步，明确你的目标"},
+    {"start": 16.5,  "end": 20,    "text": "第二步，找到行业最佳实践"},
+    {"start": 20,    "end": 23.5,  "text": "第三步，快速试错迭代"},
+    {"start": 23.5,  "end": 27,    "text": "持续学习，才是核心竞争力"}
   ]
 }

@@ -1,8 +1,8 @@
 {
   "name": "口播模式示例",
-  "description": "5秒口播短视频示例：演示 SRT 字幕 + 配音音频 + 画面同步",
+  "description": "27秒口播短视频示例：演示 8 条 SRT 字幕 + 配音音频 + 画面同步",
   "theme": "white",
-  "duration": 5,
+  "duration": 27,
   "viewport": {
     "width": 780,
     "height": 585
@@ -26,13 +26,15 @@
   "regions": [
     {
       "id": "P1",
-      "name": "开头",
-      "duration": 3
+      "name": "开头引入",
+      "duration": 13,
+      "subtitle_range": "1-4"
     },
     {
       "id": "P2",
-      "name": "结尾",
-      "duration": 2
+      "name": "四步方法",
+      "duration": 14,
+      "subtitle_range": "5-8"
     }
   ]
 }

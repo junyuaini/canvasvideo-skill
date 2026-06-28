@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveAgentWorkdir } = require('./scaffold');
 const { getProjectState } = require('./state');
+const { parseSrt } = require('./srt-parser');
 
 /**
  * 检测设计文档模式并返回文件路径（优先读 state.mode）
@@ -120,14 +121,18 @@ function extractRegions(content, mode) {
   const typeIdx = colIdx('类型');
   const subtitleRangeIdx = colIdx('包含字幕');
 
-  if (durationIdx === -1) {
-    throw new Error(`区域列表表头缺少必填列：时长。当前表头：${header.join(', ')}`);
-  }
   if (idIdx === -1 && legacyNameIdx === -1) {
     throw new Error(`区域列表表头缺少必填列：区域 ID 或 名称。当前表头：${header.join(', ')}`);
   }
+  // 时长列：创作模式必填；口播模式可用"包含字幕"代替
+  if (mode === 'creative' && durationIdx === -1) {
+    throw new Error(`创作模式区域列表必须包含"时长"列。当前表头：${header.join(', ')}`);
+  }
+  if (mode === 'dubbing' && durationIdx === -1 && subtitleRangeIdx === -1) {
+    throw new Error(`口播模式区域列表必须包含"时长"或"包含字幕"列。当前表头：${header.join(', ')}`);
+  }
 
-  // 3. 解析数据行
+  // 3. 解析数据行（跳过表头行：含列名"区域 ID"或"ID"）
   const regions = [];
   for (const line of lines) {
     const trimmed = line.trim();
@@ -139,14 +144,31 @@ function extractRegions(content, mode) {
     // id: 优先取"区域 ID"列；旧 MD 没有该列时回退到"名称"列
     const idCell = idIdx !== -1 ? cells[idIdx] : cells[legacyNameIdx];
     if (!idCell || idCell.startsWith('--')) continue;
+    // 跳过表头行：idCell 等于列名（"区域 ID" / "ID" / "名称" / "序号"）
+    if (idCell === '区域 ID' || idCell === 'ID' || idCell === '名称' || idCell === '序号') continue;
 
     // name: 优先取"区域名称"列；缺失时回退到 id（不友好但兼容）
     let nameCell = humanNameIdx !== -1 ? cells[humanNameIdx] : '';
     if (!nameCell) nameCell = idCell;
 
-    const durationStr = cells[durationIdx].replace(/[a-zA-Z\s秒]/g, '');
-    const duration = parseInt(durationStr, 10);
-    if (isNaN(duration)) continue;
+    // 解析时长：parseFloat 保留 3 位小数（不取整）
+    let duration = 0;
+    if (durationIdx !== -1) {
+      const durationStr = cells[durationIdx].replace(/[a-zA-Z\s秒]/g, '');
+      const parsed = parseFloat(durationStr);
+      if (!isNaN(parsed)) {
+        duration = parseFloat(parsed.toFixed(3));
+      }
+    }
+
+    // 口播模式 + 有字幕范围：duration 暂存 0，后面用 SRT 重算（更精准）
+    const hasSubtitleRange = mode === 'dubbing' && subtitleRangeIdx !== -1 && cells[subtitleRangeIdx];
+    if (hasSubtitleRange) {
+      duration = 0;
+    } else if (duration === 0) {
+      // 创作模式 或 口播没填字幕范围：必须有 duration
+      continue;
+    }
 
     const region = { id: idCell, name: nameCell, duration };
     if (mode === 'dubbing' && subtitleRangeIdx !== -1 && cells[subtitleRangeIdx]) {
@@ -203,10 +225,53 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   const regions = extractRegions(content, mode);
   console.log(`[✓] 区域列表提取成功: ${regions.length} 个区域`);
 
-  // 3. 计算总时长（验证）
-  const totalDuration = regions.reduce((sum, r) => sum + r.duration, 0);
+  // 2.5 口播模式：用 SRT 按"包含字幕"重算 region.duration（3 位小数，绝对精准）
+  let lastSubtitleEnd = null;
+  if (mode === 'dubbing') {
+    if (!projectState.voice || !projectState.voice.srtPath) {
+      throw new Error(
+        '口播模式必须先执行步骤 1.5（prepare-voice.js）准备配音音频和字幕。\n' +
+        '当前 state.voice 为空，请参考 docs/01.5-voice-prepare.md。'
+      );
+    }
+    const srtAbsPath = path.isAbsolute(projectState.voice.srtPath)
+      ? projectState.voice.srtPath
+      : path.join(workdir, projectState.voice.srtPath);
+    if (!fs.existsSync(srtAbsPath)) {
+      throw new Error(`SRT 文件不存在: ${srtAbsPath}`);
+    }
+    const subtitles = parseSrt(srtAbsPath);
+    if (subtitles.length > 0) {
+      lastSubtitleEnd = parseFloat(subtitles[subtitles.length - 1].end.toFixed(3));
+    }
+    let srtCalcCount = 0;
+    for (const region of regions) {
+      if (!region.subtitle_range) continue;
+      const match = region.subtitle_range.match(/(\d+)\s*[-–]\s*(\d+)/);
+      if (!match) {
+        console.warn(`[W] region ${region.id} 的"包含字幕"格式不合法: "${region.subtitle_range}"`);
+        continue;
+      }
+      const startIdx = parseInt(match[1], 10) - 1; // SRT 字幕 ID 是 1-based，数组是 0-based
+      const endIdx = parseInt(match[2], 10) - 1;
+      if (!subtitles[startIdx] || !subtitles[endIdx]) {
+        throw new Error(
+          `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
+        );
+      }
+      const dur = subtitles[endIdx].end - subtitles[startIdx].start;
+      region.duration = parseFloat(dur.toFixed(3));
+      srtCalcCount++;
+    }
+    console.log(`[✓] 按 SRT 重算 ${srtCalcCount} 个口播区域时长（3 位小数）`);
+  }
+
+  // 3. 计算总时长（口播=最后一帧字幕 end；创作=region.duration 累加）
+  const totalDuration = lastSubtitleEnd !== null
+    ? lastSubtitleEnd
+    : parseFloat(regions.reduce((sum, r) => sum + r.duration, 0).toFixed(3));
   if (config.duration && Math.abs(config.duration - totalDuration) > 2) {
-    console.warn(`[W] 时长不匹配: 配置声明 ${config.duration}秒，区域总时长 ${totalDuration}秒`);
+    console.warn(`[W] 时长不匹配: 配置声明 ${config.duration}秒，实际总时长 ${totalDuration}秒。优先使用实际总时长。`);
   }
 
   // 4. 自动计算 canvas 尺寸
@@ -221,7 +286,8 @@ function generateSkeleton(workdirRoot, skillProjectId) {
     name: config.name || '',
     description: config.description || '',
     theme: config.theme || projectState.theme || 'white',
-    duration: config.duration || projectState.duration || totalDuration,
+    // 总时长优先用 totalDuration（口播按 SRT 最后一帧、创作按 AI 填的累加），不再被 config.duration 覆盖
+    duration: totalDuration || config.duration || projectState.duration,
     viewport: config.viewport || { width: 780, height: 585 },
     canvas: { width: canvasWidth, height: canvasHeight },
     settings: {

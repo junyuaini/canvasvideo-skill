@@ -1,38 +1,32 @@
 {
   "id": "P1",
-  "name": "开头",
+  "name": "开头引入",
   "subtitles": [
-    {
-      "start": 0,
-      "end": 2.5,
-      "text": "今天我们来聊聊 AI 时代的核心竞争力"
-    }
+    {"start": 0.000,  "end": 3.200, "text": "今天我们来聊聊 AI 时代的核心竞争力"},
+    {"start": 3.200,  "end": 6.400, "text": "很多人以为是技术本身"},
+    {"start": 6.400,  "end": 9.800, "text": "但真正让 AI 改变世界的"},
+    {"start": 9.800,  "end": 13.000, "text": "是学习的能力"}
   ],
   "components": [
     {
       "id": "P1-001",
       "regionId": "P1",
       "type": "HtmlComponent",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 780,
-        "h": 585
-      },
+      "position": {"x": 0, "y": 0, "w": 780, "h": 585},
+      "subtitles": [1, 4],
       "background": {
         "html": "<div class='region-bg region-bg--bright'></div>",
         "css": ".region-bg { position: absolute; inset: 0; } .region-bg--bright { background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.25) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.22) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
       },
       "content": {
-        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span>",
-        "css": ".title { position: absolute; left: 20px; top: 200px; width: 740px; height: 80px; margin: 0; font-size: 64px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 240px; top: 310px; width: 300px; height: 60px; padding: 12px 32px; border-radius: 999px; font-size: 28px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; }",
+        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span><p id='P1-004' class='lead'>不是技术本身<br/>而是<span class='hl'>学习的能力</span></p>",
+        "css": ".title { position: absolute; left: 20px; top: 90px; width: 740px; height: 80px; margin: 0; font-size: 56px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 290px; top: 190px; width: 200px; height: 40px; padding: 8px 22px; border-radius: 999px; font-size: 18px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; } .lead { position: absolute; left: 40px; top: 280px; width: 700px; height: 200px; margin: 0; font-size: 36px; font-weight: 700; color: #1F2937; line-height: 1.4; text-align: center; letter-spacing: 1px; } .lead .hl { font-size: 42px; font-weight: 900; color: #3B82F6; text-shadow: 0 2px 12px rgba(59,130,246,0.3); }",
         "elementIds": {
-          "#P1-002": { "id": "P1-002", "start": 0, "end": 3 },
-          "#P1-003": { "id": "P1-003", "start": 1.5, "end": 3 }
+          "#P1-002": {"id": "P1-002", "subtitles": [1, 2]},
+          "#P1-003": {"id": "P1-003", "subtitles": [2, 3]},
+          "#P1-004": {"id": "P1-004", "subtitles": [3, 4]}
         }
-      },
-      "start": 0,
-      "end": 3
+      }
     }
   ]
 }

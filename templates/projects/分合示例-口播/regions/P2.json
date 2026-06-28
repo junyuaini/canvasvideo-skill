@@ -1,38 +1,32 @@
 {
   "id": "P2",
-  "name": "结尾",
+  "name": "四步方法",
   "subtitles": [
-    {
-      "start": 2.5,
-      "end": 5,
-      "text": "是持续学习的能力"
-    }
+    {"start": 13.000, "end": 16.500, "text": "第一步，明确你的目标"},
+    {"start": 16.500, "end": 20.000, "text": "第二步，找到行业最佳实践"},
+    {"start": 20.000, "end": 23.500, "text": "第三步，快速试错迭代"},
+    {"start": 23.500, "end": 27.000, "text": "持续学习，才是核心竞争力"}
   ],
   "components": [
     {
       "id": "P2-001",
       "regionId": "P2",
       "type": "HtmlComponent",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 780,
-        "h": 585
-      },
+      "position": {"x": 0, "y": 0, "w": 780, "h": 585},
+      "subtitles": [5, 8],
       "background": {
         "html": "<div class='region-bg region-bg--accent'></div>",
         "css": ".region-bg { position: absolute; inset: 0; } .region-bg--accent { background: radial-gradient(circle at 50% 40%, rgba(245,158,11,0.30) 0%, transparent 60%), radial-gradient(circle at 75% 80%, rgba(239,68,68,0.22) 0%, transparent 65%), linear-gradient(135deg, #fff7ed 0%, #fef3c7 60%, #fffbeb 100%); }"
       },
       "content": {
-        "html": "<span id='P2-002' class='badge'>KEY POINT</span><h2 id='P2-003' class='subtitle'>持续学习的能力</h2>",
-        "css": ".badge { position: absolute; left: 290px; top: 180px; width: 200px; height: 40px; padding: 10px 24px; border-radius: 8px; font-size: 18px; font-weight: 800; color: #FFFFFF; background: #F59E0B; display: flex; align-items: center; justify-content: center; } .subtitle { position: absolute; left: 20px; top: 250px; width: 740px; height: 80px; margin: 0; font-size: 56px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; }",
+        "html": "<span id='P2-002' class='badge'>FOUR STEPS</span><div id='P2-003' class='steps'><div class='step'><span class='num'>1</span><span class='txt'>明确目标</span></div><div class='step'><span class='num'>2</span><span class='txt'>最佳实践</span></div><div class='step'><span class='num'>3</span><span class='txt'>试错迭代</span></div><div class='step'><span class='num'>4</span><span class='txt'>持续优化</span></div></div><p id='P2-004' class='quote'>持续学习，才是核心竞争力</p>",
+        "css": ".badge { position: absolute; left: 290px; top: 60px; width: 200px; height: 36px; padding: 8px 22px; border-radius: 8px; font-size: 16px; font-weight: 800; color: #FFFFFF; background: #F59E0B; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; } .steps { position: absolute; left: 40px; top: 130px; width: 700px; height: 280px; display: grid; grid-template-columns: 1fr 1fr; grid-gap: 24px; padding: 0 20px; } .step { display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-radius: 14px; background: rgba(255,255,255,0.7); border: 1px solid rgba(245,158,11,0.3); box-shadow: 0 2px 8px rgba(245,158,11,0.1); } .step .num { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); color: #FFFFFF; font-size: 24px; font-weight: 900; } .step .txt { font-size: 24px; font-weight: 800; color: #111827; letter-spacing: 2px; } .quote { position: absolute; left: 40px; top: 450px; width: 700px; height: 60px; margin: 0; font-size: 32px; font-weight: 900; color: #111827; line-height: 1.2; text-align: center; letter-spacing: 2px; text-shadow: 0 2px 8px rgba(245,158,11,0.3); }",
         "elementIds": {
-          "#P2-002": { "id": "P2-002", "start": 3, "end": 5 },
-          "#P2-003": { "id": "P2-003", "start": 3.5, "end": 5 }
+          "#P2-002": {"id": "P2-002", "subtitles": [5, 8]},
+          "#P2-003": {"id": "P2-003", "subtitles": [5, 7]},
+          "#P2-004": {"id": "P2-004", "subtitles": [8]}
         }
-      },
-      "start": 3,
-      "end": 5
+      }
     }
   ]
 }
