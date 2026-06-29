@@ -292,14 +292,21 @@ function checkHtmlElementIds(components, allIds) {
             }
           }
 
-          if (typeof value.start !== 'number' || !Number.isFinite(value.start) || value.start < 0) {
-            errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].start 已设置时必须是有限非负数字（不允许 Infinity），如 0。建议：删除 start 字段让系统按所属 HtmlComponent 自动推算。`);
+          // start 可选（未设置时由前端按所属 HtmlComponent 自动推算）
+          if (value.start !== undefined && value.start !== null) {
+            if (typeof value.start !== 'number' || !Number.isFinite(value.start) || value.start < 0) {
+              errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].start 已设置时必须是有限非负数字（不允许 Infinity），如 0。建议：删除 start 字段让系统按所属 HtmlComponent 自动推算。`);
+            }
           }
 
-          if (typeof value.end !== 'number' || !Number.isFinite(value.end) || value.end < 0) {
-            errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].end 已设置时必须是有限非负数字（不允许 Infinity），如 5。建议：删除 end 字段让系统按所属 HtmlComponent 自动推算。`);
+          // end 可选（未设置时由前端按所属 HtmlComponent 自动推算）
+          if (value.end !== undefined && value.end !== null) {
+            if (typeof value.end !== 'number' || !Number.isFinite(value.end) || value.end < 0) {
+              errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].end 已设置时必须是有限非负数字（不允许 Infinity），如 5。建议：删除 end 字段让系统按所属 HtmlComponent 自动推算。`);
+            }
           }
 
+          // start/end 同时存在时检查顺序
           if (typeof value.start === 'number' && Number.isFinite(value.start) && typeof value.end === 'number' && Number.isFinite(value.end) && value.start > value.end) {
             errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].start (${value.start}) 不能大于 end (${value.end})。`);
           }

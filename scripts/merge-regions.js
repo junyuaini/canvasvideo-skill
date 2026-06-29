@@ -42,6 +42,90 @@ function resolveSubtitles(subs, srtList) {
 }
 
 /**
+ * 解析 region 的"包含字幕"范围，返回首末字幕 ID
+ * 支持 "1-5" 和 "3" 两种格式
+ * @param {string} subtitleRange - 区域 subtitle_range 字段
+ * @returns {{firstId:number, lastId:number}|null}
+ */
+function parseRegionSubtitleRange(subtitleRange) {
+  if (!subtitleRange) return null;
+  const match = String(subtitleRange).match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
+  if (!match) return null;
+  const firstId = parseInt(match[1], 10);
+  const lastId = match[2] !== undefined ? parseInt(match[2], 10) : firstId;
+  return { firstId, lastId };
+}
+
+/**
+ * 提取 component / element 字幕绑定的首末字幕 ID
+ * @param {number|Array<number>} subs
+ * @returns {{firstId:number, lastId:number}|null}
+ */
+function getSubtitleRangeBound(subs) {
+  if (subs == null) return null;
+  if (typeof subs === 'number') subs = [subs];
+  if (!Array.isArray(subs) || subs.length === 0) return null;
+  const ids = [...new Set(subs)].sort((a, b) => a - b);
+  return { firstId: ids[0], lastId: ids[ids.length - 1] };
+}
+
+/**
+ * 判断 start/end 是否"等于默认"——等于则不需要写入 project.json
+ * 默认规则：
+ *   - 创作模式：start 默认 = region.startTime，end 默认 = region.endTime
+ *   - 口播模式：仅当绑定首条字幕 = 区域首条字幕 时，start 是默认
+ *               仅当绑定末条字幕 = 区域末条字幕 时，end 是默认
+ * @param {Object} params
+ * @param {string} params.mode - 'creative' | 'dubbing'
+ * @param {number} params.actualStart - 实际计算出的 start（绝对时间）
+ * @param {number} params.actualEnd - 实际计算出的 end（绝对时间）
+ * @param {number} params.regionStartTime - region.startTime
+ * @param {number} params.regionEndTime - region.endTime
+ * @param {{firstId:number, lastId:number}|null} params.regionSubRange - region 字幕范围
+ * @param {{firstId:number, lastId:number}|null} params.boundSubRange - 当前 component/element 字幕范围
+ * @param {Array} params.srtList - SRT 列表（口播模式需要）
+ * @returns {{startIsDefault:boolean, endIsDefault:boolean}}
+ */
+function checkStartEndDefault(params) {
+  const {
+    mode,
+    actualStart,
+    actualEnd,
+    regionStartTime,
+    regionEndTime,
+    regionSubRange,
+    boundSubRange,
+    srtList
+  } = params;
+
+  const eps = 0.001;
+  let startIsDefault = false;
+  let endIsDefault = false;
+
+  if (mode === 'creative') {
+    // 创作模式：默认 = region 起止
+    if (Math.abs(actualStart - regionStartTime) < eps) startIsDefault = true;
+    if (Math.abs(actualEnd - regionEndTime) < eps) endIsDefault = true;
+  } else if (mode === 'dubbing') {
+    // 口播模式：仅当绑定首条字幕 = 区域首条字幕 时，start 是默认
+    //         仅当绑定末条字幕 = 区域末条字幕 时，end 是默认
+    if (regionSubRange && boundSubRange && Array.isArray(srtList) && srtList.length > 0) {
+      if (boundSubRange.firstId === regionSubRange.firstId) {
+        // 区域首条字幕的 SRT start == region.startTime，
+        // 因此 comp/element.start == region.startTime 时不写
+        if (Math.abs(actualStart - regionStartTime) < eps) startIsDefault = true;
+      }
+      if (boundSubRange.lastId === regionSubRange.lastId) {
+        // 区域末条字幕的 SRT end == region.endTime
+        if (Math.abs(actualEnd - regionEndTime) < eps) endIsDefault = true;
+      }
+    }
+  }
+
+  return { startIsDefault, endIsDefault };
+}
+
+/**
  * 检测模式（dubbing / creative）
  */
 function detectMode(workdir, workdirRoot) {
@@ -226,6 +310,11 @@ function mergeRegions(workdir, workdirRoot) {
     };
     project.regions.push(regionEntry);
 
+    // 解析 region 字幕范围（口播模式用），用于 start/end 默认判定
+    const regionSubRange = mode === 'dubbing'
+      ? parseRegionSubtitleRange(skeletonRegion.subtitle_range)
+      : null;
+
     // 6. 处理 components：自动转换 subtitles → start/end
     if (Array.isArray(regionData.components)) {
       for (const comp of regionData.components) {
@@ -242,9 +331,25 @@ function mergeRegions(workdir, workdirRoot) {
         } else {
           compTime = { start: regionEntry.startTime, end: regionEntry.endTime };
         }
-        // resolveSubtitles 返回全局 SRT 时间，需转为区域相对时间
-        comp.start = parseFloat((compTime.start - regionEntry.startTime).toFixed(3));
-        comp.end = parseFloat((compTime.end - regionEntry.startTime).toFixed(3));
+
+        // 判断 comp.start/end 是否为默认（不需要写入）
+        const compBoundSubRange = getSubtitleRangeBound(comp.subtitles);
+        const { startIsDefault: compStartIsDefault, endIsDefault: compEndIsDefault } = checkStartEndDefault({
+          mode,
+          actualStart: compTime.start,
+          actualEnd: compTime.end,
+          regionStartTime: regionEntry.startTime,
+          regionEndTime: regionEntry.endTime,
+          regionSubRange,
+          boundSubRange: compBoundSubRange,
+          srtList
+        });
+
+        // resolveSubtitles 返回全局 SRT 时间，需转为区域相对时间（用于 element 校验）
+        const compRelativeStart = compTime.start - regionEntry.startTime;
+        const compRelativeEnd = compTime.end - regionEntry.startTime;
+        comp.start = parseFloat(compRelativeStart.toFixed(3));
+        comp.end = parseFloat(compRelativeEnd.toFixed(3));
         const compAbsoluteStart = compTime.start;
         const compAbsoluteEnd = compTime.end;
 
@@ -267,17 +372,29 @@ function mergeRegions(workdir, workdirRoot) {
               elemTime = { start: value.start, end: value.end };
             }
             if (elemTime) {
-              // resolveSubtitles 返回全局 SRT 时间，需转为区域相对时间
               const localElemTime = {
                 start: parseFloat((elemTime.start - regionEntry.startTime).toFixed(3)),
                 end: parseFloat((elemTime.end - regionEntry.startTime).toFixed(3))
               };
               checkHierarchy(localElemTime, comp, regionBounds, key);
-              resolvedElementIds[key] = {
-                id: value.id || key.slice(1),
-                start: localElemTime.start,
-                end: localElemTime.end
-              };
+
+              // 判断 element start/end 是否为默认（不需要写入）
+              const elemBoundSubRange = getSubtitleRangeBound(value.subtitles);
+              const { startIsDefault: elemStartIsDefault, endIsDefault: elemEndIsDefault } = checkStartEndDefault({
+                mode,
+                actualStart: elemTime.start,
+                actualEnd: elemTime.end,
+                regionStartTime: regionEntry.startTime,
+                regionEndTime: regionEntry.endTime,
+                regionSubRange,
+                boundSubRange: elemBoundSubRange,
+                srtList
+              });
+
+              const elemEntry = { id: value.id || key.slice(1) };
+              if (!elemStartIsDefault) elemEntry.start = localElemTime.start;
+              if (!elemEndIsDefault) elemEntry.end = localElemTime.end;
+              resolvedElementIds[key] = elemEntry;
             } else {
               console.warn(`[W] elementIds["${key}"] 既无 subtitles/time_range，也无 start/end，保留原样`);
               resolvedElementIds[key] = value;
@@ -286,13 +403,24 @@ function mergeRegions(workdir, workdirRoot) {
           comp.content.elementIds = resolvedElementIds;
         }
 
-        comp.start = compAbsoluteStart;
-        comp.end = compAbsoluteEnd;
+        // 最终：comp.start/end 写绝对时间；如果是默认则不写
+        if (compStartIsDefault) {
+          delete comp.start;
+        } else {
+          comp.start = compAbsoluteStart;
+        }
+        if (compEndIsDefault) {
+          delete comp.end;
+        } else {
+          comp.end = compAbsoluteEnd;
+        }
         if (comp.content && comp.content.elementIds) {
           for (const key of Object.keys(comp.content.elementIds)) {
             const entry = comp.content.elementIds[key];
             if (entry && typeof entry.start === 'number') {
               entry.start = parseFloat((entry.start + regionEntry.startTime).toFixed(3));
+            }
+            if (entry && typeof entry.end === 'number') {
               entry.end = parseFloat((entry.end + regionEntry.startTime).toFixed(3));
             }
           }
@@ -307,7 +435,12 @@ function mergeRegions(workdir, workdirRoot) {
     }
   }
 
-  project.components.sort((a, b) => a.start - b.start);
+  // 按 start 升序排序（start 可能为 undefined，视为 -Infinity 排在最前）
+  project.components.sort((a, b) => {
+    const aStart = typeof a.start === 'number' ? a.start : -Infinity;
+    const bStart = typeof b.start === 'number' ? b.start : -Infinity;
+    return aStart - bStart;
+  });
   project.subtitles.sort((a, b) => a.start - b.start);
 
   return project;
@@ -344,4 +477,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { mergeRegions, resolveSubtitles, resolveTimeRange };
+module.exports = { mergeRegions, resolveSubtitles, resolveTimeRange, parseRegionSubtitleRange, getSubtitleRangeBound, checkStartEndDefault };
