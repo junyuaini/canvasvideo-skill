@@ -1,51 +1,34 @@
 /**
  * 项目初始化脚本
- * 
+ *
  * 功能：
  *  - 创建工作目录结构
  *  - 初始化项目状态
  *  - 保存用户配置
- * 
- * 用法：node init-project.js <mode> [options]
- *   mode: creative | dubbing
+ *
+ * 仅支持口播模式（dubbing）。
+ *
+ * 用法：node init-project.js [options]
  *
  * 配置方式（二选一）：
  *   1. JSON 配置文件：--config=
- *   2. JSON 字符串（不推荐，容易引号出错）：'{"content":"AI学习"}'
- *
- * 必填字段：
- *   1. mode（命令行位置参数）: creative | dubbing
- *   2. theme: 主题名（warm / white / dark 等）
- *   3. content（creative）| audioPath + subtitlePath（dubbing）
- *   4. **subtitle**（项目级字幕样式，6 字段全必填，AI 必须根据内容风格自己决定填什么）：
- *      {
- *        "color": "#FFFFFF",                       // 文字颜色，hex 或 rgba
- *        "fontSize": "36px",                       // 字号，CSS 长度
- *        "position": "bottom-center",              // 9 档之一：top/middle/bottom + left/center/right
- *        "weight": 700,                            // 字重，100-900 整百
- *        "background": "rgba(0,0,0,0.5)",          // 背景色，transparent/hex/rgba
- *        "textShadow": "0 1px 3px rgba(0,0,0,0.8)" // 描边/阴影
- *      }
- *   缺失会在 generate-skeleton 阶段 fail-fast 报错；老数据无 subtitle 上传会被云端 schema 拒绝。
+ *   2. JSON 字符串（不推荐，容易引号出错）：'{"audioPath":"..."}'
  *
  * 项目隔离：
  *   默认情况下，若 workdirRoot 下已有 .canvasvideo/project-state.json，则沿用老项目；
  *   只有当 state.json 不存在时才会创建新项目 ID。
  *   若要强制重新创建项目（新主题 / 内容完全不同 / 隔离昨天的项目），请加 --new：
- *     node init-project.js creative --new --config=...
+ *     node init-project.js --new --config=...
  *
  * 示例：
  *   # 方式1：配置文件（推荐）
- *   node init-project.js creative --config=project-config.json
+ *   node init-project.js --config=project-config.json
  *
  *   # 方式2：JSON 字符串（兼容旧方式）
- *   node init-project.js creative '{"content":"AI学习","duration":15}'
- *
- *   # 口播模式
- *   node init-project.js dubbing --config=dubbing-config.json
+ *   node init-project.js '{"content":"AI学习"}'
  *
  *   # 强制重新建项目（覆盖 state.json）
- *   node init-project.js creative --new --config=new-topic.json
+ *   node init-project.js --new --config=new-topic.json
  */
 const fs = require('fs');
 const path = require('path');
@@ -65,13 +48,13 @@ function parseArgs(argv) {
 
   const args = {
     workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
-    mode: null,   // 第一个非 -- 位置参数
+    mode: 'dubbing',  // 固定口播模式
     configFile: null,
     configJson: null,
     forceNew: false,  // --new 标志：强制重新创建项目（删除老 state.json）
   };
 
-  // 从剩余参数里找 mode 和 config
+  // 从剩余参数里找 config
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--cwd=')) continue;
@@ -79,8 +62,6 @@ function parseArgs(argv) {
       args.forceNew = true;
     } else if (arg.startsWith('--config=')) {
       args.configFile = arg.slice('--config='.length);
-    } else if (!args.mode && !arg.startsWith('--')) {
-      args.mode = arg;
     } else if (!args.configJson && !arg.startsWith('--')) {
       args.configJson = arg;
     }
@@ -123,9 +104,8 @@ function loadConfig(args) {
 }
 
 /**
- * 初始化项目
+ * 初始化项目（口播模式）
  * @param {string} workdirRoot - 工作根目录
- * @param {string} mode - 'creative' | 'dubbing'
  * @param {Object} config - 用户配置
  * @param {Object} [options] - 额外参数
  * @param {string} [options.serverUrl] - 服务端 URL，默认 DEFAULT_SERVER_URL
@@ -136,9 +116,10 @@ function loadConfig(args) {
  *  - 新格式 skillProjectId 内嵌 userShort6（来自 userId），需要 userId 才能生成
  *  - 这意味着 init-project 阶段就需要联网注册账号（与原来的"上传时再注册"不同）
  */
-async function initProject(workdirRoot, mode, config = {}, options = {}) {
+async function initProject(workdirRoot, config = {}, options = {}) {
   const serverUrl = options.serverUrl || DEFAULT_SERVER_URL;
   const forceNew = options.forceNew === true;
+  const mode = 'dubbing';
 
   // 第一步：决定新建 / 沿用，并打决策日志
   //   - state.json 不存在  → 新建（🆕）
@@ -183,23 +164,12 @@ async function initProject(workdirRoot, mode, config = {}, options = {}) {
   const skillProjectId = state.skillProjectId;
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
 
-  // 模式一致性检查：避免跨模式 init 导致 state 脏数据
-  if (state.mode && state.mode !== mode) {
-    throw new Error(`项目模式冲突：当前 state.mode=${state.mode}，本次传入 mode=${mode}。如需切换模式，请删除 workdir 目录后重新 init。`);
-  }
+  // 写入模式（口播）
   state.mode = mode;
 
-  if (mode === 'creative') {
-    state.content = config.content || '';
-    state.duration = config.duration || 15;
-    state.theme = config.theme || 'white';
-    state.bgmStyle = config.bgmStyle || 'corporate';
-  } else if (mode === 'dubbing') {
-    // dubbing 模式不收集配置字段
-    // 配音音频和 SRT 字幕由步骤 1.5（prepare-voice.js）准备
-    // 参考文档：docs/01.5-voice-prepare.md
-    state.voice = null;  // 由 prepare-voice.js 填充（含 source/audioPath/srtPath/duration/subtitleCount/voiceName）
-  }
+  // 口播模式：配音音频和 SRT 字幕由步骤 1.5（prepare-voice.js）准备
+  // 参考文档：docs/01.5-voice-prepare.md
+  state.voice = null;  // 由 prepare-voice.js 填充（含 source/audioPath/srtPath/duration/subtitleCount/voiceName）
 
   // 保存状态
   saveProjectState(workdirRoot, state);
@@ -222,37 +192,11 @@ async function initProject(workdirRoot, mode, config = {}, options = {}) {
 if (require.main === module) {
   const args = parseArgs(process.argv.slice(2));
 
-  if (!args.mode) {
-    console.error('用法: node init-project.js --cwd=<Agent工作目录> <mode> [options]');
-    console.error('');
-    console.error('--cwd=<绝对路径>   Agent 工作目录的绝对路径（必传，避免 workdir 飘到奇怪地方）');
-    console.error('--new              强制创建新项目（删除老 state.json）。换主题/换内容时必加。');
-    console.error('mode: creative | dubbing');
-    console.error('');
-    console.error('配置方式（二选一）:');
-    console.error('  1. 配置文件（推荐）: --config=');
-    console.error('  2. JSON 字符串: \'{...}\'');
-    console.error('');
-    console.error('示例:');
-    console.error('  # 沿用现有项目（修改/续做）');
-    console.error('  node init-project.js --cwd=/path/to/agent/workspace creative --config=project-config.json');
-    console.error('  # 强制创建新项目（换主题）');
-    console.error('  node init-project.js --cwd=/path/to/agent/workspace creative --new --config=new-topic.json');
-    console.error('  # 口播模式');
-    console.error('  node init-project.js --cwd=/path/to/agent/workspace dubbing --config=dubbing-config.json');
-    process.exit(1);
-  }
-
-  if (!['creative', 'dubbing'].includes(args.mode)) {
-    console.error(`[E] 无效的模式: ${args.mode}，必须是 creative 或 dubbing`);
-    process.exit(1);
-  }
-
   // initProject 是 async —— 因为新格式 ID 需要先联网注册账号拿到 userId
   (async () => {
     try {
       const config = loadConfig(args);
-      const result = await initProject(args.workdirRoot, args.mode, config, { forceNew: args.forceNew });
+      const result = await initProject(args.workdirRoot, config, { forceNew: args.forceNew });
 
       // 输出结果（供后续步骤使用）
       console.log('');

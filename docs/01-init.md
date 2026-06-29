@@ -1,21 +1,22 @@
 ﻿# 步骤1：初始化
 
 > 前置步骤：无（用户首次提出需求）
-> 下一步：[步骤2：骨架设计](02-skeleton-design-creative.md)（创作模式）或 [02-skeleton-design-dubbing.md](02-skeleton-design-dubbing.md)（口播模式）
+> 下一步：[步骤2：骨架设计（口播模式）](02-skeleton-design-dubbing.md)
 
 ---
 
 ## 目标
 
-初始化工作目录 → 确认模式 → 收集必要信息。
+初始化工作目录 → 确认模式（口播模式）→ 收集必要信息。
+
+> 注：项目仅支持口播模式。用户需提供音频 + SRT 字幕。
 
 ---
 
-## 两种模式
+## 模式
 
 | 模式 | 用户提供 | 字幕 | AI负责 |
 |------|---------|------|--------|
-| 创作模式 | 主题/时长/受众等文本 | ❌ 不生成 | 自动生成画面、HtmlComponent、占位素材；配BGM |
 | 口播模式 | 音频(.mp3/.wav/.m4a) + SRT字幕 | ✅ 必须有 | 严格按音频/SRT排版 |
 
 ---
@@ -24,45 +25,11 @@
 
 ### 步骤1：确认模式
 
-**AI 自动推断**：
-
-| 推断条件 | 推断结果 |
-|---------|---------|
-| 用户提供 `.mp3/.wav/.m4a/.srt` 路径 | 口播模式 |
-| 其他所有情况 | 创作模式 |
-
-**用 AskUserQuestion 告知用户推断结果，确认是否正确**：
-
-- 说明两种模式区别：
-  - **创作模式**：AI 自动生成画面、动画、BGM，适合没有现成录音的情况
-  - **口播模式**：您提供音频+字幕，AI 按音频节奏排版画面，适合有现成录音的情况
-- 让用户确认模式或切换
-
-**严禁**：让用户回答"你想用什么模式"这种开放式问题。
+**口播模式**：用户提供 `.mp3/.wav/.m4a` 音频和 `.srt` 字幕，AI 按音频节奏排版画面。
 
 ---
 
 ### 步骤2：收集信息
-
-根据确认后的模式，收集对应字段。**已获取的字段不再重复索要**。
-
-#### 创作模式
-
-| 字段名 | 描述 | 是否必填 | 规则/默认值 |
-|--------|------|---------|------------|
-| `content` | 视频内容/主题 | **必填** | 描述视频要讲什么 |
-| `duration` | 预计时长（秒） | 非必填 | 默认 `15`，建议给用户选项如 `15s/30s/60s/90s` |
-
-**向用户确认**（只问 content/duration）：
-```
-已获取您的内容：{简要复述}
-- 时长：{用户选的秒数}秒
-如无需调整，直接回复"可以"即可。
-```
-
-> 其它字段（theme/BGM 等）在 Step 2 设计文档的 MD 模板中填写，或省略（使用默认值）。
-
-#### 口播模式
 
 > 口播模式 init-project 不收集任何配置字段（音频/字幕/style 等全部在 Step 2 MD 模板中写）。
 
@@ -115,33 +82,24 @@
 先创建配置文件：
 
 ```bash
-# 创作模式 - 新建项目（推荐，状态文件不存在时默认就是新建）
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --config=project-config.json
+# 口播模式 - 新建项目（推荐，状态文件不存在时默认就是新建）
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --config=dubbing-config.json
 
-# 创作模式 - 强制新建项目（已有项目时加 --new，会删除老 state.json）
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --new --config=project-config.json
+# 口播模式 - 强制新建项目（已有项目时加 --new，会删除老 state.json）
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --new --config=dubbing-config.json
 
-# 创作模式 - 沿用现有项目（修改/迭代当前视频）
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --config=project-config.json
-
-# 口播模式 - 新建项目
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --config=dubbing-config.json
-
-# 口播模式 - 强制新建项目
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing --new --config=dubbing-config.json
+# 口播模式 - 沿用现有项目（修改/迭代当前视频）
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --config=dubbing-config.json
 ```
 
 **方式2：JSON 字符串（兼容旧方式）**
 
 ```bash
-# 创作模式 - 新建
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative '{"content":"视频主题","duration":15}'
+# 口播模式 - 新建
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
 
-# 创作模式 - 强制新建
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> creative --new '{"content":"新主题","duration":15}'
-
-# 口播模式
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
+# 口播模式 - 强制新建
+node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --new '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
 ```
 
 **`--new` 标志说明**：
@@ -197,7 +155,7 @@ node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> dubbing '{
 
 > [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-- [E] 模式已确定（创作/口播）
-- [E] 必填信息已获取（content 或 audio+subtitle）
+- [E] 模式已确定（口播）
+- [E] 必填信息已获取（audio + subtitle）
 - [E] 工作目录已创建
 - [E] skillProjectId 已生成

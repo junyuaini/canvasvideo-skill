@@ -34,7 +34,6 @@
 ```
 {workdirRoot}/
   └── {skillProjectId}/
-        ├── design-skeleton-creative.md
         ├── design-skeleton-dubbing.md
         ├── ...
         ├── skeleton.json

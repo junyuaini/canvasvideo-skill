@@ -90,9 +90,9 @@ sequenceDiagram
 |------|------|--------|------|------|------|------|------|
 | 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) | `init-project.js` | — | [01-principles.md](rules/01-principles.md) | 通用 |
 | **1.5** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [01.5-voice-prepare.md](docs/01.5-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） | **仅口播** |
-| 2 | 骨架设计 | `design-skeleton-*.md` | [02-skeleton-design-creative.md](docs/02-skeleton-design-creative.md) / [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-creative.md` / `design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) | 通用 |
-| 3 | 生成骨架JSON | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` / `分合示例-创作/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） | 通用 |
-| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-creative.md](docs/04-region-design-creative.md) / [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | — | 通用 |
+| 2 | 骨架设计 | `design-skeleton-dubbing.md` | [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) | 通用 |
+| 3 | 生成骨架JSON | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） | 通用 |
+| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | — | 通用 |
 | 5 | 合并为 project.json | `project.json` | [05-merge.md](docs/05-merge.md) | `merge-regions.js` | — | — | 通用 |
 | 6 | 素材处理 | 资源文件 | [06-assets.md](docs/06-assets.md) | `setup-assets.js` | — | — | 通用 |
 | 7 | 校验 | 校验报告 | [07-validate.md](docs/07-validate.md) | `selfcheck.js` | — | [09-selfcheck.md](rules/09-selfcheck.md) | 通用 |
@@ -129,7 +129,6 @@ sequenceDiagram
 
 ```
 {workdirRoot}/{skillProjectId}/
-├── design-skeleton-creative.md # 骨架设计（创作模式）
 ├── design-skeleton-dubbing.md  # 骨架设计（口播模式）
 ├── skeleton.json               # 骨架配置（步骤3产出）
 ├── regions/
@@ -169,7 +168,7 @@ const skillProjectId = state.skillProjectId;
 
 // 4. 按步骤执行
 // 步骤1：初始化（见 docs/01-init.md）
-// 步骤2：骨架设计（见 docs/02-skeleton-design-creative.md 或 02-skeleton-design-dubbing.md）
+// 步骤2：骨架设计（见 docs/02-skeleton-design-dubbing.md）
 // ... 以此类推
 ```
 
@@ -194,10 +193,8 @@ canvasvideo-skill/
 ├── SKILL.md                    # 本文件（总导航）
 ├── docs/                       # 执行文档（AI 按步骤阅读）
 │   ├── 01-init.md
-│   ├── 02-skeleton-design-creative.md
 │   ├── 02-skeleton-design-dubbing.md
 │   ├── 03-skeleton-build.md
-│   ├── 04-region-design-creative.md
 │   ├── 04-region-design-dubbing.md
 │   ├── 05-merge.md
 │   ├── 06-assets.md
@@ -221,13 +218,10 @@ canvasvideo-skill/
 │   ├── upload-video.js
 │   └── selfcheck.js
 ├── templates/                  # 模板与样例
-│   ├── artifacts/              # 骨架设计模板（创作/口播）
-│   │   ├── design-skeleton-creative.md
+│   ├── artifacts/              # 骨架设计模板（口播）
 │   │   └── design-skeleton-dubbing.md
-│   ├── bgm/                   # BGM 目录
 │   └── projects/              # 项目样例
-│       ├── 分合示例-口播/
-│       └── 分合示例-创作/
+│       └── 分合示例-口播/
 ├── package.json
 └── README.md
 ```

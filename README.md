@@ -15,8 +15,8 @@
 
 AI 会自动：
 
-1. **理解你的需求**，温和追问基本信息（创作模式 or 口播模式 / 时长 / 风格）
-2. **在本地生成设计文档** `design-skeleton-creative.md` 或 `design-skeleton-dubbing.md`，含详尽的素材准备清单
+1. **理解你的需求**，温和追问基本信息（口播模式 / 时长 / 风格）
+2. **在本地生成设计文档** `design-skeleton-dubbing.md`，含详尽的素材准备清单
 3. **多轮微调**，直到你确认满意
 4. **打包并上传到云端**，给你一个可分享的视频链接
 5. **后续迭代**直接在已有项目上修改，链接保持不变
@@ -90,7 +90,6 @@ npm install
 
 | 模式 | 用户提供 | AI 负责 |
 |------|---------|--------|
-| **创作模式** | 主题 / 时长 / 风格等文本信息 | 自动生成解说、字幕、占位素材、默认 BGM |
 | **口播模式** | 口播音频 + SRT 字幕 | 严格按音频/SRT 排版，自动生成其他素材 |
 
 ---
@@ -104,14 +103,12 @@ canvasvideo-skill/
 ├── LICENSE                    # MIT
 ├── .gitignore
 │
-├── docs/                      # 📋 执行步骤（9 步流程 + 1.5 口播专用）
-│   ├── 01-init.md                       # 步骤1：初始化 + 模式判定
-│   ├── 01.5-voice-prepare.md            # 步骤1.5：音频与字幕准备（仅口播模式）
-│   ├── 02-skeleton-design-creative.md   # 步骤2：骨架设计（创作模式）
-│   ├── 02-skeleton-design-dubbing.md    # 步骤2：骨架设计（口播模式）
+├── docs/                      # 📋 执行步骤（9 步流程）
+│   ├── 01-init.md                       # 步骤1：初始化
+│   ├── 01.5-voice-prepare.md            # 步骤1.5：音频与字幕准备
+│   ├── 02-skeleton-design-dubbing.md    # 步骤2：骨架设计
 │   ├── 03-skeleton-build.md             # 步骤3：MD → skeleton.json
-│   ├── 04-region-design-creative.md     # 步骤4：区域设计（创作模式）
-│   ├── 04-region-design-dubbing.md      # 步骤4：区域设计（口播模式）
+│   ├── 04-region-design-dubbing.md      # 步骤4：区域设计
 │   ├── 05-merge.md                      # 步骤5：合并 skeleton + regions → project.json
 │   ├── 06-assets.md                     # 步骤6：素材处理
 │   ├── 07-validate.md                   # 步骤7：校验
@@ -126,28 +123,23 @@ canvasvideo-skill/
 │   └── 09-selfcheck.md       # 本地自检规则（ID 格式 + 重复）
 │
 ├── templates/                 # 🎨 模板（AI 生成时参考/复制）
-│   ├── artifacts/             # 设计文档模板（仅骨架）
-│   │   ├── design-skeleton-creative.md
+│   ├── artifacts/             # 设计文档模板
 │   │   └── design-skeleton-dubbing.md
 │   ├── projects/              # project.json 样板库
 │   │   ├── README.md
-│   │   ├── 分合示例-创作/
 │   │   └── 分合示例-口播/
-│   ├── placeholders/          # 占位图资源
-│   │   ├── README.md
-│   │   ├── light/             # 极简白主题 SVG 兜底图
-│   │   └── dark/              # 沉浸黑主题 SVG 兜底图
-│   └── bgm/                   # 内置 BGM
+│   └── placeholders/          # 占位图资源
 │       ├── README.md
-│       └── *.mp3
+│       ├── light/             # 极简白主题 SVG 兜底图
+│       └── dark/              # 沉浸黑主题 SVG 兜底图
 │
 └── scripts/                   # 🛠️ Node.js 工具脚本
     ├── init-project.js      # 步骤1：初始化（生成 state.json + skillProjectId）
-    ├── prepare-voice.js     # 步骤1.5：音频与字幕准备（仅口播模式）
+ │   ├── prepare-voice.js     # 步骤1.5：音频与字幕准备
     ├── tts.js               # 步骤1.5 内部依赖：TTS 引擎（基于 node-edge-tts）
     ├── generate-skeleton.js # 步骤3：MD → skeleton.json
     ├── merge-regions.js     # 步骤5：合并 skeleton + regions → project.json
-    ├── setup-assets.js      # 步骤6：复制占位素材 + BGM
+ │   ├── setup-assets.js      # 步骤6：复制占位素材
     ├── validate.js          # 步骤7：本地校验入口
     ├── selfcheck.js         # 步骤7：自检规则（ID 格式 + 重复 + 时间轴）
     ├── package.js           # 步骤8：打包 zip
@@ -257,10 +249,10 @@ AI 第一次给你做视频时大致会这样走：
 | **执行步骤** | `docs/01-init.md` ~ `09-upload.md` | AI（按步骤执行） |
 | **AI 设计知识库** | `rules/*.md` | AI（设计阶段查阅） |
 | **AI 生成模板** | `templates/projects/*/` | AI（作样板复制改写） |
-| **AI 资源库** | `templates/placeholders/`、`templates/bgm/` | AI（写 project.json 时直接引用） |
+| **AI 资源库** | `templates/placeholders/` | AI（写 project.json 时直接引用） |
 | **结构校验** | 云端 `/api/projects/validate` | upload-video.js 自动调用 |
 | **执行脚本** | `scripts/*.js` | AI（工作流中调用） |
-| **局部速查** | `templates/projects/README.md`、`templates/placeholders/README.md`、`templates/bgm/README.md` | AI（局部速查） |
+| **局部速查** | `templates/projects/README.md`、`templates/placeholders/README.md` | AI（局部速查） |
 
 ---
 

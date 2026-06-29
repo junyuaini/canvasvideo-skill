@@ -71,24 +71,21 @@ function getSubtitleRangeBound(subs) {
 
 /**
  * 判断 start/end 是否"等于默认"——等于则不需要写入 project.json
- * 默认规则：
- *   - 创作模式：start 默认 = region.startTime，end 默认 = region.endTime
- *   - 口播模式：仅当绑定首条字幕 = 区域首条字幕 时，start 是默认
- *               仅当绑定末条字幕 = 区域末条字幕 时，end 是默认
+ * 默认规则（口播模式）：
+ *   - 仅当绑定首条字幕 = 区域首条字幕 时，start 是默认（start == region.startTime）
+ *   - 仅当绑定末条字幕 = 区域末条字幕 时，end 是默认（end == region.endTime）
  * @param {Object} params
- * @param {string} params.mode - 'creative' | 'dubbing'
  * @param {number} params.actualStart - 实际计算出的 start（绝对时间）
  * @param {number} params.actualEnd - 实际计算出的 end（绝对时间）
  * @param {number} params.regionStartTime - region.startTime
  * @param {number} params.regionEndTime - region.endTime
  * @param {{firstId:number, lastId:number}|null} params.regionSubRange - region 字幕范围
  * @param {{firstId:number, lastId:number}|null} params.boundSubRange - 当前 component/element 字幕范围
- * @param {Array} params.srtList - SRT 列表（口播模式需要）
+ * @param {Array} params.srtList - SRT 列表
  * @returns {{startIsDefault:boolean, endIsDefault:boolean}}
  */
 function checkStartEndDefault(params) {
   const {
-    mode,
     actualStart,
     actualEnd,
     regionStartTime,
@@ -102,23 +99,12 @@ function checkStartEndDefault(params) {
   let startIsDefault = false;
   let endIsDefault = false;
 
-  if (mode === 'creative') {
-    // 创作模式：默认 = region 起止
-    if (Math.abs(actualStart - regionStartTime) < eps) startIsDefault = true;
-    if (Math.abs(actualEnd - regionEndTime) < eps) endIsDefault = true;
-  } else if (mode === 'dubbing') {
-    // 口播模式：仅当绑定首条字幕 = 区域首条字幕 时，start 是默认
-    //         仅当绑定末条字幕 = 区域末条字幕 时，end 是默认
-    if (regionSubRange && boundSubRange && Array.isArray(srtList) && srtList.length > 0) {
-      if (boundSubRange.firstId === regionSubRange.firstId) {
-        // 区域首条字幕的 SRT start == region.startTime，
-        // 因此 comp/element.start == region.startTime 时不写
-        if (Math.abs(actualStart - regionStartTime) < eps) startIsDefault = true;
-      }
-      if (boundSubRange.lastId === regionSubRange.lastId) {
-        // 区域末条字幕的 SRT end == region.endTime
-        if (Math.abs(actualEnd - regionEndTime) < eps) endIsDefault = true;
-      }
+  if (regionSubRange && boundSubRange && Array.isArray(srtList) && srtList.length > 0) {
+    if (boundSubRange.firstId === regionSubRange.firstId) {
+      if (Math.abs(actualStart - regionStartTime) < eps) startIsDefault = true;
+    }
+    if (boundSubRange.lastId === regionSubRange.lastId) {
+      if (Math.abs(actualEnd - regionEndTime) < eps) endIsDefault = true;
     }
   }
 
@@ -126,16 +112,14 @@ function checkStartEndDefault(params) {
 }
 
 /**
- * 检测模式（dubbing / creative）
+ * 检测模式（仅支持口播模式）
  */
-function detectMode(workdir, workdirRoot) {
+function detectMode(workdirRoot) {
   try {
     const state = getProjectState(workdirRoot);
     if (state && state.mode) return state.mode;
   } catch (e) {}
-  if (fs.existsSync(path.join(workdir, 'design-skeleton-creative.md'))) return 'creative';
-  if (fs.existsSync(path.join(workdir, 'design-skeleton-dubbing.md'))) return 'dubbing';
-  return null;
+  return 'dubbing';
 }
 
 /**
@@ -187,68 +171,51 @@ function mergeRegions(workdir, workdirRoot) {
   validateSkeletonSource(workdir, skeleton);
 
   // 1. 检测模式 + 加载 SRT（口播模式必读）
-  const mode = detectMode(workdir, workdirRoot);
+  const mode = detectMode(workdirRoot);
   let srtList = [];
-  if (mode === 'dubbing') {
-    try {
-      const state = getProjectState(workdirRoot);
-      if (state && state.voice && state.voice.srtPath) {
-        const srtAbs = path.isAbsolute(state.voice.srtPath)
-          ? state.voice.srtPath
-          : path.join(workdir, state.voice.srtPath);
-        srtList = parseSrt(srtAbs);
-        console.log(`[✓] 加载 SRT: ${srtList.length} 条字幕`);
-      } else {
-        console.warn('[W] 口播模式但 state.voice.srtPath 缺失，元素字幕绑定无法解析');
-      }
-    } catch (e) {
-      console.warn(`[W] SRT 加载失败: ${e.message}，元素字幕绑定无法解析`);
+  try {
+    const state = getProjectState(workdirRoot);
+    if (state && state.voice && state.voice.srtPath) {
+      const srtAbs = path.isAbsolute(state.voice.srtPath)
+        ? state.voice.srtPath
+        : path.join(workdir, state.voice.srtPath);
+      srtList = parseSrt(srtAbs);
+      console.log(`[✓] 加载 SRT: ${srtList.length} 条字幕`);
+    } else {
+      console.warn('[W] state.voice.srtPath 缺失，元素字幕绑定无法解析');
     }
+  } catch (e) {
+    console.warn(`[W] SRT 加载失败: ${e.message}，元素字幕绑定无法解析`);
   }
 
-  // 2. 计算每个 region 的全局起止时间
-//    - 口播模式：直接从 SRT 取（每个 region 的字幕段首尾 = region 全局起止，与 component 字幕绑定完全对齐）
-//    - 创作模式：按骨架顺序累加（无字幕锚点）
+  // 2. 计算每个 region 的全局起止时间（直接从 SRT 取：region 字幕段首尾 = region 全局起止）
   const regionTimes = {};
-  if (mode === 'dubbing' && srtList.length > 0) {
-    for (const r of skeleton.regions) {
-      if (r.subtitle_range) {
-        const match = r.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
-        if (match) {
-          const startId = parseInt(match[1], 10);
-          const endId = match[2] !== undefined ? parseInt(match[2], 10) : startId; // 单条字幕 "3" 等价于 "3-3"
-          const startSub = srtList[startId - 1];
-          const endSub = srtList[endId - 1];
-          if (startSub && endSub) {
-            regionTimes[r.id] = {
-              id: r.id,
-              duration: parseFloat((endSub.end - startSub.start).toFixed(3)),
-              startTime: parseFloat(startSub.start.toFixed(3)),
-              endTime: parseFloat(endSub.end.toFixed(3))
-            };
-            continue;
-          }
+  for (const r of skeleton.regions) {
+    if (r.subtitle_range) {
+      const match = r.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
+      if (match) {
+        const startId = parseInt(match[1], 10);
+        const endId = match[2] !== undefined ? parseInt(match[2], 10) : startId; // 单条字幕 "3" 等价于 "3-3"
+        const startSub = srtList[startId - 1];
+        const endSub = srtList[endId - 1];
+        if (startSub && endSub) {
+          regionTimes[r.id] = {
+            id: r.id,
+            duration: parseFloat((endSub.end - startSub.start).toFixed(3)),
+            startTime: parseFloat(startSub.start.toFixed(3)),
+            endTime: parseFloat(endSub.end.toFixed(3))
+          };
+          continue;
         }
       }
-      // fallback：累加
-      regionTimes[r.id] = {
-        id: r.id,
-        duration: r.duration,
-        startTime: 0,
-        endTime: r.duration
-      };
     }
-  } else {
-    let accTime = 0;
-    for (const r of skeleton.regions) {
-      regionTimes[r.id] = {
-        id: r.id,
-        duration: r.duration,
-        startTime: parseFloat(accTime.toFixed(3)),
-        endTime: parseFloat((accTime + r.duration).toFixed(3))
-      };
-      accTime += r.duration;
-    }
+    // fallback：累加
+    regionTimes[r.id] = {
+      id: r.id,
+      duration: r.duration,
+      startTime: 0,
+      endTime: r.duration
+    };
   }
   const lastRegion = skeleton.regions[skeleton.regions.length - 1];
   const lastTime = regionTimes[lastRegion.id]?.endTime || 0;
@@ -310,22 +277,18 @@ function mergeRegions(workdir, workdirRoot) {
     };
     project.regions.push(regionEntry);
 
-    // 解析 region 字幕范围（口播模式用），用于 start/end 默认判定
-    const regionSubRange = mode === 'dubbing'
-      ? parseRegionSubtitleRange(skeletonRegion.subtitle_range)
-      : null;
+    // 解析 region 字幕范围，用于 start/end 默认判定
+    const regionSubRange = parseRegionSubtitleRange(skeletonRegion.subtitle_range);
 
     // 6. 处理 components：自动转换 subtitles → start/end
     if (Array.isArray(regionData.components)) {
       for (const comp of regionData.components) {
         // 6.1 决定 component.start/end
-        // 优先级：subtitles（口播）> time_range（创作）> 旧 start/end > 缺省 = region 完整范围
+        // 优先级：subtitles（口播）> 旧 start/end > 缺省 = region 完整范围
         // 缺省 fallback 与"未设置 = 默认展示整个 region"语义保持一致
         let compTime = null;
         if (comp.subtitles != null && srtList.length > 0) {
           compTime = resolveSubtitles(comp.subtitles, srtList);
-        } else if (Array.isArray(comp.time_range)) {
-          compTime = resolveTimeRange(comp.time_range, regionEntry.startTime);
         } else if (typeof comp.start === 'number' && typeof comp.end === 'number') {
           compTime = { start: comp.start, end: comp.end };
         } else {
@@ -335,7 +298,6 @@ function mergeRegions(workdir, workdirRoot) {
         // 判断 comp.start/end 是否为默认（不需要写入）
         const compBoundSubRange = getSubtitleRangeBound(comp.subtitles);
         const { startIsDefault: compStartIsDefault, endIsDefault: compEndIsDefault } = checkStartEndDefault({
-          mode,
           actualStart: compTime.start,
           actualEnd: compTime.end,
           regionStartTime: regionEntry.startTime,
@@ -358,7 +320,7 @@ function mergeRegions(workdir, workdirRoot) {
           endTime: parseFloat((regionEntry.endTime - regionEntry.startTime).toFixed(3))
         };
 
-        // 6.2 处理 elementIds：自动转换 subtitles/time_range/start-end
+        // 6.2 处理 elementIds：自动转换 subtitles → start/end
         if (comp.content && comp.content.elementIds) {
           const resolvedElementIds = {};
           for (const [key, value] of Object.entries(comp.content.elementIds)) {
@@ -366,8 +328,6 @@ function mergeRegions(workdir, workdirRoot) {
             let elemTime = null;
             if (value.subtitles != null && srtList.length > 0) {
               elemTime = resolveSubtitles(value.subtitles, srtList);
-            } else if (Array.isArray(value.time_range)) {
-              elemTime = resolveTimeRange(value.time_range, regionEntry.startTime);
             } else if (typeof value.start === 'number' && typeof value.end === 'number') {
               elemTime = { start: value.start, end: value.end };
             }
@@ -381,7 +341,6 @@ function mergeRegions(workdir, workdirRoot) {
               // 判断 element start/end 是否为默认（不需要写入）
               const elemBoundSubRange = getSubtitleRangeBound(value.subtitles);
               const { startIsDefault: elemStartIsDefault, endIsDefault: elemEndIsDefault } = checkStartEndDefault({
-                mode,
                 actualStart: elemTime.start,
                 actualEnd: elemTime.end,
                 regionStartTime: regionEntry.startTime,
@@ -396,7 +355,7 @@ function mergeRegions(workdir, workdirRoot) {
               if (!elemEndIsDefault) elemEntry.end = localElemTime.end;
               resolvedElementIds[key] = elemEntry;
             } else {
-              console.warn(`[W] elementIds["${key}"] 既无 subtitles/time_range，也无 start/end，保留原样`);
+              console.warn(`[W] elementIds["${key}"] 既无 subtitles，也无 start/end，保留原样`);
               resolvedElementIds[key] = value;
             }
           }
@@ -477,4 +436,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { mergeRegions, resolveSubtitles, resolveTimeRange, parseRegionSubtitleRange, getSubtitleRangeBound, checkStartEndDefault };
+module.exports = { mergeRegions, resolveSubtitles, parseRegionSubtitleRange, getSubtitleRangeBound, checkStartEndDefault };

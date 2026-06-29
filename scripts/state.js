@@ -102,7 +102,7 @@ function loadOrCreateProject(workdirRoot, userId) {
   const state = {
     skillProjectId: generateSkillProjectId(userId),
     userId: userId,
-    mode: null, // 默认为 null，由 init-project 写入 actual mode（creative / dubbing）
+    mode: 'dubbing', // 固定口播模式
     designConfirmed: false,
     previewToken: null,
     previewUrl: null,

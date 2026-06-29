@@ -1,10 +1,8 @@
 /**
  * 骨架 JSON 自动生成脚本
  *
- * 功能：读取 design-skeleton 自动生成 skeleton.json
- * 支持两种模式：
- *   - creative: design-skeleton-creative.md
- *   - dubbing:  design-skeleton-dubbing.md
+ * 功能：读取 design-skeleton-dubbing.md 自动生成 skeleton.json
+ * 仅支持口播模式
  *
  * 用法：node generate-skeleton.js --cwd=<Agent工作目录> <skillProjectId>
  *
@@ -18,34 +16,18 @@ const { getProjectState } = require('./state');
 const { parseSrt } = require('./srt-parser');
 
 /**
- * 检测设计文档模式并返回文件路径（优先读 state.mode）
+ * 检测口播模式设计文档路径
  * @param {string} workdirRoot - 工作根目录
  * @param {string} workdir - 工作目录
  * @returns {Object} { mode, designPath }
  */
 function detectMode(workdirRoot, workdir) {
-  // 1. 优先读 state.mode（state.json 由 init-project 写入，最权威）
-  try {
-    const state = getProjectState(workdirRoot);
-    if (state && state.mode === 'creative') {
-      const p = path.join(workdir, 'design-skeleton-creative.md');
-      if (fs.existsSync(p)) return { mode: 'creative', designPath: p };
-    }
-    if (state && state.mode === 'dubbing') {
-      const p = path.join(workdir, 'design-skeleton-dubbing.md');
-      if (fs.existsSync(p)) return { mode: 'dubbing', designPath: p };
-    }
-  } catch (e) {
-    // state 读不到，fallback 到文件名匹配
+  const mode = 'dubbing';
+  const p = path.join(workdir, 'design-skeleton-dubbing.md');
+  if (!fs.existsSync(p)) {
+    throw new Error('未找到口播设计文档 design-skeleton-dubbing.md');
   }
-
-  // 2. fallback: 看哪个 MD 文件存在
-  const creativePath = path.join(workdir, 'design-skeleton-creative.md');
-  const dubbingPath = path.join(workdir, 'design-skeleton-dubbing.md');
-  if (fs.existsSync(creativePath)) return { mode: 'creative', designPath: creativePath };
-  if (fs.existsSync(dubbingPath)) return { mode: 'dubbing', designPath: dubbingPath };
-
-  throw new Error('未找到设计文档，请确认以下文件之一存在：\n  - design-skeleton-creative.md\n  - design-skeleton-dubbing.md');
+  return { mode, designPath: p };
 }
 
 /**
@@ -81,7 +63,7 @@ function extractJsonConfig(content) {
 /**
  * 从 Markdown 中提取区域列表表格（按表头找列名）
  * @param {string} content - Markdown 内容
- * @param {string} mode - 模式：creative 或 dubbing
+ * @param {string} mode - 模式（口播）
  * @returns {Array} regions 数组
  */
 function extractRegions(content, mode) {
@@ -132,11 +114,8 @@ function extractRegions(content, mode) {
   if (idIdx === -1 && legacyNameIdx === -1) {
     throw new Error(`区域列表表头缺少必填列：区域 ID 或 名称。当前表头：${header.join(', ')}`);
   }
-  // 时长列：创作模式必填；口播模式可用"包含字幕"代替
-  if (mode === 'creative' && durationIdx === -1) {
-    throw new Error(`创作模式区域列表必须包含"时长"列。当前表头：${header.join(', ')}`);
-  }
-  if (mode === 'dubbing' && durationIdx === -1 && subtitleRangeIdx === -1) {
+  // 时长列：可省略（用"包含字幕"代替）；同时存在时优先用 SRT 重算
+  if (durationIdx === -1 && subtitleRangeIdx === -1) {
     throw new Error(`口播模式区域列表必须包含"时长"或"包含字幕"列。当前表头：${header.join(', ')}`);
   }
 
@@ -174,7 +153,7 @@ function extractRegions(content, mode) {
     if (hasSubtitleRange) {
       duration = 0;
     } else if (duration === 0) {
-      // 创作模式 或 口播没填字幕范围：必须有 duration
+      // 口播模式没填字幕范围：必须有 duration
       continue;
     }
 
@@ -233,53 +212,51 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   const regions = extractRegions(content, mode);
   console.log(`[✓] 区域列表提取成功: ${regions.length} 个区域`);
 
-  // 2.5 口播模式：用 SRT 按"包含字幕"重算 region.duration（3 位小数，绝对精准）
+  // 2.5 用 SRT 按"包含字幕"重算 region.duration（3 位小数，绝对精准）
+  if (!projectState.voice || !projectState.voice.srtPath) {
+    throw new Error(
+      '口播模式必须先执行步骤 1.5（prepare-voice.js）准备配音音频和字幕。\n' +
+      '当前 state.voice 为空，请参考 docs/01.5-voice-prepare.md。'
+    );
+  }
+  const srtAbsPath = path.isAbsolute(projectState.voice.srtPath)
+    ? projectState.voice.srtPath
+    : path.join(workdir, projectState.voice.srtPath);
+  if (!fs.existsSync(srtAbsPath)) {
+    throw new Error(`SRT 文件不存在: ${srtAbsPath}`);
+  }
+  const subtitles = parseSrt(srtAbsPath);
   let lastSubtitleEnd = null;
-  if (mode === 'dubbing') {
-    if (!projectState.voice || !projectState.voice.srtPath) {
+  if (subtitles.length > 0) {
+    lastSubtitleEnd = parseFloat(subtitles[subtitles.length - 1].end.toFixed(3));
+  }
+  let srtCalcCount = 0;
+  for (const region of regions) {
+    if (!region.subtitle_range) continue;
+    const match = region.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
+    if (!match) {
+      console.warn(`[W] region ${region.id} 的"包含字幕"格式不合法: "${region.subtitle_range}"（应为 "1-5" 或 "3"）`);
+      continue;
+    }
+    const startIdx = parseInt(match[1], 10) - 1; // SRT 字幕 ID 是 1-based，数组是 0-based
+    let endIdx = match[2] !== undefined ? parseInt(match[2], 10) - 1 : startIdx; // 单条字幕 "3" 等价于 "3-3"
+    if (!subtitles[startIdx]) {
       throw new Error(
-        '口播模式必须先执行步骤 1.5（prepare-voice.js）准备配音音频和字幕。\n' +
-        '当前 state.voice 为空，请参考 docs/01.5-voice-prepare.md。'
+        `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
       );
     }
-    const srtAbsPath = path.isAbsolute(projectState.voice.srtPath)
-      ? projectState.voice.srtPath
-      : path.join(workdir, projectState.voice.srtPath);
-    if (!fs.existsSync(srtAbsPath)) {
-      throw new Error(`SRT 文件不存在: ${srtAbsPath}`);
+    if (!subtitles[endIdx]) {
+      throw new Error(
+        `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
+      );
     }
-    const subtitles = parseSrt(srtAbsPath);
-    if (subtitles.length > 0) {
-      lastSubtitleEnd = parseFloat(subtitles[subtitles.length - 1].end.toFixed(3));
-    }
-    let srtCalcCount = 0;
-    for (const region of regions) {
-      if (!region.subtitle_range) continue;
-      const match = region.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
-      if (!match) {
-        console.warn(`[W] region ${region.id} 的"包含字幕"格式不合法: "${region.subtitle_range}"（应为 "1-5" 或 "3"）`);
-        continue;
-      }
-      const startIdx = parseInt(match[1], 10) - 1; // SRT 字幕 ID 是 1-based，数组是 0-based
-      let endIdx = match[2] !== undefined ? parseInt(match[2], 10) - 1 : startIdx; // 单条字幕 "3" 等价于 "3-3"
-      if (!subtitles[startIdx]) {
-        throw new Error(
-          `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
-        );
-      }
-      if (!subtitles[endIdx]) {
-        throw new Error(
-          `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
-        );
-      }
-      const dur = subtitles[endIdx].end - subtitles[startIdx].start;
-      region.duration = parseFloat(dur.toFixed(3));
-      srtCalcCount++;
-    }
-    console.log(`[✓] 按 SRT 重算 ${srtCalcCount} 个口播区域时长（3 位小数）`);
+    const dur = subtitles[endIdx].end - subtitles[startIdx].start;
+    region.duration = parseFloat(dur.toFixed(3));
+    srtCalcCount++;
   }
+  console.log(`[✓] 按 SRT 重算 ${srtCalcCount} 个口播区域时长（3 位小数）`);
 
-  // 3. 计算总时长（口播=最后一帧字幕 end；创作=region.duration 累加）
+  // 3. 计算总时长（口播=最后一帧字幕 end）
   const totalDuration = lastSubtitleEnd !== null
     ? lastSubtitleEnd
     : parseFloat(regions.reduce((sum, r) => sum + r.duration, 0).toFixed(3));
@@ -299,7 +276,7 @@ function generateSkeleton(workdirRoot, skillProjectId) {
     name: config.name || '',
     description: config.description || '',
     theme: config.theme || projectState.theme || 'white',
-    // 总时长优先用 totalDuration（口播按 SRT 最后一帧、创作按 AI 填的累加），不再被 config.duration 覆盖
+    // 总时长优先用 totalDuration（口播按 SRT 最后一帧）
     duration: totalDuration || config.duration || projectState.duration,
     viewport: config.viewport || { width: 780, height: 585 },
     canvas: { width: canvasWidth, height: canvasHeight },
@@ -317,80 +294,43 @@ function generateSkeleton(workdirRoot, skillProjectId) {
     source_design_doc: path.basename(designPath)
   };
 
-  // 模式特有字段
-  if (mode === 'creative') {
-    skeleton.audio = {
-      path: `./assets/placeholders/bgm/${config.bgm || projectState.bgmStyle || 'corporate'}.mp3`,
-      loop: true,
-      fadeIn: 1,
-      fadeOut: 2
-    };
-  } else {
-    // dubbing 模式 —— 强制用 state.voice.audioPath 覆盖 MD 里写的 audio.path
-    // 理由：MD 是 AI 写的，路径可能写错；prepare-voice.js 才是 source of truth
-    if (!projectState.voice || !projectState.voice.audioPath) {
-      throw new Error(
-        '口播模式必须先执行步骤 1.5（prepare-voice.js）准备配音音频和字幕。\n' +
-        '当前 state.voice 为空，请参考 docs/01.5-voice-prepare.md。'
-      );
-    }
-    skeleton.audio = config.audio && config.audio.path
-      ? { ...config.audio, path: projectState.voice.audioPath }  // 保留 fadeIn/loop 等
-      : { path: projectState.voice.audioPath };
-    // 用 state.voice.duration 覆盖（如果 MD 里 duration 缺失或不准）
-    if (!config.duration && projectState.voice.duration) {
-      skeleton.duration = projectState.voice.duration;
-    }
-    if (config.style) skeleton.style = config.style;
-    else skeleton.style = 'warm';  // dubbing fallback 默认 warm
-    if (config.emotion_curve_template) skeleton.emotion_curve_template = config.emotion_curve_template;
-    if (config.subtitle_count) skeleton.subtitle_count = config.subtitle_count;
-    else if (projectState.voice.subtitleCount) {
-      skeleton.subtitle_count = projectState.voice.subtitleCount;
-    }
-
-    // 项目级字幕样式（必填，6 字段）
-    // schema 强约束要求 project.json 必须带 subtitle，AI 在 init-project 的 config 里没传就 fail-fast
-    if (!config.subtitle || typeof config.subtitle !== 'object') {
-      throw new Error(
-        '[generate-skeleton] config.subtitle 缺失或不是对象。\n' +
-        '字幕样式是项目级必填（color/fontSize/position/weight/background/textShadow）。\n' +
-        '请在 init-project 的 config JSON 里加 subtitle 字段，例如：\n' +
-        '  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
-      );
-    }
-    skeleton.subtitle = config.subtitle;
-
-    // 项目模式（必填，dubbing 或 creative）
-    // schema 强约束要求 project.json 必须带 mode
-    if (!config.mode || !['dubbing', 'creative'].includes(config.mode)) {
-      throw new Error(
-        '[generate-skeleton] config.mode 缺失或非法。\n' +
-        '必须为 "dubbing"（口播）或 "creative"（创作）。\n' +
-        '口播模式必须配置配音音频 + 字幕；创作模式无需字幕，音频必须为 BGM 用法。'
-      );
-    }
-    if (config.mode !== mode) {
-      throw new Error(
-        `[generate-skeleton] config.mode "${config.mode}" 与骨架类型 "${mode}" 不匹配。\n` +
-        '口播骨架请用 creative 模式的 generate-skeleton，创作骨架请用 creative 模式。'
-      );
-    }
-    skeleton.mode = config.mode;
-
-    // 口播模式：subtitle 样式必填；创作模式不需要
-    if (config.mode === 'dubbing') {
-      if (!config.subtitle || typeof config.subtitle !== 'object') {
-        throw new Error(
-          '[generate-skeleton] [口播模式] config.subtitle 缺失或不是对象。\n' +
-          '字幕样式是口播项目必填（color/fontSize/position/weight/background/textShadow）。\n' +
-          '请在 init-project 的 config JSON 里加 subtitle 字段，例如：\n' +
-          '  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
-        );
-      }
-      skeleton.subtitle = config.subtitle;
-    }
+  // 口播模式 —— 强制用 state.voice.audioPath 覆盖 MD 里写的 audio.path
+  // 理由：MD 是 AI 写的，路径可能写错；prepare-voice.js 才是 source of truth
+  if (!projectState.voice || !projectState.voice.audioPath) {
+    throw new Error(
+      '口播模式必须先执行步骤 1.5（prepare-voice.js）准备配音音频和字幕。\n' +
+      '当前 state.voice 为空，请参考 docs/01.5-voice-prepare.md。'
+    );
   }
+  skeleton.audio = config.audio && config.audio.path
+    ? { ...config.audio, path: projectState.voice.audioPath }  // 保留 fadeIn/loop 等
+    : { path: projectState.voice.audioPath };
+  // 用 state.voice.duration 覆盖（如果 MD 里 duration 缺失或不准）
+  if (!config.duration && projectState.voice.duration) {
+    skeleton.duration = projectState.voice.duration;
+  }
+  if (config.style) skeleton.style = config.style;
+  else skeleton.style = 'warm';  // dubbing fallback 默认 warm
+  if (config.emotion_curve_template) skeleton.emotion_curve_template = config.emotion_curve_template;
+  if (config.subtitle_count) skeleton.subtitle_count = config.subtitle_count;
+  else if (projectState.voice.subtitleCount) {
+    skeleton.subtitle_count = projectState.voice.subtitleCount;
+  }
+
+  // 项目级字幕样式（必填，6 字段）
+  // schema 强约束要求 project.json 必须带 subtitle，AI 在 init-project 的 config 里没传就 fail-fast
+  if (!config.subtitle || typeof config.subtitle !== 'object') {
+    throw new Error(
+      '[generate-skeleton] config.subtitle 缺失或不是对象。\n' +
+      '字幕样式是项目级必填（color/fontSize/position/weight/background/textShadow）。\n' +
+      '请在 init-project 的 config JSON 里加 subtitle 字段，例如：\n' +
+      '  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
+    );
+  }
+  skeleton.subtitle = config.subtitle;
+
+  // 项目模式（固定 dubbing）
+  skeleton.mode = 'dubbing';
 
   // 6. 保存 skeleton.json
   const skeletonPath = path.join(workdir, 'skeleton.json');
@@ -401,12 +341,8 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   console.log(`  时长: ${skeleton.duration}秒`);
   console.log(`  画布: ${skeleton.canvas.width} × ${skeleton.canvas.height}`);
   console.log(`  区域: ${skeleton.regions.length} 个`);
-  if (mode === 'creative') {
-    console.log(`  BGM: ${config.bgm || 'corporate'}`);
-  } else {
-    console.log(`  音频: ${skeleton.audio.path}`);
-    console.log(`  风格: ${skeleton.style || '-'}`);
-  }
+  console.log(`  音频: ${skeleton.audio.path}`);
+  console.log(`  风格: ${skeleton.style || '-'}`);
 
   return skeleton;
 }

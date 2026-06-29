@@ -92,7 +92,7 @@ node scripts/upload-video.js --cwd=/path/to/agent/workspace https://custom-serve
 {
   "skillProjectId": "cv_a1b2c3_mqtk95pt_0b43fa53",
   "userId": "cu-xxxxxxxxxxxx",
-  "mode": "creative",
+  "mode": "dubbing",
   "designConfirmed": true,
 + "previewToken": "pt-xxxxxxxxxxxxxxxx",
 + "previewUrl": "https://dajiulanren.top/cv/view/pt-xxxxxxxxxxxxxxxx",

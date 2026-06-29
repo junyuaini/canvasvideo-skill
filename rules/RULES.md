@@ -25,8 +25,8 @@
 
 ### 项目初始化
 - 新建 vs 沿用决策（`--new`） → [01-principles.md §R2](01-principles.md#r2-项目新建-vs-沿用)
-- 项目模式必填（mode: dubbing/creative） → [06-components.md §R0](06-components.md#r0-项目级必填字段总览)
-- 字幕样式必填（口播模式，color/fontSize/position/weight/background/textShadow） → [06-components.md §R8](06-components.md#r8-字幕样式项目级必填仅口播模式)
+- 项目模式固定 dubbing（口播模式） → [06-components.md §R0](06-components.md#r0-项目级必填字段总览)
+- 字幕样式必填（color/fontSize/position/weight/background/textShadow） → [06-components.md §R8](06-components.md#r8-字幕样式项目级必填)
 - skillProjectId 格式约束 → [01-principles.md §R6](01-principles.md#r6-skillprojectid-规范)
 
 ### API 调用

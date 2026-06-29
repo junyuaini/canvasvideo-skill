@@ -91,7 +91,7 @@ function checkHtmlComponentBackground(components) {
 
         if (!bg || typeof bg !== 'object') {
           errors.push(
-            `${pathStr} HtmlComponent ${compLabel} 缺少 'background' 字段（与 content 平级）。HtmlComponent 必须同时携带 background 和 content 作为两个基本属性，例：{ "background": { "html": "<div class='region-bg'></div>", "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(...); }" } }。详见 docs/04-region-design-creative.md。`
+            `${pathStr} HtmlComponent ${compLabel} 缺少 'background' 字段（与 content 平级）。HtmlComponent 必须同时携带 background 和 content 作为两个基本属性，例：{ "background": { "html": "<div class='region-bg'></div>", "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(...); }" } }。详见 docs/04-region-design-dubbing.md。`
           );
         } else {
           if (!bg.html || typeof bg.html !== 'string' || bg.html.trim() === '') {
@@ -549,48 +549,43 @@ function selfcheck(project) {
     );
   }
 
-  // [必填] project.subtitle —— 口播模式项目级字幕样式（color/fontSize/position/weight/background/textShadow）
-  // 仅 dubbing 模式需要；creative 模式无字幕内容，不需要 subtitle 样式
-  if (project.mode === 'dubbing') {
-    const REQUIRED_SUBTITLE_FIELDS = ['color', 'fontSize', 'position', 'weight', 'background', 'textShadow'];
-    const VALID_POSITIONS = [
-      'top-left', 'top-center', 'top-right',
-      'middle-left', 'middle-center', 'middle-right',
-      'bottom-left', 'bottom-center', 'bottom-right'
-    ];
-    if (!project.subtitle || typeof project.subtitle !== 'object') {
-      errors.push(
-        '[必填] [口播模式] project.subtitle 缺失或不是对象。字幕样式必填（6 字段全要）：' +
-        'color / fontSize / position / weight / background / textShadow。' +
-        '请在 init-project 的 config JSON 里加 subtitle 字段，例如：' +
-        '{ "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
-      );
-    } else {
-      for (const f of REQUIRED_SUBTITLE_FIELDS) {
-        if (project.subtitle[f] === undefined || project.subtitle[f] === null || project.subtitle[f] === '') {
-          errors.push(`[必填] [口播模式] project.subtitle.${f} 缺失。6 字段全必填：color / fontSize / position / weight / background / textShadow。`);
-        }
+  // [必填] project.subtitle —— 项目级字幕样式（color/fontSize/position/weight/background/textShadow）
+  const REQUIRED_SUBTITLE_FIELDS = ['color', 'fontSize', 'position', 'weight', 'background', 'textShadow'];
+  const VALID_POSITIONS = [
+    'top-left', 'top-center', 'top-right',
+    'middle-left', 'middle-center', 'middle-right',
+    'bottom-left', 'bottom-center', 'bottom-right'
+  ];
+  if (!project.subtitle || typeof project.subtitle !== 'object') {
+    errors.push(
+      '[必填] project.subtitle 缺失或不是对象。字幕样式必填（6 字段全要）：' +
+      'color / fontSize / position / weight / background / textShadow。' +
+      '请在 init-project 的 config JSON 里加 subtitle 字段，例如：' +
+      '{ "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
+    );
+  } else {
+    for (const f of REQUIRED_SUBTITLE_FIELDS) {
+      if (project.subtitle[f] === undefined || project.subtitle[f] === null || project.subtitle[f] === '') {
+        errors.push(`[必填] project.subtitle.${f} 缺失。6 字段全必填：color / fontSize / position / weight / background / textShadow。`);
       }
-      if (project.subtitle.position && !VALID_POSITIONS.includes(project.subtitle.position)) {
-        errors.push(`[枚举] project.subtitle.position "${project.subtitle.position}" 不在 9 档之内，应为：${VALID_POSITIONS.join(' / ')}`);
-      }
-      if (project.subtitle.weight !== undefined && (!Number.isFinite(project.subtitle.weight) || project.subtitle.weight < 100 || project.subtitle.weight > 900 || project.subtitle.weight % 100 !== 0)) {
-        errors.push(`[范围] project.subtitle.weight 必须是 100-900 的整百数（实际: ${project.subtitle.weight}）`);
-      }
+    }
+    if (project.subtitle.position && !VALID_POSITIONS.includes(project.subtitle.position)) {
+      errors.push(`[枚举] project.subtitle.position "${project.subtitle.position}" 不在 9 档之内，应为：${VALID_POSITIONS.join(' / ')}`);
+    }
+    if (project.subtitle.weight !== undefined && (!Number.isFinite(project.subtitle.weight) || project.subtitle.weight < 100 || project.subtitle.weight > 900 || project.subtitle.weight % 100 !== 0)) {
+      errors.push(`[范围] project.subtitle.weight 必须是 100-900 的整百数（实际: ${project.subtitle.weight}）`);
     }
   }
 
-  // [必填] project.mode —— 项目模式
-  const VALID_MODES = ['dubbing', 'creative'];
+  // [必填] project.mode —— 项目模式（仅口播模式）
+  const VALID_MODES = ['dubbing'];
   if (!project.mode || !VALID_MODES.includes(project.mode)) {
     errors.push(
-      '[必填] project.mode 缺失或非法：必须为 "dubbing"（口播）或 "creative"（创作）。' +
-      '口播模式必须配置配音音频（audio，非 BGM 用法）+ 字幕（subtitles）；' +
-      '创作模式无需字幕，音频必须为 BGM 用法（loop/fadeIn/fadeOut）。'
+      '[必填] project.mode 缺失或非法：必须为 "dubbing"（口播模式）。' +
+      '口播模式必须配置配音音频（audio）+ 字幕（subtitles）。'
     );
   }
 
-  const mode = project.mode;
   const hasAudio = (() => {
     if (typeof project.audio === 'string') return project.audio.trim().length > 0;
     if (project.audio && typeof project.audio === 'object' && typeof project.audio.path === 'string') return project.audio.path.trim().length > 0;
@@ -602,15 +597,9 @@ function selfcheck(project) {
         || project.audio.fadeOut !== undefined));
   const hasSubtitles = Array.isArray(project.subtitles) && project.subtitles.length > 0;
 
-  if (mode === 'dubbing') {
-    if (!hasAudio) errors.push('[口播模式] 必须配置配音音频（audio 字段）。');
-    if (!hasSubtitles) errors.push('[口播模式] 必须提供字幕（subtitles 数组）。请先用 prepare-voice.js 生成 SRT 字幕。');
-    if (isBgmUsage) errors.push('[口播模式] audio 不能使用 BGM 用法（loop/fadeIn/fadeOut），配音音频应直接写路径字符串或对象形式（无 loop/fadeIn/fadeOut）。');
-  }
-  if (mode === 'creative') {
-    if (hasAudio && !isBgmUsage) errors.push('[创作模式] audio 必须使用 BGM 用法（设置 loop/fadeIn/fadeOut），例如 { "path": "...", "loop": true }。不能使用配音音频。');
-    if (hasSubtitles) errors.push('[创作模式] 不需要字幕（subtitles 数组应为空或不配置）。如有配音需求请切换为口播模式。');
-  }
+  if (!hasAudio) errors.push('[口播模式] 必须配置配音音频（audio 字段）。');
+  if (!hasSubtitles) errors.push('[口播模式] 必须提供字幕（subtitles 数组）。请先用 prepare-voice.js 生成 SRT 字幕。');
+  if (isBgmUsage) errors.push('[口播模式] audio 不能使用 BGM 用法（loop/fadeIn/fadeOut），配音音频应直接写路径字符串或对象形式（无 loop/fadeIn/fadeOut）。');
 
   // 检查 ID 格式
   const formatErrors = checkIdFormat(components);
@@ -665,9 +654,7 @@ if (require.main === module) {
     const project = JSON.parse(fs.readFileSync(projectPath, 'utf-8'));
     const result = selfcheck(project);
 
-    const examplePath = project.mode === 'creative'
-      ? 'templates/projects/分合示例-创作/'
-      : 'templates/projects/分合示例-口播/';
+    const examplePath = 'templates/projects/分合示例-口播/';
     if (result.errors.length) {
       console.error('\n❌ Errors:');
       result.errors.forEach(e => console.error('  - ' + e));

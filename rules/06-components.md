@@ -12,14 +12,14 @@
 | 字段 | 类型 | 必填 | 来源 | 说明 |
 |------|------|------|------|------|
 | `name` | string | ✅ | AI 设计 / skeleton 模板 | 项目名 |
-| `mode` | `"dubbing" \| "creative"` | ✅ | AI 决策 | 项目模式：dubbing=口播（配音+字幕），creative=创作（BGM，无字幕） |
+| `mode` | `"dubbing"` | ✅ | 固定 | 项目模式（口播模式），必须配置配音音频+字幕 |
 | `theme` | `"black" \| "white"` | ✅ | AI 决策 | 背景主题，决定 scaffold 复制 `dark/` 还是 `light/` 占位图 |
 | `viewport` | `{ width, height }` | ✅ | AI 设计 | 视口尺寸（默认 780×585） |
-| `subtitle` | object（6 字段） | 口播 ✅ | **R8 口播必填** | 字幕样式，口播模式必填；创作模式不需要 |
+| `subtitle` | object（6 字段） | ✅ | **R8 必填** | 字幕样式，必填 |
 | `regions[]` | array | ✅ | 步骤 4 产出 | 区域列表 |
 | `assets` | object | ✅ | 步骤 6 产出 | 素材清单（voice / subtitles / placeholders / images） |
-| `audio` | object | 口播 ✅ | 步骤 1.5 产出 | 口播音频配置（口播模式必填，创作模式必须为 BGM 用法） |
-| `subtitles[]` | array | 口播 ✅ | SRT 解析 | 字幕内容数组（口播模式必填，创作模式禁止配置） |
+| `audio` | object | ✅ | 步骤 1.5 产出 | 口播音频配置（口播模式必填） |
+| `subtitles[]` | array | ✅ | SRT 解析 | 字幕内容数组（口播模式必填） |
 
 > 老项目若缺 `subtitle`，**schema 不兼容**，上传会被拒。沿用口播项目时也不能少。
 
@@ -144,9 +144,8 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ## R4 HtmlComponent elementIds 规则
 
-`content.elementIds` 为对象，**key 必须是 `#ID` 形式**（`#` 后跟元素 ID），value 是 `{ id, subtitles | time_range }` 对象：
+`content.elementIds` 为对象，**key 必须是 `#ID` 形式**（`#` 后跟元素 ID），value 是 `{ id, subtitles }` 对象：
 
-**口播模式**（绑字幕）：
 ```json
 "elementIds": {
   "#P1-002": { "id": "P1-002", "subtitles": [11, 14] },
@@ -154,26 +153,17 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 }
 ```
 
-**创作模式**（time_range 相对 region 起点）：
-```json
-"elementIds": {
-  "#P1-002": { "id": "P1-002", "time_range": [0, 5] },
-  "#P1-003": { "id": "P1-003", "time_range": [0.3, 5] }
-}
-```
-
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | key | string | ✅ | 必须是 `#ID` 形式（如 `#P1-002`） |
 | id | string | ✅ | 元素唯一标识，必须等于 `key.slice(1)`；格式 `P{区域编号}-{三位数字}`，与顶层 HtmlComponent ID 同池且全局唯一 |
-| subtitles | Array<number> | 口播推荐 | 绑字幕范围（merge 查 SRT 自动算 start/end）。不填 = 展示整个所属 HtmlComponent |
-| time_range | [number, number] | 创作推荐 | 相对 region 起点的局部时间（merge 转全局 start/end）。不填 = 展示整个所属 HtmlComponent |
+| subtitles | Array<number> | 推荐 | 绑字幕范围（merge 查 SRT 自动算 start/end）。不填 = 展示整个所属 HtmlComponent |
 
 **merge 自动填充**（输出到 project.json 时）：
-- `element.start` = subtitles 第一字幕 start 或 time_range[0] + region.startTime
-- `element.end` = subtitles 最后字幕 end 或 time_range[1] + region.startTime
+- `element.start` = subtitles 第一字幕 start
+- `element.end` = subtitles 最后字幕 end
 
-**优先级**：subtitles > time_range > 旧 start/end（兼容）> fallback to parent
+**优先级**：subtitles > 旧 start/end（兼容）> fallback to parent
 
 > 未填时一律 fallback 到父级时间窗口（与背景切换规则保持一致），不报错。
 
@@ -187,8 +177,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 - ✅ HTML 字符串里必须有对应的 `id` 属性（如 `<div id="P1-002">`），否则时间线不生效
 - ✅ 元素时间范围（已设置时）必须落在所属 HtmlComponent 时间范围内（`component.start ≤ element.start && element.end ≤ component.end`）
 - ✅ `0 ≤ element.start ≤ element.end`（已设置时）
-- ✅ 口播模式：subtitles 范围必须在所属 region 字幕范围内
-- ✅ 创作模式：time_range 必须在 `[0, region.duration]` 范围内
+- ✅ subtitles 范围必须在所属 region 字幕范围内
 - ❌ `component.start / end` 和 `element.start / end` **可不填**，不填时由前端/merge 自动从父级时间窗口推算（与背景切换规则保持一致）
 
 **作用**：
@@ -304,9 +293,9 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ---
 
-## R8 字幕样式项目级必填（仅口播模式）
+## R8 字幕样式项目级必填
 
-**AI 必须在 init-project 的 config JSON 里提供 `subtitle` 字段，6 字段全要。字幕样式从"主题控制"改为"项目级必填"。仅口播模式需要；创作模式不需要。**
+**AI 必须在 init-project 的 config JSON 里提供 `subtitle` 字段，6 字段全要。字幕样式从"主题控制"改为"项目级必填"。**
 
 ### 字段结构
 

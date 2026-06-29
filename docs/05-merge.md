@@ -1,6 +1,6 @@
 # 步骤5：合并
 
-> 前置步骤：[步骤4：区域设计与生成JSON](04-region-design-creative.md) / [步骤4：区域设计与生成JSON（口播模式）](04-region-design-dubbing.md)
+> 前置步骤：[步骤4：区域设计与生成JSON（口播模式）](04-region-design-dubbing.md)
 > 下一步：[步骤6：素材处理](06-assets.md)
 
 ---
@@ -55,7 +55,7 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 ### 第 4 步：素材清单引用
 
-把 `design-skeleton-{creative\|dubbing}.md` 素材清单中**所有非空状态的素材**，挂到 HtmlComponent 的 `<img>` 上：
+把 `design-skeleton-dubbing.md` 素材清单中**所有非空状态的素材**，挂到 HtmlComponent 的 `<img>` 上：
 
 | design-skeleton 状态 | project.json 写法 |
 |---|---|
@@ -91,11 +91,11 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 | 字段 | 来源 | 说明 |
 |------|------|------|
-| `region.startTime / endTime` | 口播：从 SRT 字幕范围取；创作：累加 | merge 自动写入 |
-| `component.start / end` | subtitles（口播查 SRT）/ time_range（创作相对 region）/ 旧 start/end / 缺省=region 起止 | merge 自动写入 |
+| `region.startTime / endTime` | 从 SRT 字幕范围取 | merge 自动写入 |
+| `component.start / end` | subtitles（查 SRT）/ 旧 start/end / 缺省=region 起止 | merge 自动写入 |
 | `elementIds[].start / end` | 同上 | merge 自动写入 |
 
-**优先级**：subtitles > time_range > 旧 start/end > fallback to region
+**优先级**：subtitles > 旧 start/end > fallback to region
 
 **缺省规则**：所有时间字段都可省略不填
 - 组件 start/end 未填 → 展示整个 region（与背景切换规则保持一致）

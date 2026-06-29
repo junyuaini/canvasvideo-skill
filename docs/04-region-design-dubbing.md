@@ -141,7 +141,7 @@
 
 > **硬规则**：所有 HtmlComponent 都必须携带 ackground 字段（与 content 平级）。这是 HtmlComponent 的两个基本属性之一。
 
-字段结构与详细说明见 [04-region-design-creative.md](04-region-design-creative.md) §"组件 background 字段（与 content 平级）" 与 [rules/06-components.md](../rules/06-components.md) §R3。
+字段结构与详细说明见 [rules/06-components.md](../rules/06-components.md) §R3。
 
 **校验**：selfcheck.js 校验所有 HtmlComponent 必须有 ackground.html + ackground.css，缺一报错；后端 projectValidator.collectErrors 在上传时也会强制校验，缺 background 直接 400 拒绝。
 
