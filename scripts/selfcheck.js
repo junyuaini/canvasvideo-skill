@@ -601,26 +601,72 @@ function selfcheck(project) {
   if (!hasSubtitles) errors.push('[口播模式] 必须提供字幕（subtitles 数组）。请先用 prepare-voice.js 生成 SRT 字幕。');
   if (isBgmUsage) errors.push('[口播模式] audio 不能使用 BGM 用法（loop/fadeIn/fadeOut），配音音频应直接写路径字符串或对象形式（无 loop/fadeIn/fadeOut）。');
 
-  // [口播模式] 每条字幕必须带 validateElementDesign 字段（30-200字，含 element id）
+  // [口播模式] 每条字幕必须带 validateElementDesign 字段（30-200字，含 element id，且 id 必须在该字幕时间窗内显示）
   // 目的：强制 AI 在设计画面时自我审视"字幕和画面是否匹配"，避免画完再说
+  // 语义：分析"该字幕时间窗内画面上正在显示的元素组合"是否构成完整合理画面，不是"为字幕设计什么新元素"
   if (hasSubtitles) {
-    const ELEM_ID_PATTERN = /P\d+-\d{3}/;
+    const ELEM_ID_PATTERN = /P\d+-\d{3}/g;
+    // 收集所有 HtmlComponent 的 element 时序，构建 id → {start, end, regionId} 索引
+    const elemIndex = new Map();
+    function indexHtmlElements(comps) {
+      if (!Array.isArray(comps)) return;
+      comps.forEach((c) => {
+        if (!c || typeof c !== 'object') return;
+        if (c.type === 'HtmlComponent' && c.content && c.content.elementIds && typeof c.content.elementIds === 'object') {
+          Object.values(c.content.elementIds).forEach((el) => {
+            if (!el || !el.id) return;
+            // element.start/end 未设置时按所属 component 推算（与 R4 缺省规则一致）
+            let elStart = el.start;
+            let elEnd = el.end;
+            if (typeof elStart !== 'number' || !Number.isFinite(elStart)) {
+              elStart = (typeof c.start === 'number' && Number.isFinite(c.start)) ? c.start : 0;
+            }
+            if (typeof elEnd !== 'number' || !Number.isFinite(elEnd)) {
+              elEnd = (typeof c.end === 'number' && Number.isFinite(c.end)) ? elStart : elStart;
+            }
+            elemIndex.set(el.id, { start: elStart, end: elEnd, regionId: c.regionId });
+          });
+        }
+        if (Array.isArray(c.children) && c.children.length > 0) indexHtmlElements(c.children);
+      });
+    }
+    if (Array.isArray(project.components)) indexHtmlElements(project.components);
+
     project.subtitles.forEach((sub, idx) => {
       if (!sub || typeof sub !== 'object') return;
       const v = sub.validateElementDesign;
       if (!v || typeof v !== 'string' || v.trim().length === 0) {
-        errors.push(`[口播模式] subtitles[${idx}] 缺少 validateElementDesign 字段。AI 必填：描述该字幕对应的画面元素是否合理，30-200 字，必须含至少 1 个 element id（如 P1-002）。详见 rules/06-components.md §R10`);
-      } else {
-        const len = v.trim().length;
-        if (len < 30) {
-          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太短（${len} 字），至少 30 字。`);
-        } else if (len > 200) {
-          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太长（${len} 字），建议控制在 200 字以内。`);
-        }
-        if (!ELEM_ID_PATTERN.test(v)) {
-          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 必须含至少 1 个 element id（如 P1-002、P3-005）。当前未检测到。`);
-        }
+        errors.push(`[口播模式] subtitles[${idx}] 缺少 validateElementDesign 字段。AI 必填：分析"该字幕时间窗内画面上正在显示的元素组合"是否合理，30-200 字，必须含至少 1 个 element id（如 P1-002），且该 id 必须在 [${sub.start}, ${sub.end}] 字幕时间窗内显示。详见 rules/06-components.md §R10`);
+        return;
       }
+      const len = v.trim().length;
+      if (len < 30) {
+        errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太短（${len} 字），至少 30 字。`);
+        return;
+      }
+      if (len > 200) {
+        errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太长（${len} 字），建议控制在 200 字以内。`);
+      }
+      // 提取所有 P{n}-{nnn} id（去重）
+      const matches = v.match(ELEM_ID_PATTERN) || [];
+      const uniqueIds = [...new Set(matches)];
+      if (uniqueIds.length === 0) {
+        errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 必须含至少 1 个 element id（如 P1-002、P3-005）。当前未检测到。`);
+        return;
+      }
+      // cross 校验：每个 id 必须存在 + element 时间必须与字幕时间窗有重叠
+      const subStart = (typeof sub.start === 'number' && Number.isFinite(sub.start)) ? sub.start : 0;
+      const subEnd = (typeof sub.end === 'number' && Number.isFinite(sub.end)) ? sub.end : subStart;
+      uniqueIds.forEach((id) => {
+        if (!elemIndex.has(id)) {
+          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 引用了不存在的 element id "${id}"（不在 components 中）。请改为该字幕时间窗 [${subStart}, ${subEnd}] 内画面上正在显示的元素 id。`);
+          return;
+        }
+        const el = elemIndex.get(id);
+        if (el.end < subStart - 0.001 || el.start > subEnd + 0.001) {
+          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 引用的 element "${id}" 不在该字幕时间窗 [${subStart}, ${subEnd}] 内显示（该 element 实际显示区间 [${el.start}, ${el.end}]）。请改为该时间窗内正在显示的元素 id。`);
+        }
+      });
     });
   }
 

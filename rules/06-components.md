@@ -355,7 +355,9 @@ bottom-left   bottom-center   bottom-right
 
 ## R10 字幕 validateElementDesign 必填（口播模式 · 强制 AI 自检）
 
-**AI 在生成区域 JSON 时，必须为每条字幕填写 `validateElementDesign` 字段，让 AI 强制自我审视"字幕和画面是否匹配"，避免画完再说。**
+**AI 在生成区域 JSON 时，必须为每条字幕填写 `validateElementDesign` 字段，让 AI 强制自我审视"该字幕时间窗口内，画面上正在显示的元素组合起来是否构成一个完整、合理、符合字幕语义的画面"。**
+
+> ⚠️ **本字段的语义是"分析已有画面"，不是"为字幕设计新元素"**。每条字幕对应一个时间窗口 [start, end]，AI 必须先找出"在这个时间窗口内正在显示的元素"（即 `element.start/end` 与字幕时间窗有重叠的元素），再分析这些元素组合成的画面是否完整、是否合理、是否匹配字幕语义。
 
 ### 字段位置
 
@@ -366,43 +368,66 @@ bottom-left   bottom-center   bottom-right
 | 项 | 规则 |
 |----|------|
 | 长度 | 30-200 字（trim 后） |
-| 必含 element id | 至少 1 个 `P{n}-{nnn}` 格式（如 `P1-002`、`P3-005`） |
-| 必含内容 | (1) 字幕区间内的元素列表（id + 视觉功能）；(2) 布局是否合理（位置/尺寸/层级/对比度）；(3) 整体评价（合理/不合理 + 原因） |
+| 必含 element id | 至少 1 个 `P{n}-{nnn}` 格式（如 `P1-002`、`P3-005`），**且该 id 必须在字幕时间窗口 [subtitle.start, subtitle.end] 内正在显示**（即 element.start/end 与字幕时间窗有重叠） |
+| 必含内容 | (1) 该字幕时间窗口内**正在显示**的元素清单（id + 各自的视觉功能/位置/层级）；(2) 这些元素组合成的画面是否完整 / 是否合理 / 是否与字幕语义匹配；(3) 整体评价（合理 / 不合理 + 原因） |
+
+### 正确理解：什么是"字幕对应的元素"？
+
+| 错误理解 ❌ | 正确理解 ✅ |
+|------------|-----------|
+| 把当前组件当作"字幕对应的元素"，列出该组件里所有元素 | 找出 `element.start/end` 与 `subtitle.start/end` 有重叠的元素（**只列正在显示的**） |
+| 把所有元素都堆进去（不看时间窗口） | 严格按时间窗口过滤：只有该字幕说出口时画面上**正显示**的元素才算 |
+| 写元素设计意图（"为字幕设计了什么"） | 写元素组合分析（"画面上正在显示的 X、Y、Z，组合成什么画面，是否合理"） |
 
 ### 正例
 
 ```json
 {
-  "start": 0,
-  "end": 2.5,
-  "text": "今天我们来聊聊 AI 时代的核心竞争力",
-  "validateElementDesign": "P1-001 含 3 个元素：主标题'AI 时代' 60px 居中、副标题'核心竞争力' 36px 居中偏上、配图 480x320 居中偏下。元素垂直堆叠无重叠，文字与背景对比度足够，整体合理。"
+  "start": 3.5,
+  "end": 6.0,
+  "text": "P1001 一般是主键",
+  "validateElementDesign": "此时画面上正在显示 P1-002（表格容器，淡灰底 760x400 居中）、P1-003（表头行，4 列表头加粗）、P1-004（数据行 3 条，第一列'ID'为金色高亮表示主键）。这些元素组合成一张'带主键高亮的示例数据表'画面，完整呈现了字幕'P1001 一般是主键'的含义，整体合理。"
 }
 ```
 
 ### 反例（会被 fail-fast）
 
 - ❌ `"合理"` —— 太短且无 element id
-- ❌ `"元素布局合理，3 个元素组成"` —— 无 element id（30 字到了但缺关键校验）
+- ❌ `"P1-001 元素布局合理，3 个元素组成"` —— P1-001 是组件不是元素；且未指明哪些元素 + 是否在该时间窗
+- ❌ `"画面有 P1-002（主键高亮）、P1-005（标题），布局合理"` —— 引用了 P1-005 但 P1-005 的显示时间可能不在该字幕时间窗内
 - ❌ `""` —— 空
-- ❌ `"P1-001 看起来还行"` —— 含 id 但太短且无具体说明
+- ❌ `"P1-002 看起来还行"` —— 含 id 但太短且无具体说明
+- ❌ 复制粘贴同一条 validateElementDesign 给所有字幕 —— 失去自检意义
 
 ### 校验链路
 
 | 校验点 | 行为 |
 |--------|------|
-| `selfcheck.js`（Skill 端） | 缺失/过短/无 element id → 输出 `[口播模式] subtitles[N].validateElementDesign ...` 错误 |
+| `selfcheck.js`（Skill 端） | ① 缺失/过短 → 输出 `[口播模式] subtitles[N].validateElementDesign ...` 错误；② 提取所有 element id 后做 3 项交叉校验：id 必须在 components 中存在、id 必须在字幕时间窗口内显示 |
 | `projectValidator.js`（Server 端） | 同上 |
-| `project.schema.json`（ajv） | 缺失 → 返回 400；过短 → pattern 校验失败 |
+| `project.schema.json`（ajv） | 缺失 → 返回 400；pattern 强制 P\d+-\d{3} 格式 |
+
+### Cross 校验伪代码（便于理解校验逻辑）
+
+```
+对每条字幕 (sub.start, sub.end)：
+  提取 validateElementDesign 中所有形如 P{n}-{nnn} 的 id（去重）
+  对每个引用的 id：
+    在 components[].content.elementIds 中查找
+    若不存在 → 错误：引用了不存在的 element
+    若 element.end < sub.start 或 element.start > sub.end → 错误：该元素在该字幕时间窗内不显示
+```
 
 ### 严禁
 
 - ❌ AI 写"合理"两个字就完事 —— 字数不够且无 element id
-- ❌ 只写元素数量（"3 个元素组成"）不写 id —— 强制反推关联不到具体元素
-- ❌ 复制粘贴同一条 validateElementDesign 给所有字幕 —— 失去自检意义
+- ❌ 把当前组件 id（P1-001）当作元素 id 写入 —— 组件是容器不是元素
+- ❌ 引用不在该字幕时间窗口内的元素（用 element.start/end 与 subtitle.start/end 是否重叠来判断）
+- ❌ 复制粘贴同一条 validateElementDesign 给所有字幕 —— 每条字幕时间窗不同，画面元素组合也不同
 - ❌ 跳过填写（依赖 SRT 自动填充）—— SRT 是标准格式，无此字段
 
 ### 与其他规则的关系
 
 - **R10 与 R8**：R8 控制项目级字幕样式（color/fontSize/...），R10 控制每条字幕对应的画面自检说明，两者正交
-- **R10 与 R3（component id）**：R3 要求 component id 用 `P{n}-{nnn}` 格式，R10 反向校验 validateElementDesign 必须含该格式 id，形成双向校验
+- **R10 与 R4（elementId 规则）**：R4 规定 element.start/end 必填数字+非负，R10 反向校验 validateElementDesign 引用的 element id 必须"在 subtitle 时间窗内显示"
+- **R10 与 R2（组件）**：R2 的 component id（如 P1-001）是组件容器 id，**不是元素 id**；R10 引用的是 component.content.elementIds 里的元素 id（如 P1-002）
