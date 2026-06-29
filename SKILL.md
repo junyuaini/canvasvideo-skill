@@ -92,7 +92,7 @@ sequenceDiagram
 | **1.5** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [01.5-voice-prepare.md](docs/01.5-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） | **仅口播** |
 | 2 | 骨架设计 | `design-skeleton-dubbing.md` | [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) | 通用 |
 | 3 | 生成骨架JSON | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） | 通用 |
-| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | — | 通用 |
+| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | [06-components.md §R10](rules/06-components.md#r10-字幕-validateelementdesign-必填口播模式--强制-ai-自检)（字幕 validateElementDesign 必填） | 通用 |
 | 5 | 合并为 project.json | `project.json` | [05-merge.md](docs/05-merge.md) | `merge-regions.js` | — | — | 通用 |
 | 6 | 素材处理 | 资源文件 | [06-assets.md](docs/06-assets.md) | `setup-assets.js` | — | — | 通用 |
 | 7 | 校验 | 校验报告 | [07-validate.md](docs/07-validate.md) | `selfcheck.js` | — | [09-selfcheck.md](rules/09-selfcheck.md) | 通用 |

@@ -350,3 +350,59 @@ bottom-left   bottom-center   bottom-right
 ### 与其他规则的关系
 
 - **R8 与骨架/沿用规则**：新建/沿用都要带 subtitle，沿用时**不能少**；强制重置（`--new`）后也必须重新带 subtitle
+
+---
+
+## R10 字幕 validateElementDesign 必填（口播模式 · 强制 AI 自检）
+
+**AI 在生成区域 JSON 时，必须为每条字幕填写 `validateElementDesign` 字段，让 AI 强制自我审视"字幕和画面是否匹配"，避免画完再说。**
+
+### 字段位置
+
+`project.subtitles[i].validateElementDesign`（SRT 解析时自动映射，AI 在 Step 4 区域设计时填写）
+
+### 字段规范
+
+| 项 | 规则 |
+|----|------|
+| 长度 | 30-200 字（trim 后） |
+| 必含 element id | 至少 1 个 `P{n}-{nnn}` 格式（如 `P1-002`、`P3-005`） |
+| 必含内容 | (1) 字幕区间内的元素列表（id + 视觉功能）；(2) 布局是否合理（位置/尺寸/层级/对比度）；(3) 整体评价（合理/不合理 + 原因） |
+
+### 正例
+
+```json
+{
+  "start": 0,
+  "end": 2.5,
+  "text": "今天我们来聊聊 AI 时代的核心竞争力",
+  "validateElementDesign": "P1-001 含 3 个元素：主标题'AI 时代' 60px 居中、副标题'核心竞争力' 36px 居中偏上、配图 480x320 居中偏下。元素垂直堆叠无重叠，文字与背景对比度足够，整体合理。"
+}
+```
+
+### 反例（会被 fail-fast）
+
+- ❌ `"合理"` —— 太短且无 element id
+- ❌ `"元素布局合理，3 个元素组成"` —— 无 element id（30 字到了但缺关键校验）
+- ❌ `""` —— 空
+- ❌ `"P1-001 看起来还行"` —— 含 id 但太短且无具体说明
+
+### 校验链路
+
+| 校验点 | 行为 |
+|--------|------|
+| `selfcheck.js`（Skill 端） | 缺失/过短/无 element id → 输出 `[口播模式] subtitles[N].validateElementDesign ...` 错误 |
+| `projectValidator.js`（Server 端） | 同上 |
+| `project.schema.json`（ajv） | 缺失 → 返回 400；过短 → pattern 校验失败 |
+
+### 严禁
+
+- ❌ AI 写"合理"两个字就完事 —— 字数不够且无 element id
+- ❌ 只写元素数量（"3 个元素组成"）不写 id —— 强制反推关联不到具体元素
+- ❌ 复制粘贴同一条 validateElementDesign 给所有字幕 —— 失去自检意义
+- ❌ 跳过填写（依赖 SRT 自动填充）—— SRT 是标准格式，无此字段
+
+### 与其他规则的关系
+
+- **R10 与 R8**：R8 控制项目级字幕样式（color/fontSize/...），R10 控制每条字幕对应的画面自检说明，两者正交
+- **R10 与 R3（component id）**：R3 要求 component id 用 `P{n}-{nnn}` 格式，R10 反向校验 validateElementDesign 必须含该格式 id，形成双向校验

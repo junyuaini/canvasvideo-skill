@@ -601,6 +601,29 @@ function selfcheck(project) {
   if (!hasSubtitles) errors.push('[口播模式] 必须提供字幕（subtitles 数组）。请先用 prepare-voice.js 生成 SRT 字幕。');
   if (isBgmUsage) errors.push('[口播模式] audio 不能使用 BGM 用法（loop/fadeIn/fadeOut），配音音频应直接写路径字符串或对象形式（无 loop/fadeIn/fadeOut）。');
 
+  // [口播模式] 每条字幕必须带 validateElementDesign 字段（30-200字，含 element id）
+  // 目的：强制 AI 在设计画面时自我审视"字幕和画面是否匹配"，避免画完再说
+  if (hasSubtitles) {
+    const ELEM_ID_PATTERN = /P\d+-\d{3}/;
+    project.subtitles.forEach((sub, idx) => {
+      if (!sub || typeof sub !== 'object') return;
+      const v = sub.validateElementDesign;
+      if (!v || typeof v !== 'string' || v.trim().length === 0) {
+        errors.push(`[口播模式] subtitles[${idx}] 缺少 validateElementDesign 字段。AI 必填：描述该字幕对应的画面元素是否合理，30-200 字，必须含至少 1 个 element id（如 P1-002）。详见 rules/06-components.md §R10`);
+      } else {
+        const len = v.trim().length;
+        if (len < 30) {
+          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太短（${len} 字），至少 30 字。`);
+        } else if (len > 200) {
+          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太长（${len} 字），建议控制在 200 字以内。`);
+        }
+        if (!ELEM_ID_PATTERN.test(v)) {
+          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 必须含至少 1 个 element id（如 P1-002、P3-005）。当前未检测到。`);
+        }
+      }
+    });
+  }
+
   // 检查 ID 格式
   const formatErrors = checkIdFormat(components);
   errors.push(...formatErrors);

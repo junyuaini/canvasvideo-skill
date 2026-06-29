@@ -27,6 +27,7 @@
 - 新建 vs 沿用决策（`--new`） → [01-principles.md §R2](01-principles.md#r2-项目新建-vs-沿用)
 - 项目模式固定 dubbing（口播模式） → [06-components.md §R0](06-components.md#r0-项目级必填字段总览)
 - 字幕样式必填（color/fontSize/position/weight/background/textShadow） → [06-components.md §R8](06-components.md#r8-字幕样式项目级必填)
+- 字幕 validateElementDesign 必填（30-200字 + element id，强制 AI 自检） → [06-components.md §R10](06-components.md#r10-字幕-validateelementdesign-必填口播模式--强制-ai-自检)
 - skillProjectId 格式约束 → [01-principles.md §R6](01-principles.md#r6-skillprojectid-规范)
 
 ### API 调用
