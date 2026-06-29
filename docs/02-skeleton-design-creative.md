@@ -240,6 +240,16 @@
 
 参考 `templates/artifacts/design-skeleton-creative.md`，按模板结构填充实际内容，生成设计文档。
 
+**注意：字幕样式必填**：
+项目配置 JSON 必须包含 `subtitle` 字段（6 字段全要，参考 [06-components.md §R8](../rules/06-components.md#r8-字幕样式项目级必填)）：
+```json
+{
+  "name": "",
+  "viewport": {"width": 780, "height": 585},
+  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }
+}
+```
+
 **模板结构（精简版：2 个表格）**：
 
 1. **项目配置（JSON）** — 视频基本信息

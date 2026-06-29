@@ -272,6 +272,25 @@
 2. **SRT 时间轴** — 字幕原文（来自步骤 1.5 产物）
 3. **区域列表** — 含"类型 / 包含字幕 / 情绪 / 内容描述"4 列（**不含"时长(秒)"列**，由脚本按 SRT 自动算）
 
+**注意：字幕样式必填**：
+项目配置 JSON 必须包含 `subtitle` 字段（6 字段全要，参考 06-components.md §R8）：
+```json
+{
+  "name": "",
+  "description": "",
+  "viewport": {"width": 780, "height": 585},
+  "audio": {"path": "./assets/voice.mp3"},
+  "subtitle": {
+    "color": "#FFFFFF",
+    "fontSize": "36px",
+    "position": "bottom-center",
+    "weight": 700,
+    "background": "rgba(0,0,0,0.5)",
+    "textShadow": "0 1px 3px rgba(0,0,0,0.8)"
+  }
+}
+```
+
 > 💡 **设计文档里的 `audio.path` 字段会被自动覆盖**——步骤 3 跑 generate-skeleton.js 时，会用 `state.voice.audioPath` 强制覆盖（防止 AI 在 MD 里写错路径）。
 
 ---

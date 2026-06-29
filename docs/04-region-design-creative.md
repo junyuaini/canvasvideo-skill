@@ -302,6 +302,8 @@
 > ⚠️ **AI 填局部时间 `time_range`，merge 自动 + region.startTime 转全局**
 >
 > 创作模式没有字幕锚点，AI 按内容节奏决定每个元素的时间区间。
+>
+> 同理，`component.start / end` 可选（不填 = 默认展示整个 region），`elementIds.start / end` 可选（不填 = 默认展示整个所属 HtmlComponent）。
 
 **格式**：
 
@@ -315,6 +317,10 @@
 - `time_range[0]` = 元素相对 region 起点的出现时间（秒，3 位小数）
 - `time_range[1]` = 元素相对 region 起点的消失时间（秒，3 位小数）
 - merge-regions.js 自动转全局：`element.start = region.startTime + time_range[0]`
+
+**统一规则**：未设置 start/end 时，**默认展示整个父级时间窗口**（与背景切换规则保持一致）
+- component 未设置 → 展示整个 region（start = region.startTime, end = 下一 region.startTime）
+- element 未设置 → 展示整个所属 HtmlComponent（start = component.start, end = component.end）
 
 **4.3 元素时间分配建议**
 
@@ -340,8 +346,8 @@
 区域结束前0.5秒开始淡出。
 
 **说明**：
-- 当前系统只支持元素整体出现（渐入渐出），不支持单个元素内部动画（如逐字、逐位滚动）
-- 如需复杂动画效果，使用 HtmlComponent + `content.elementIds` 控制内部元素的独立时间线
+- 所有 HtmlComponent 必须通过 `content.html` + `content.css` + `content.elementIds` 描述画面内容
+- `content.elementIds` 是 HtmlComponent 的**必填字段**，用于注册内部元素的 ID 和时间线
 
 **重要硬规则**：
 - ✅ 每个区域使用一个 HtmlComponent
@@ -594,8 +600,7 @@ node scripts/validate-region.js --cwd=<Agent工作目录的绝对路径> {skillP
 
 **脚本自动校验**（merge 阶段 + selfcheck 自动校验）：
 
-- elementIds 子项必须填 `time_range`（创作模式）
-- time_range 必须在 region duration 范围内
+- elementIds 子项如填了 `time_range` 必须在 region duration 范围内
 - merge 后元素 ⊂ 组件 = 区域（嵌套关系校验）
 - HtmlComponent 含 `background` 字段（与 `content` 平级）
 

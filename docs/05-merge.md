@@ -92,10 +92,15 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 | 字段 | 来源 | 说明 |
 |------|------|------|
 | `region.startTime / endTime` | 口播：从 SRT 字幕范围取；创作：累加 | merge 自动写入 |
-| `component.start / end` | subtitles（口播查 SRT）/ time_range（创作相对 region）| merge 自动写入 |
+| `component.start / end` | subtitles（口播查 SRT）/ time_range（创作相对 region）/ 旧 start/end / 缺省=region 起止 | merge 自动写入 |
 | `elementIds[].start / end` | 同上 | merge 自动写入 |
 
 **优先级**：subtitles > time_range > 旧 start/end > fallback to region
+
+**缺省规则**：所有时间字段都可省略不填
+- 组件 start/end 未填 → 展示整个 region（与背景切换规则保持一致）
+- 元素 start/end 未填 → 展示整个所属 HtmlComponent
+- 前端会在 createMany 之前再补一次作为兜底（即使 merge 没跑过）
 
 **AI 写完后自查**：
 

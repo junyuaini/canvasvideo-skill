@@ -12,6 +12,7 @@
 {
   "name": "",
   "description": "",
+  "mode": "creative",
   "viewport": {"width": 780, "height": 585}
 }
 ```
@@ -22,6 +23,7 @@
 |------|------|------|
 | name | ✅ | 视频名称 |
 | description | ❌ | 视频描述 |
+| mode | ✅ | 固定为 `"creative"`，创作模式必填 |
 | theme | ❌ 可选 | 背景主题 `white` / `black`，省略时用默认值 |
 | duration | ❌ 可选 | 总时长（秒）⚠️ **会被自动覆盖**：实际时长 = 区域时长累加 |
 | viewport | ✅ | 视口尺寸，默认 `{"width":780,"height":585}` |
@@ -80,6 +82,7 @@ AI 写完后自查：
 {
   "name": "2024年AI行业报告",
   "description": "60秒短视频：2024年AI行业发展",
+  "mode": "creative",
   "theme": "black",
   "viewport": {"width": 780, "height": 585},
   "bgm": "tech-pulse"
@@ -107,6 +110,7 @@ AI 写完后自查：
 {
   "name": "人工智能发展史",
   "description": "90秒短视频：AI发展历程",
+  "mode": "creative",
   "theme": "black",
   "viewport": {"width": 780, "height": 585},
   "bgm": "tech-pulse"

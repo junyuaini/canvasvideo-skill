@@ -322,6 +322,8 @@
 > ⚠️ **AI 不填 start/end，填"对应字幕范围"（subtitles 字段）**
 >
 > merge-regions.js 会自动从 SRT 查时间填回去，保证 100% 精准对齐字幕。
+>
+> 同理，`component.start / end` 和 `elementIds[].start / end` 全部由 merge 自动从所属 region 推算，**AI 不必手填**。如果 AI 填了就以填的为准（用于精确控制场景）。
 
 **绑定规则**：
 
@@ -333,9 +335,14 @@
 | 跨元素 | 多个元素绑不同字幕同时出现 | elemA `subtitles: [11, 12]`，elemB `subtitles: [13, 14]` |
 
 **merge 自动算时间**：
-- `element.start` = 绑定字幕列表第一字幕的 `start`
-- `element.end` = 绑定字幕列表最后字幕的 `end`
-- `component.start` / `component.end` = region 的全局起止（= 该 region 第一/最后字幕的起止）
+- `element.start` = 绑定字幕列表第一字幕的 `start`（未填 = component.start）
+- `element.end` = 绑定字幕列表最后字幕的 `end`（未填 = component.end）
+- `component.start` = region.startTime（未填）/ `subtitles` 范围起（填了）
+- `component.end` = 下一 region.startTime（未填，最后 region = project.duration）/ `subtitles` 范围止（填了）
+
+**统一规则**：未设置 start/end 时，**默认展示整个父级时间窗口**（与背景切换规则保持一致）
+- component 未设置 → 展示整个 region
+- element 未设置 → 展示整个所属 HtmlComponent
 
 **5.3 元素绑定时长建议**
 
@@ -361,8 +368,8 @@
 区域结束前0.5秒开始淡出。
 
 **说明**：
-- 当前系统只支持元素整体出现（渐入渐出），不支持单个元素内部动画（如逐字、逐位滚动）
-- 如需复杂动画效果，使用 HtmlComponent + `content.elementIds` 控制内部元素的独立时间线
+- 所有 HtmlComponent 必须通过 `content.html` + `content.css` + `content.elementIds` 描述画面内容
+- `content.elementIds` 是 HtmlComponent 的**必填字段**，用于注册内部元素的 ID 和时间线
 
 **重要硬规则**：
 - ✅ 每个区域使用一个 HtmlComponent

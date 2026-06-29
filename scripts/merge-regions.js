@@ -129,10 +129,10 @@ function mergeRegions(workdir, workdirRoot) {
   if (mode === 'dubbing' && srtList.length > 0) {
     for (const r of skeleton.regions) {
       if (r.subtitle_range) {
-        const match = r.subtitle_range.match(/(\d+)\s*[-–]\s*(\d+)/);
+        const match = r.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
         if (match) {
           const startId = parseInt(match[1], 10);
-          const endId = parseInt(match[2], 10);
+          const endId = match[2] !== undefined ? parseInt(match[2], 10) : startId; // 单条字幕 "3" 等价于 "3-3"
           const startSub = srtList[startId - 1];
           const endSub = srtList[endId - 1];
           if (startSub && endSub) {
@@ -177,8 +177,9 @@ function mergeRegions(workdir, workdirRoot) {
   const project = {
     name: skeleton.name,
     description: skeleton.description,
+    mode: mode,
     theme: skeleton.theme,
-    duration: skeleton.duration,
+    duration: parseFloat(lastTime.toFixed(3)),
     viewport: skeleton.viewport,
     settings: skeleton.settings,
     audio: skeleton.audio,
@@ -229,6 +230,8 @@ function mergeRegions(workdir, workdirRoot) {
     if (Array.isArray(regionData.components)) {
       for (const comp of regionData.components) {
         // 6.1 决定 component.start/end
+        // 优先级：subtitles（口播）> time_range（创作）> 旧 start/end > 缺省 = region 完整范围
+        // 缺省 fallback 与"未设置 = 默认展示整个 region"语义保持一致
         let compTime = null;
         if (comp.subtitles != null && srtList.length > 0) {
           compTime = resolveSubtitles(comp.subtitles, srtList);
@@ -239,8 +242,16 @@ function mergeRegions(workdir, workdirRoot) {
         } else {
           compTime = { start: regionEntry.startTime, end: regionEntry.endTime };
         }
-        comp.start = compTime.start;
-        comp.end = compTime.end;
+        // resolveSubtitles 返回全局 SRT 时间，需转为区域相对时间
+        comp.start = parseFloat((compTime.start - regionEntry.startTime).toFixed(3));
+        comp.end = parseFloat((compTime.end - regionEntry.startTime).toFixed(3));
+        const compAbsoluteStart = compTime.start;
+        const compAbsoluteEnd = compTime.end;
+
+        const regionBounds = {
+          startTime: 0,
+          endTime: parseFloat((regionEntry.endTime - regionEntry.startTime).toFixed(3))
+        };
 
         // 6.2 处理 elementIds：自动转换 subtitles/time_range/start-end
         if (comp.content && comp.content.elementIds) {
@@ -256,11 +267,16 @@ function mergeRegions(workdir, workdirRoot) {
               elemTime = { start: value.start, end: value.end };
             }
             if (elemTime) {
-              checkHierarchy({ start: elemTime.start, end: elemTime.end }, comp, regionEntry, key);
+              // resolveSubtitles 返回全局 SRT 时间，需转为区域相对时间
+              const localElemTime = {
+                start: parseFloat((elemTime.start - regionEntry.startTime).toFixed(3)),
+                end: parseFloat((elemTime.end - regionEntry.startTime).toFixed(3))
+              };
+              checkHierarchy(localElemTime, comp, regionBounds, key);
               resolvedElementIds[key] = {
                 id: value.id || key.slice(1),
-                start: elemTime.start,
-                end: elemTime.end
+                start: localElemTime.start,
+                end: localElemTime.end
               };
             } else {
               console.warn(`[W] elementIds["${key}"] 既无 subtitles/time_range，也无 start/end，保留原样`);
@@ -268,6 +284,18 @@ function mergeRegions(workdir, workdirRoot) {
             }
           }
           comp.content.elementIds = resolvedElementIds;
+        }
+
+        comp.start = compAbsoluteStart;
+        comp.end = compAbsoluteEnd;
+        if (comp.content && comp.content.elementIds) {
+          for (const key of Object.keys(comp.content.elementIds)) {
+            const entry = comp.content.elementIds[key];
+            if (entry && typeof entry.start === 'number') {
+              entry.start = parseFloat((entry.start + regionEntry.startTime).toFixed(3));
+              entry.end = parseFloat((entry.end + regionEntry.startTime).toFixed(3));
+            }
+          }
         }
 
         project.components.push(comp);

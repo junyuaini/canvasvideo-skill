@@ -1,12 +1,14 @@
 ---
 name: "canvasvideo"
-description: "生成画布视频（CanvasVideo）—— 基于 H5 Canvas 的动画视频制作工具。默认使用顶层 HtmlComponent 模式自由布局，通过 elementIds 控制内部元素独立时间线。支持两种模式：1）创作模式：输入主题/文案，AI 设计画面 + 调用模板填充素材 + 默认 BGM，导出可分享的视频链接；2）口播模式：上传音频（MP3）+ 字幕（SRT），AI 按音频节奏自动排版画面，生成配音视频。输出为高清 H5 视频，支持播放/暂停/快进/全景浏览，可导出 MP4。适用于产品宣传，知识科普，口播短视频，数据可视化，品牌发布等场景。"
+description: >
+  生成画布视频（CanvasVideo）—— 基于 H5 Canvas 的动画视频制作工具，默认使用顶层 HtmlComponent 模式自由布局。
+  当用户说"做个视频"、"生成口播视频"、"做一条短视频"、"生成动画"、"做个数据可视化视频"时触发。
+  输入主题/文案或音频（MP3）+ 字幕（SRT），自动按 9 步流程（初始化→音频/骨架设计→骨架 JSON→区域设计→合并→素材→校验→打包→上传），输出可分享的 H5 视频链接，桌面/手机即点即看。
 ---
 
 # CanvasVideo Skill
 
-> 本 Skill 用于生成画布视频（H5 视频)，支持创作模式和口播模式。
-> AI 按步骤执行，每步完成后等待用户确认，再进入下一步。
+CanvasVideo Skill 帮助 AI 生成高质量 CanvasVideo 视频。
 
 ---
 
@@ -84,18 +86,18 @@ sequenceDiagram
 
 ## 步骤清单
 
-| 步骤 | 操作 | 产出物 | 文档 | 模式 |
-|------|------|--------|------|------|
-| 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) | 通用 |
-| **1.5** | **音频与字幕准备**（用户素材 / TTS 生成） | `voice.mp3` + `subtitle.srt` + `state.voice` | [01.5-voice-prepare.md](docs/01.5-voice-prepare.md) | **仅口播** |
-| 2 | 骨架设计（创作/口播） | `design-skeleton-*.md` | [02-skeleton-design-creative.md](docs/02-skeleton-design-creative.md) / [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) | 通用 |
-| 3 | 生成骨架JSON（必须） | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) | 通用 |
-| 4 | 区域设计与生成JSON（基于 skeleton） | `regions/P1.json`, `P2.json`... | [04-region-design-creative.md](docs/04-region-design-creative.md) / [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | 通用 |
-| 5 | 合并为 project.json | `project.json` | [05-merge.md](docs/05-merge.md) | 通用 |
-| 6 | 素材处理 | 资源文件 | [06-assets.md](docs/06-assets.md) | 通用 |
-| 7 | 校验 | 校验报告 | [07-validate.md](docs/07-validate.md) | 通用 |
-| 8 | 打包 | `<skillProjectId>.zip` | [08-package.md](docs/08-package.md) | 通用 |
-| 9 | 上传（最终步骤） | 预览链接 | [09-upload.md](docs/09-upload.md) | 通用 |
+| 步骤 | 操作 | 产出物 | 流程 | 脚本 | 样例 | 规则 | 模式 |
+|------|------|--------|------|------|------|------|------|
+| 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) | `init-project.js` | — | [01-principles.md](rules/01-principles.md) | 通用 |
+| **1.5** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [01.5-voice-prepare.md](docs/01.5-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） | **仅口播** |
+| 2 | 骨架设计 | `design-skeleton-*.md` | [02-skeleton-design-creative.md](docs/02-skeleton-design-creative.md) / [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-creative.md` / `design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) | 通用 |
+| 3 | 生成骨架JSON | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` / `分合示例-创作/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） | 通用 |
+| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-creative.md](docs/04-region-design-creative.md) / [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | — | 通用 |
+| 5 | 合并为 project.json | `project.json` | [05-merge.md](docs/05-merge.md) | `merge-regions.js` | — | — | 通用 |
+| 6 | 素材处理 | 资源文件 | [06-assets.md](docs/06-assets.md) | `setup-assets.js` | — | — | 通用 |
+| 7 | 校验 | 校验报告 | [07-validate.md](docs/07-validate.md) | `selfcheck.js` | — | [09-selfcheck.md](rules/09-selfcheck.md) | 通用 |
+| 8 | 打包 | `<skillProjectId>.zip` | [08-package.md](docs/08-package.md) | `package.js` | — | — | 通用 |
+| 9 | 上传 | 预览链接 | [09-upload.md](docs/09-upload.md) | `upload-video.js` | — | — | 通用 |
 
 ---
 
@@ -103,11 +105,9 @@ sequenceDiagram
 
 ### 硬约束（不得违反）
 
-1. **设计文档仅在本地**：不上传服务器
+0. **严格按流程执行**：CanvasVideo Skill 有严格 9 步流程，AI 必须按顺序执行每一步（设计→骨架→区域→素材→合并→自检→打包→上传），不得跳步或省略环节。
 
-2. **设计确认后才上传**：由 AI 流程自行保证（不通过脚本硬拦）
-
-3. **视频生成后不回设计**：所有迭代直接改 project.json
+1. **视频生成后不回设计**：所有迭代直接改 project.json
 
 4. **固定 skillProjectId**：同一项目多次上传使用相同 ID，服务器复用 previewToken
 
@@ -123,11 +123,9 @@ sequenceDiagram
 
 9. **不主动重置账号**：用户要重置时引导其手动删除 `.user.json`
 
-10. **不打扰用户**：不主动删文件、不二次确认
+10. **skillProjectId 必须走脚本**：禁止 LLM 自编，格式 `cv_{userShort6}_{timestamp}_{random8}`，详见 [rules/01-principles.md §R6](rules/01-principles.md#r6-skillprojectid-规范)
 
-11. **skillProjectId 必须走脚本**：禁止 LLM 自编，格式 `cv_{userShort6}_{timestamp}_{random8}`，详见 [rules/01-principles.md §R6](rules/01-principles.md#r6-skillprojectid-规范)
-
-### 文件结构
+### 视频文件结构
 
 ```
 {workdirRoot}/{skillProjectId}/
@@ -222,12 +220,14 @@ canvasvideo-skill/
 │   ├── package.js
 │   ├── upload-video.js
 │   └── selfcheck.js
-├── templates/                  # 模板
-│   ├── artifacts/              # 过程模板（仅骨架设计文档）
+├── templates/                  # 模板与样例
+│   ├── artifacts/              # 骨架设计模板（创作/口播）
 │   │   ├── design-skeleton-creative.md
 │   │   └── design-skeleton-dubbing.md
-│   ├── bgm/                    # BGM 目录
-│   └── projects/               # 项目示例
+│   ├── bgm/                   # BGM 目录
+│   └── projects/              # 项目样例
+│       ├── 分合示例-口播/
+│       └── 分合示例-创作/
 ├── package.json
 └── README.md
 ```

@@ -65,13 +65,16 @@ function validateRegion(skeleton, regionData, regionName) {
   // 检查每个 HtmlComponent 的时间范围
   if (Array.isArray(regionData.components)) {
     regionData.components.forEach((comp, index) => {
-      if (comp.start < regionStart || comp.end > regionEnd) {
-        errors.push(`[E] ${comp.id || `HtmlComponent#${index}`} 时间 ${comp.start}-${comp.end} 超出区域范围 ${regionStart.toFixed(1)}-${regionEnd.toFixed(1)}`);
-      }
+      // start/end 可选（未设置时由前端按 region 自动推算）
+      if (typeof comp.start === 'number' && typeof comp.end === 'number') {
+        if (comp.start < regionStart || comp.end > regionEnd) {
+          errors.push(`[E] ${comp.id || `HtmlComponent#${index}`} 时间 ${comp.start}-${comp.end} 超出区域范围 ${regionStart.toFixed(1)}-${regionEnd.toFixed(1)}`);
+        }
 
-      // 检查时间合理性
-      if (comp.start >= comp.end) {
-        errors.push(`[E] ${comp.id || `HtmlComponent#${index}`} start(${comp.start}) 必须小于 end(${comp.end})`);
+        // 检查时间合理性
+        if (comp.start >= comp.end) {
+          errors.push(`[E] ${comp.id || `HtmlComponent#${index}`} start(${comp.start}) 必须小于 end(${comp.end})`);
+        }
       }
     });
 

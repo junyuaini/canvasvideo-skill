@@ -255,14 +255,19 @@ function generateSkeleton(workdirRoot, skillProjectId) {
     let srtCalcCount = 0;
     for (const region of regions) {
       if (!region.subtitle_range) continue;
-      const match = region.subtitle_range.match(/(\d+)\s*[-–]\s*(\d+)/);
+      const match = region.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
       if (!match) {
-        console.warn(`[W] region ${region.id} 的"包含字幕"格式不合法: "${region.subtitle_range}"`);
+        console.warn(`[W] region ${region.id} 的"包含字幕"格式不合法: "${region.subtitle_range}"（应为 "1-5" 或 "3"）`);
         continue;
       }
       const startIdx = parseInt(match[1], 10) - 1; // SRT 字幕 ID 是 1-based，数组是 0-based
-      const endIdx = parseInt(match[2], 10) - 1;
-      if (!subtitles[startIdx] || !subtitles[endIdx]) {
+      let endIdx = match[2] !== undefined ? parseInt(match[2], 10) - 1 : startIdx; // 单条字幕 "3" 等价于 "3-3"
+      if (!subtitles[startIdx]) {
+        throw new Error(
+          `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
+        );
+      }
+      if (!subtitles[endIdx]) {
         throw new Error(
           `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
         );
@@ -355,6 +360,36 @@ function generateSkeleton(workdirRoot, skillProjectId) {
       );
     }
     skeleton.subtitle = config.subtitle;
+
+    // 项目模式（必填，dubbing 或 creative）
+    // schema 强约束要求 project.json 必须带 mode
+    if (!config.mode || !['dubbing', 'creative'].includes(config.mode)) {
+      throw new Error(
+        '[generate-skeleton] config.mode 缺失或非法。\n' +
+        '必须为 "dubbing"（口播）或 "creative"（创作）。\n' +
+        '口播模式必须配置配音音频 + 字幕；创作模式无需字幕，音频必须为 BGM 用法。'
+      );
+    }
+    if (config.mode !== mode) {
+      throw new Error(
+        `[generate-skeleton] config.mode "${config.mode}" 与骨架类型 "${mode}" 不匹配。\n` +
+        '口播骨架请用 creative 模式的 generate-skeleton，创作骨架请用 creative 模式。'
+      );
+    }
+    skeleton.mode = config.mode;
+
+    // 口播模式：subtitle 样式必填；创作模式不需要
+    if (config.mode === 'dubbing') {
+      if (!config.subtitle || typeof config.subtitle !== 'object') {
+        throw new Error(
+          '[generate-skeleton] [口播模式] config.subtitle 缺失或不是对象。\n' +
+          '字幕样式是口播项目必填（color/fontSize/position/weight/background/textShadow）。\n' +
+          '请在 init-project 的 config JSON 里加 subtitle 字段，例如：\n' +
+          '  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
+        );
+      }
+      skeleton.subtitle = config.subtitle;
+    }
   }
 
   // 6. 保存 skeleton.json

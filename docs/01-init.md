@@ -76,47 +76,6 @@
 
 ---
 
-### 步骤2.6：字幕样式（必填）
-
-**无论创作模式还是口播模式，都必须配置字幕样式**。字幕样式从"主题控制"改为"项目级必填"——主题不再控制颜色/字号/位置，由项目自身决定。
-
-AI 必须根据内容风格自己决定填什么值（用户不参与这个决策）。典型场景的推荐值：
-
-| 场景 | color | fontSize | position | weight | background | textShadow |
-|------|-------|----------|----------|--------|------------|------------|
-| 浅色背景 | `#1A1A1A` | `36px` | `bottom-center` | `700` | `transparent` | `0 1px 2px rgba(255,255,255,0.8)` |
-| 深色背景 | `#FFFFFF` | `36px` | `bottom-center` | `700` | `rgba(0,0,0,0.5)` | `0 1px 3px rgba(0,0,0,0.8)` |
-| 高对比（科普） | `#FFFFFF` | `40px` | `bottom-center` | `800` | `rgba(0,0,0,0.7)` | `0 2px 4px rgba(0,0,0,0.9)` |
-| 顶部标题 | `#1A1A1A` | `48px` | `top-center` | `700` | `transparent` | `none` |
-
-**位置 9 档**：`top-left / top-center / top-right / middle-left / middle-center / middle-right / bottom-left / bottom-center / bottom-right`
-
-**字段约束**（schema 强校验，缺失或格式错会被服务端拒绝）：
-
-```json
-"subtitle": {
-  "color": "#FFFFFF",                                  // hex 或 rgba
-  "fontSize": "36px",                                  // CSS 长度（px/rem/em）
-  "position": "bottom-center",                         // 9 档之一
-  "weight": 700,                                       // 100-900 整百
-  "background": "rgba(0,0,0,0.5)",                     // transparent / hex / rgba
-  "textShadow": "0 1px 3px rgba(0,0,0,0.8)"            // CSS text-shadow，空字符串表示无
-}
-```
-
-**何时 AI 必须决定**：
-
-- ✅ **AI 必须自己决定**：用户没指定字幕样式时
-- ❌ **AI 不能问用户**：除非用户主动说"字幕我要 XXX"——否则不要打断用户流程
-
-**校验失败会怎样**：
-
-- `generate-skeleton.js`：缺 `config.subtitle` → fail-fast 抛错并给出补字段示例
-- `selfcheck.js`：6 字段缺任意一个 → 输出 `[必填] project.subtitle.X 缺失`
-- `server validate`：上传时 schema 拒绝，返回 400
-
----
-
 ### 步骤2.5：判断新建 vs 沿用
 
 **这一步是 init-project 跑之前必须做的决策**，对应 [rules/01-principles.md §R2](rules/01-principles.md#r2-项目新建-vs-沿用)。

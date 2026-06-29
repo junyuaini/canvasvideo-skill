@@ -293,11 +293,11 @@ function checkHtmlElementIds(components, allIds) {
           }
 
           if (typeof value.start !== 'number' || !Number.isFinite(value.start) || value.start < 0) {
-            errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].start 必须是有限非负数字（不允许 Infinity），如 0。`);
+            errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].start 已设置时必须是有限非负数字（不允许 Infinity），如 0。建议：删除 start 字段让系统按所属 HtmlComponent 自动推算。`);
           }
 
           if (typeof value.end !== 'number' || !Number.isFinite(value.end) || value.end < 0) {
-            errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].end 必须是有限非负数字（不允许 Infinity），如 5。`);
+            errors.push(`HtmlComponent [${labelId}] elementIds["${key}"].end 已设置时必须是有限非负数字（不允许 Infinity），如 5。建议：删除 end 字段让系统按所属 HtmlComponent 自动推算。`);
           }
 
           if (typeof value.start === 'number' && Number.isFinite(value.start) && typeof value.end === 'number' && Number.isFinite(value.end) && value.start > value.end) {
@@ -396,11 +396,10 @@ function checkHtmlElementIds(components, allIds) {
  * 规则：
  *   - project.duration 必填（> 0.1）
  *   - Σ region.duration === project.duration（严格相等，不允许留白）
- *   - component.start / end 必填、有限数字、≥ 0、start ≤ end
- *   - component.end 必须是有限数字（不允许 Infinity）
+ *   - component.start / end 可选；未设置时由前端根据所属 region 推算（start=region.startTime, end=下一region.startTime）
+ *   - elementIds.start / end 可选；未设置时由前端根据所属 component 推算
+ *   - 已设置时必须为有限数字，≥ 0，start ≤ end
  *   - region.startTime ≤ component.start 且 component.end ≤ region.endTime
- *   - elementIds.start / end 必填、有限数字、≥ 0、start ≤ end
- *   - elementIds.end 必须是有限数字（不允许 Infinity）
  *   - component.start ≤ elementIds.start 且 elementIds.end ≤ component.end
  */
 function checkTimeHierarchy(project) {
@@ -453,36 +452,40 @@ function checkTimeHierarchy(project) {
 
       const compLabel = comp.id ? ` [${comp.id}]` : '';
 
-      if (comp.start === undefined || comp.start === null || typeof comp.start !== 'number' || !Number.isFinite(comp.start)) {
-        errors.push(
-          `[层级 2 / component]${compLabel} start 必填且为有限数字（不允许 Infinity），如 0。建议：补一个具体的开始时间。`
-        );
-      } else if (comp.start < 0) {
-        errors.push(
-          `[层级 2 / component]${compLabel} start=${comp.start} 不能小于 0。建议：调整为 ≥ 0。`
-        );
+      if (comp.start !== undefined && comp.start !== null) {
+        if (typeof comp.start !== 'number' || !Number.isFinite(comp.start)) {
+          errors.push(
+            `[层级 2 / component]${compLabel} start 已设置时必须是有限数字（不允许 Infinity），如 0。建议：删除 start 字段让系统按所属 region 自动推算。`
+          );
+        } else if (comp.start < 0) {
+          errors.push(
+            `[层级 2 / component]${compLabel} start=${comp.start} 不能小于 0。建议：调整为 ≥ 0。`
+          );
+        }
       }
 
-      if (comp.end === undefined || comp.end === null || typeof comp.end !== 'number' || !Number.isFinite(comp.end)) {
-        errors.push(
-          `[层级 2 / component]${compLabel} end 必填且为有限数字（不允许 Infinity），如 5。建议：补一个具体的结束时间。`
-        );
-      } else if (comp.end < 0) {
-        errors.push(
-          `[层级 2 / component]${compLabel} end=${comp.end} 不能小于 0。建议：调整为 ≥ 0。`
-        );
-      } else {
-        if (comp.regionId && regionRanges.has(comp.regionId)) {
-          const range = regionRanges.get(comp.regionId);
-          if (typeof comp.start === 'number' && Number.isFinite(comp.start) && comp.end > range.endTime + 0.001) {
+      if (comp.end !== undefined && comp.end !== null) {
+        if (typeof comp.end !== 'number' || !Number.isFinite(comp.end)) {
+          errors.push(
+            `[层级 2 / component]${compLabel} end 已设置时必须是有限数字（不允许 Infinity），如 5。建议：删除 end 字段让系统按所属 region 自动推算。`
+          );
+        } else if (comp.end < 0) {
+          errors.push(
+            `[层级 2 / component]${compLabel} end=${comp.end} 不能小于 0。建议：调整为 ≥ 0。`
+          );
+        } else {
+          if (comp.regionId && regionRanges.has(comp.regionId)) {
+            const range = regionRanges.get(comp.regionId);
+            if (typeof comp.start === 'number' && Number.isFinite(comp.start) && comp.end > range.endTime + 0.001) {
+              errors.push(
+                `[层级 2 / component]${compLabel} end=${comp.end} 超出所属 region "${comp.regionId}" 结束时间 ${range.endTime}（region 范围 [${range.startTime}, ${range.endTime}]）。建议：将 end 改为 ${range.endTime} 或更小，或删除 end 让系统按 region 自动推算。`
+              );
+            }
+          } else if (comp.regionId && !regionRanges.has(comp.regionId)) {
             errors.push(
-              `[层级 2 / component]${compLabel} end=${comp.end} 超出所属 region "${comp.regionId}" 结束时间 ${range.endTime}（region 范围 [${range.startTime}, ${range.endTime}]）。建议：将 end 改为 ${range.endTime} 或更小。`
+              `[层级 2 / component]${compLabel} regionId "${comp.regionId}" 在 regions 数组中找不到，无法校验时间范围。`
             );
           }
-        } else if (comp.regionId && !regionRanges.has(comp.regionId)) {
-          errors.push(
-            `[层级 2 / component]${compLabel} regionId "${comp.regionId}" 在 regions 数组中找不到，无法校验时间范围。`
-          );
         }
       }
 
@@ -539,33 +542,67 @@ function selfcheck(project) {
     );
   }
 
-  // [必填] project.subtitle —— 项目级字幕样式（color/fontSize/position/weight/background/textShadow）
-  // schema 强约束（云端会再校验一次），selfcheck 提前发现更友好
-  const REQUIRED_SUBTITLE_FIELDS = ['color', 'fontSize', 'position', 'weight', 'background', 'textShadow'];
-  const VALID_POSITIONS = [
-    'top-left', 'top-center', 'top-right',
-    'middle-left', 'middle-center', 'middle-right',
-    'bottom-left', 'bottom-center', 'bottom-right'
-  ];
-  if (!project.subtitle || typeof project.subtitle !== 'object') {
-    errors.push(
-      '[必填] project.subtitle 缺失或不是对象。项目级字幕样式必填（6 字段全要）：' +
-      'color / fontSize / position / weight / background / textShadow。' +
-      '请在 init-project 的 config JSON 里加 subtitle 字段，例如：' +
-      '{ "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
-    );
-  } else {
-    for (const f of REQUIRED_SUBTITLE_FIELDS) {
-      if (project.subtitle[f] === undefined || project.subtitle[f] === null || project.subtitle[f] === '') {
-        errors.push(`[必填] project.subtitle.${f} 缺失。6 字段全必填：color / fontSize / position / weight / background / textShadow。`);
+  // [必填] project.subtitle —— 口播模式项目级字幕样式（color/fontSize/position/weight/background/textShadow）
+  // 仅 dubbing 模式需要；creative 模式无字幕内容，不需要 subtitle 样式
+  if (project.mode === 'dubbing') {
+    const REQUIRED_SUBTITLE_FIELDS = ['color', 'fontSize', 'position', 'weight', 'background', 'textShadow'];
+    const VALID_POSITIONS = [
+      'top-left', 'top-center', 'top-right',
+      'middle-left', 'middle-center', 'middle-right',
+      'bottom-left', 'bottom-center', 'bottom-right'
+    ];
+    if (!project.subtitle || typeof project.subtitle !== 'object') {
+      errors.push(
+        '[必填] [口播模式] project.subtitle 缺失或不是对象。字幕样式必填（6 字段全要）：' +
+        'color / fontSize / position / weight / background / textShadow。' +
+        '请在 init-project 的 config JSON 里加 subtitle 字段，例如：' +
+        '{ "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
+      );
+    } else {
+      for (const f of REQUIRED_SUBTITLE_FIELDS) {
+        if (project.subtitle[f] === undefined || project.subtitle[f] === null || project.subtitle[f] === '') {
+          errors.push(`[必填] [口播模式] project.subtitle.${f} 缺失。6 字段全必填：color / fontSize / position / weight / background / textShadow。`);
+        }
+      }
+      if (project.subtitle.position && !VALID_POSITIONS.includes(project.subtitle.position)) {
+        errors.push(`[枚举] project.subtitle.position "${project.subtitle.position}" 不在 9 档之内，应为：${VALID_POSITIONS.join(' / ')}`);
+      }
+      if (project.subtitle.weight !== undefined && (!Number.isFinite(project.subtitle.weight) || project.subtitle.weight < 100 || project.subtitle.weight > 900 || project.subtitle.weight % 100 !== 0)) {
+        errors.push(`[范围] project.subtitle.weight 必须是 100-900 的整百数（实际: ${project.subtitle.weight}）`);
       }
     }
-    if (project.subtitle.position && !VALID_POSITIONS.includes(project.subtitle.position)) {
-      errors.push(`[枚举] project.subtitle.position "${project.subtitle.position}" 不在 9 档之内，应为：${VALID_POSITIONS.join(' / ')}`);
-    }
-    if (project.subtitle.weight !== undefined && (!Number.isFinite(project.subtitle.weight) || project.subtitle.weight < 100 || project.subtitle.weight > 900 || project.subtitle.weight % 100 !== 0)) {
-      errors.push(`[范围] project.subtitle.weight 必须是 100-900 的整百数（实际: ${project.subtitle.weight}）`);
-    }
+  }
+
+  // [必填] project.mode —— 项目模式
+  const VALID_MODES = ['dubbing', 'creative'];
+  if (!project.mode || !VALID_MODES.includes(project.mode)) {
+    errors.push(
+      '[必填] project.mode 缺失或非法：必须为 "dubbing"（口播）或 "creative"（创作）。' +
+      '口播模式必须配置配音音频（audio，非 BGM 用法）+ 字幕（subtitles）；' +
+      '创作模式无需字幕，音频必须为 BGM 用法（loop/fadeIn/fadeOut）。'
+    );
+  }
+
+  const mode = project.mode;
+  const hasAudio = (() => {
+    if (typeof project.audio === 'string') return project.audio.trim().length > 0;
+    if (project.audio && typeof project.audio === 'object' && typeof project.audio.path === 'string') return project.audio.path.trim().length > 0;
+    return false;
+  })();
+  const isBgmUsage = (typeof project.audio === 'object' && project.audio !== null
+    && (project.audio.loop !== undefined
+        || project.audio.fadeIn !== undefined
+        || project.audio.fadeOut !== undefined));
+  const hasSubtitles = Array.isArray(project.subtitles) && project.subtitles.length > 0;
+
+  if (mode === 'dubbing') {
+    if (!hasAudio) errors.push('[口播模式] 必须配置配音音频（audio 字段）。');
+    if (!hasSubtitles) errors.push('[口播模式] 必须提供字幕（subtitles 数组）。请先用 prepare-voice.js 生成 SRT 字幕。');
+    if (isBgmUsage) errors.push('[口播模式] audio 不能使用 BGM 用法（loop/fadeIn/fadeOut），配音音频应直接写路径字符串或对象形式（无 loop/fadeIn/fadeOut）。');
+  }
+  if (mode === 'creative') {
+    if (hasAudio && !isBgmUsage) errors.push('[创作模式] audio 必须使用 BGM 用法（设置 loop/fadeIn/fadeOut），例如 { "path": "...", "loop": true }。不能使用配音音频。');
+    if (hasSubtitles) errors.push('[创作模式] 不需要字幕（subtitles 数组应为空或不配置）。如有配音需求请切换为口播模式。');
   }
 
   // 检查 ID 格式
@@ -621,9 +658,13 @@ if (require.main === module) {
     const project = JSON.parse(fs.readFileSync(projectPath, 'utf-8'));
     const result = selfcheck(project);
 
+    const examplePath = project.mode === 'creative'
+      ? 'templates/projects/分合示例-创作/'
+      : 'templates/projects/分合示例-口播/';
     if (result.errors.length) {
       console.error('\n❌ Errors:');
       result.errors.forEach(e => console.error('  - ' + e));
+      console.error(`\n参考: ${examplePath}`);
     }
 
     if (result.warnings.length) {

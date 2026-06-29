@@ -12,8 +12,17 @@
 {
   "name": "",
   "description": "",
+  "mode": "dubbing",
   "viewport": {"width": 780, "height": 585},
-  "audio": {"path": "./assets/voice.mp3"}
+  "audio": {"path": "./assets/voice.mp3"},
+  "subtitle": {
+    "color": "#FFFFFF",
+    "fontSize": "36px",
+    "position": "bottom-center",
+    "weight": 700,
+    "background": "rgba(0,0,0,0.5)",
+    "textShadow": "0 1px 3px rgba(0,0,0,0.8)"
+  }
 }
 ```
 
@@ -23,6 +32,7 @@
 |------|------|------|
 | name | ✅ | 视频名称 |
 | description | ❌ | 视频描述 |
+| mode | ✅ | 固定为 `"dubbing"`，口播模式必填 |
 | theme | ❌ 可选 | 背景主题 `white` / `black` |
 | duration | ❌ 可选 | 总时长（秒）⚠️ **会被自动覆盖**：实际时长 = SRT 最后一帧 end |
 | viewport | ✅ | 视口尺寸，默认 `{"width":780,"height":585}` |
@@ -30,6 +40,7 @@
 | style | ❌ 可选 | 视觉风格 `warm` / `tech` / `business` / `art` |
 | emotion_curve_template | ❌ 可选 | 情绪曲线类型 |
 | subtitle_count | ❌ 可选 | SRT 字幕总条数 |
+| subtitle | ✅ | 字幕样式（6 字段，项目级必填，参考 rules/06-components.md §R8） |
 
 ---
 
@@ -85,12 +96,21 @@ AI 写完后自查：
 {
   "name": "AI学习指南",
   "description": "30秒口播：AI时代如何高效学习",
+  "mode": "dubbing",
   "theme": "black",
   "viewport": {"width": 780, "height": 585},
   "audio": {"path": "./assets/voice.mp3"},
   "style": "tech",
   "emotion_curve_template": "起伏型",
-  "subtitle_count": 8
+  "subtitle_count": 8,
+  "subtitle": {
+    "color": "#FFFFFF",
+    "fontSize": "36px",
+    "position": "bottom-center",
+    "weight": 700,
+    "background": "rgba(0,0,0,0.5)",
+    "textShadow": "0 1px 3px rgba(0,0,0,0.8)"
+  }
 }
 ```
 
@@ -126,12 +146,21 @@ AI 写完后自查：
 {
   "name": "人工智能发展史",
   "description": "90秒口播：AI发展历程",
+  "mode": "dubbing",
   "theme": "black",
   "viewport": {"width": 780, "height": 585},
   "audio": {"path": "./assets/voice.mp3"},
   "style": "tech",
   "emotion_curve_template": "波浪型",
-  "subtitle_count": 18
+  "subtitle_count": 18,
+  "subtitle": {
+    "color": "#FFFFFF",
+    "fontSize": "36px",
+    "position": "bottom-center",
+    "weight": 700,
+    "background": "rgba(0,0,0,0.5)",
+    "textShadow": "0 1px 3px rgba(0,0,0,0.8)"
+  }
 }
 ```
 

@@ -1,6 +1,27 @@
-﻿# 组件规则
+# 项目配置使用规范
 
-> HtmlComponent 选型、API 调用规范、HtmlComponent 使用方法。
+> 项目级（project.json）字段、HtmlComponent 写法、字幕/主题/图片等公共资源使用规范。
+> 改组件写法、看不懂字段、不知道该用谁，**先看本文件**。
+
+---
+
+## R0 项目级必填字段总览
+
+`project.json` 顶层有必填字段，缺任一会被 selfcheck / server validate 拒：
+
+| 字段 | 类型 | 必填 | 来源 | 说明 |
+|------|------|------|------|------|
+| `name` | string | ✅ | AI 设计 / skeleton 模板 | 项目名 |
+| `mode` | `"dubbing" \| "creative"` | ✅ | AI 决策 | 项目模式：dubbing=口播（配音+字幕），creative=创作（BGM，无字幕） |
+| `theme` | `"black" \| "white"` | ✅ | AI 决策 | 背景主题，决定 scaffold 复制 `dark/` 还是 `light/` 占位图 |
+| `viewport` | `{ width, height }` | ✅ | AI 设计 | 视口尺寸（默认 780×585） |
+| `subtitle` | object（6 字段） | 口播 ✅ | **R8 口播必填** | 字幕样式，口播模式必填；创作模式不需要 |
+| `regions[]` | array | ✅ | 步骤 4 产出 | 区域列表 |
+| `assets` | object | ✅ | 步骤 6 产出 | 素材清单（voice / subtitles / placeholders / images） |
+| `audio` | object | 口播 ✅ | 步骤 1.5 产出 | 口播音频配置（口播模式必填，创作模式必须为 BGM 用法） |
+| `subtitles[]` | array | 口播 ✅ | SRT 解析 | 字幕内容数组（口播模式必填，创作模式禁止配置） |
+
+> 老项目若缺 `subtitle`，**schema 不兼容**，上传会被拒。沿用口播项目时也不能少。
 
 ---
 
@@ -112,12 +133,14 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ## R3 HtmlComponent 必须 background（硬规则）
 
 **所有 HtmlComponent 必须携带 background 字段**（与 content 平级），作为组件底色/氛围背景：
-- ackground.html 必填、字符串、非空（一般是单个根 <div>，可嵌套 SVG/渐变/装饰）
-- ackground.css 必填、字符串、非空（建议 position: absolute; inset: 0; 让背景填满 video-frame）
+- background.html 必填、字符串、非空（一般是单个根 <div>，可嵌套 SVG/渐变/装饰）
+- background.css 必填、字符串、非空（建议 position: absolute; inset: 0; 让背景填满 video-frame）
 - 非 HtmlComponent（如 AggregateComponent）不强制
 - **校验**：selfcheck.js 在本地会拦、projectValidator.collectErrors 在上传时会 400 拒绝
 
 > 💡 为什么 background 放在组件上而不是 region 上？跟 `content` 一套写法，每个 HtmlComponent 自带底色，区域切换时由前端 `renderRegionBackground` 接管背景层，组件内部背景与组件层互不干扰。
+
+---
 
 ## R4 HtmlComponent elementIds 规则
 
@@ -143,21 +166,30 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 |------|------|------|------|
 | key | string | ✅ | 必须是 `#ID` 形式（如 `#P1-002`） |
 | id | string | ✅ | 元素唯一标识，必须等于 `key.slice(1)`；格式 `P{区域编号}-{三位数字}`，与顶层 HtmlComponent ID 同池且全局唯一 |
-| subtitles | Array<number> | 口播 ✅ | 绑字幕范围（merge 查 SRT 自动算 start/end） |
-| time_range | [number, number] | 创作 ✅ | 相对 region 起点的局部时间（merge 转全局 start/end） |
+| subtitles | Array<number> | 口播推荐 | 绑字幕范围（merge 查 SRT 自动算 start/end）。不填 = 展示整个所属 HtmlComponent |
+| time_range | [number, number] | 创作推荐 | 相对 region 起点的局部时间（merge 转全局 start/end）。不填 = 展示整个所属 HtmlComponent |
 
 **merge 自动填充**（输出到 project.json 时）：
 - `element.start` = subtitles 第一字幕 start 或 time_range[0] + region.startTime
 - `element.end` = subtitles 最后字幕 end 或 time_range[1] + region.startTime
 
-**优先级**：subtitles > time_range > 旧 start/end（兼容）> 报错
+**优先级**：subtitles > time_range > 旧 start/end（兼容）> fallback to parent
+
+> 未填时一律 fallback 到父级时间窗口（与背景切换规则保持一致），不报错。
+
+**缺省行为**（与背景切换规则保持一致）：
+- `component.start` 未填 = `region.startTime`
+- `component.end` 未填 = 下一 `region.startTime`（最后 region = `project.duration`）
+- `element.start` 未填 = `component.start`
+- `element.end` 未填 = `component.end`
 
 **关键约束**：
 - ✅ HTML 字符串里必须有对应的 `id` 属性（如 `<div id="P1-002">`），否则时间线不生效
-- ✅ 元素时间范围必须落在所属 HtmlComponent 时间范围内（`component.start ≤ element.start && element.end ≤ component.end`）
-- ✅ `0 ≤ element.start ≤ element.end`
+- ✅ 元素时间范围（已设置时）必须落在所属 HtmlComponent 时间范围内（`component.start ≤ element.start && element.end ≤ component.end`）
+- ✅ `0 ≤ element.start ≤ element.end`（已设置时）
 - ✅ 口播模式：subtitles 范围必须在所属 region 字幕范围内
 - ✅ 创作模式：time_range 必须在 `[0, region.duration]` 范围内
+- ❌ `component.start / end` 和 `element.start / end` **可不填**，不填时由前端/merge 自动从父级时间窗口推算（与背景切换规则保持一致）
 
 **作用**：
 1. 按 ↑ 键显示元素 ID 标签，方便定位和修改
@@ -269,3 +301,63 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 - [E] Picsum URL 必须含 `seed` 参数
 - [E] 占位图必须有水印（Picsum 走 CSS 水印 / 本地 SVG 自带水印）
 - [W] `<img>` 的尺寸与 `position` 协调（避免拉伸变形）
+
+---
+
+## R8 字幕样式项目级必填（仅口播模式）
+
+**AI 必须在 init-project 的 config JSON 里提供 `subtitle` 字段，6 字段全要。字幕样式从"主题控制"改为"项目级必填"。仅口播模式需要；创作模式不需要。**
+
+### 字段结构
+
+```json
+"subtitle": {
+  "color":      "#FFFFFF",                       // 文字颜色，hex 或 rgba
+  "fontSize":   "36px",                           // 字号，CSS 长度
+  "position":   "bottom-center",                  // 9 档：top/middle/bottom + left/center/right
+  "weight":     700,                              // 字重，100-900 整百
+  "background": "rgba(0,0,0,0.5)",                // 背景色，transparent/hex/rgba
+  "textShadow": "0 1px 3px rgba(0,0,0,0.8)"       // 描边/阴影
+}
+```
+
+### 9 档 position 枚举
+
+```
+top-left      top-center      top-right
+middle-left   middle-center   middle-right
+bottom-left   bottom-center   bottom-right
+```
+
+### 推荐默认值（AI 自主决定，不主动问用户）
+
+| 风格 | color | fontSize | position | weight | background | textShadow |
+|------|-------|----------|----------|--------|------------|------------|
+| 暗色科技 | `#FFFFFF` | `36px` | `bottom-center` | `700` | `rgba(0,0,0,0.55)` | `0 1px 3px rgba(0,0,0,0.9)` |
+| 亮色商务 | `#1a1a1a` | `34px` | `bottom-center` | `600` | `rgba(255,255,255,0.7)` | `0 1px 2px rgba(255,255,255,0.6)` |
+| 暗色情绪 | `#F5E8EC` | `40px` | `middle-center` | `800` | `transparent` | `0 2px 6px rgba(0,0,0,0.95)` |
+| 亮色清新 | `#2C3E50` | `32px` | `bottom-left` | `500` | `rgba(255,255,255,0.6)` | `none` |
+
+### 决策权
+
+- ✅ **AI 自己决定**（用户没指定时）：按上表选值
+- ❌ **AI 不主动问用户**：除非用户明确说"字幕我要 XXX"
+
+### 校验层级（3 道防线）
+
+| 层级 | 时机 | 行为 |
+|------|------|------|
+| 1. `generate-skeleton.js` | 生成骨架时 | 缺 `config.subtitle` → fail-fast 抛错 + 给补字段示例 |
+| 2. `selfcheck.js` | 本地校验 | 6 字段缺任一 → 输出 `[必填] project.subtitle.X 缺失`；position 不在 9 档 → `[枚举]`；weight 不在 100-900 整百 → `[范围]` |
+| 3. `server validate`（ajv schema） | 上传时 | 校验失败 → 返回 400 |
+
+### 严禁
+
+- ❌ AI 在 config 里偷懒不写 subtitle（理由："主题应该会处理"）——主题**不**再控制字幕
+- ❌ 沿用老项目时省略 subtitle（schema 不兼容，老项目上传会被拒）
+- ❌ 让用户填 subtitle 字段（除非用户主动指定）
+- ❌ 改主题的 `colors.subtitle` 来"曲线救国"——前端不再从 theme 读字幕样式
+
+### 与其他规则的关系
+
+- **R8 与骨架/沿用规则**：新建/沿用都要带 subtitle，沿用时**不能少**；强制重置（`--new`）后也必须重新带 subtitle

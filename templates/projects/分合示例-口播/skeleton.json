@@ -1,6 +1,7 @@
 {
   "name": "口播模式示例",
   "description": "27秒口播短视频示例：演示 8 条 SRT 字幕 + 配音音频 + 画面同步",
+  "mode": "dubbing",
   "theme": "white",
   "duration": 27,
   "viewport": {
@@ -16,6 +17,14 @@
     "contentZoomRatio": 1,
     "preFullViewDuration": 0.4,
     "postFullViewDuration": 0.4
+  },
+  "subtitle": {
+    "color": "#1a1a1a",
+    "fontSize": "32px",
+    "position": "bottom-center",
+    "weight": 700,
+    "background": "rgba(255,255,255,0.75)",
+    "textShadow": "0 1px 2px rgba(255,255,255,0.6)"
   },
   "audio": {
     "path": "assets/placeholders/voiceover/sample.mp3",
