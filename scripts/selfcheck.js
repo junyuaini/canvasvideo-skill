@@ -606,7 +606,17 @@ function selfcheck(project) {
   // 语义：分析"该字幕时间窗内画面上正在显示的元素组合"是否构成完整合理画面，不是"为字幕设计什么新元素"
   if (hasSubtitles) {
     const ELEM_ID_PATTERN = /P\d+-\d{3}/g;
+    // 字幕序号 → {start, end} 索引（subtitles 数组的 idx 即字幕序号 1-based）
+    const subIndex = new Map();
+    project.subtitles.forEach((s, i) => {
+      if (!s || typeof s !== 'object') return;
+      if (typeof s.start === 'number' && Number.isFinite(s.start)
+        && typeof s.end === 'number' && Number.isFinite(s.end)) {
+        subIndex.set(i + 1, { start: s.start, end: s.end });
+      }
+    });
     // 收集所有 HtmlComponent 的 element 时序，构建 id → {start, end, regionId} 索引
+    // 优先读 element.start/end；缺失时按 elementIds.subtitles 区间推算（与 merge-regions.js 同步逻辑）
     const elemIndex = new Map();
     function indexHtmlElements(comps) {
       if (!Array.isArray(comps)) return;
@@ -615,15 +625,23 @@ function selfcheck(project) {
         if (c.type === 'HtmlComponent' && c.content && c.content.elementIds && typeof c.content.elementIds === 'object') {
           Object.values(c.content.elementIds).forEach((el) => {
             if (!el || !el.id) return;
-            // element.start/end 未设置时按所属 component 推算（与 R4 缺省规则一致）
-            let elStart = el.start;
-            let elEnd = el.end;
-            if (typeof elStart !== 'number' || !Number.isFinite(elStart)) {
-              elStart = (typeof c.start === 'number' && Number.isFinite(c.start)) ? c.start : 0;
+            let elStart = (typeof el.start === 'number' && Number.isFinite(el.start)) ? el.start : null;
+            let elEnd = (typeof el.end === 'number' && Number.isFinite(el.end)) ? el.end : null;
+            // fallback 1: elementIds.subtitles 区间
+            if ((elStart === null || elEnd === null) && Array.isArray(el.subtitles) && el.subtitles.length > 0) {
+              const nums = el.subtitles.filter((n) => Number.isInteger(n));
+              if (nums.length > 0) {
+                const minN = Math.min(...nums);
+                const maxN = Math.max(...nums);
+                const minSub = subIndex.get(minN);
+                const maxSub = subIndex.get(maxN);
+                if (elStart === null && minSub) elStart = minSub.start;
+                if (elEnd === null && maxSub) elEnd = maxSub.end;
+              }
             }
-            if (typeof elEnd !== 'number' || !Number.isFinite(elEnd)) {
-              elEnd = (typeof c.end === 'number' && Number.isFinite(c.end)) ? elStart : elStart;
-            }
+            // fallback 2: 所属 component 时间窗
+            if (elStart === null) elStart = (typeof c.start === 'number' && Number.isFinite(c.start)) ? c.start : 0;
+            if (elEnd === null) elEnd = (typeof c.end === 'number' && Number.isFinite(c.end)) ? elStart : elStart;
             elemIndex.set(el.id, { start: elStart, end: elEnd, regionId: c.regionId });
           });
         }
