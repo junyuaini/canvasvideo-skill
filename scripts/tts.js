@@ -111,8 +111,8 @@ function serializeSrt(entries) {
 }
 
 // ===== 字幕聚合：把字级条目按标点切短 =====
-const TRAILING_PUNCT_RE = /([，。！？；：、,!?;:\.]+)\s*$/;
-const STRIP_PUNCT_RE = /[，。！？；：、,!?;:\.\s]+/g;
+const TRAILING_PUNCT_RE = /([，。！？；：、,!?;:\."""''《》【】…—–]+)\s*$/;
+const STRIP_PUNCT_RE = /[，。！？；：、,!?;:\."""''《》【】…—–\s]+/g;
 function groupEntriesByPunctuation(entries) {
   // entries: [{part, start, end}, ...] 毫秒时间戳
   const result = [];

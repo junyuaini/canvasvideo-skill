@@ -1,13 +1,52 @@
-# 步骤1.5：音频与字幕准备（仅口播模式）
+# 步骤2：音频与字幕准备（仅口播模式）
 
 > 前置步骤：[步骤1：初始化](01-init.md)（state.mode 必须为 `dubbing`）
-> 下一步：[步骤2：骨架设计（口播模式）](02-skeleton-design-dubbing.md)
+> 下一步：[步骤3：骨架设计（口播模式）](03-skeleton-design-dubbing.md)
 
 ---
 
 ## 目标
 
 把配音音频（MP3）和字幕（SRT）准备好，存到 workdir 的标准路径，**并在 state.json 写入 voice 字段**。后续步骤（骨架设计、合并）直接读这个字段。
+
+---
+
+## 产出
+
+### 文件
+
+```
+{workdir}/{skillProjectId}/
+└── assets/
+    ├── voice/
+    │   └── voice.mp3              # 配音音频（统一名称）
+    └── subtitles/
+        └── subtitle.srt            # 字幕（统一名称）
+```
+
+### state.json 新增字段
+
+```json
+{
+  "voice": {
+    "source": "user" | "generated",
+    "audioPath": "./assets/voice/voice.mp3",
+    "srtPath": "./assets/subtitles/subtitle.srt",
+    "duration": 39.375,
+    "subtitleCount": 18,
+    "voiceName": "zh-CN-XiaoxiaoNeural" | null
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `source` | 素材来源，方便排查 |
+| `audioPath` | 相对 workdir 的路径，merge-regions 自动填到 `project.json.audio.path` |
+| `srtPath` | 相对 workdir 的路径，方便骨架设计时直接读 |
+| `duration` | 音频时长（秒），取自 SRT 末条字幕 end time |
+| `subtitleCount` | 字幕条目数 |
+| `voiceName` | TTS 音色名（仅 generated 时填），用户素材时为 null |
 
 ---
 
@@ -106,45 +145,6 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 ---
 
-## 产出
-
-### 文件
-
-```
-{workdir}/{skillProjectId}/
-└── assets/
-    ├── voice/
-    │   └── voice.mp3              # 配音音频（统一名称）
-    └── subtitles/
-        └── subtitle.srt            # 字幕（统一名称）
-```
-
-### state.json 新增字段
-
-```json
-{
-  "voice": {
-    "source": "user" | "generated",
-    "audioPath": "./assets/voice/voice.mp3",
-    "srtPath": "./assets/subtitles/subtitle.srt",
-    "duration": 39.375,
-    "subtitleCount": 18,
-    "voiceName": "zh-CN-XiaoxiaoNeural" | null
-  }
-}
-```
-
-| 字段 | 说明 |
-|------|------|
-| `source` | 素材来源，方便排查 |
-| `audioPath` | 相对 workdir 的路径，merge-regions 自动填到 `project.json.audio.path` |
-| `srtPath` | 相对 workdir 的路径，方便骨架设计时直接读 |
-| `duration` | 音频时长（秒），取自 SRT 末条字幕 end time |
-| `subtitleCount` | 字幕条目数 |
-| `voiceName` | TTS 音色名（仅 generated 时填），用户素材时为 null |
-
----
-
 ## 自检
 
 > [E] Error — 不符合将阻断 | [W] Warning | [I] Info
@@ -170,14 +170,11 @@ A: 当前不支持。Whisper 集成在另一个工具集成的范畴。本次只
 **Q: TTS 生成的配音质量不满意？**
 A: 试试换音色（`--voice=zh-CN-YunxiNeural` 等），或调整 `--rate` / `--pitch`。Azure TTS 中文质量已经很好，但具体效果因内容而异。
 
-**Q: 音频里有人声 + 背景音乐，TTS 生成的音频怎么处理？**
-A: 当前不支持混音。TTS 生成的只有干声（无 BGM），背景音乐由步骤 6（setup-assets.js）的 BGM 单独提供，前端播放时会自动混音。
-
 **Q: 可以跑多次 prepare-voice 吗？**
 A: 可以，新素材会**覆盖**旧的（与 setup-assets 一致）。如果换音色重生成，记得把 state.json 的 `voice.voiceName` 也更新。
 
 **Q: 不跑这个步骤直接进 step 2 会怎样？**
-A: 步骤 2 骨架设计时读不到 SRT 文件，AI 会要求先准备素材。state.voice 为空时，后续步骤也会提示。
+A: 步骤 3 骨架设计时读不到 SRT 文件，AI 会要求先准备素材。state.voice 为空时，后续步骤也会提示。
 
 ---
 
@@ -194,7 +191,7 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录> {skillProjectId} \
 **会发生什么**：
 - ✅ 覆盖 `assets/voice/voice.mp3` 和 `assets/subtitles/subtitle.srt`
 - ✅ 刷新 `state.voice`（duration / subtitleCount / voiceName 全部更新）
-- ✅ 步骤 3（generate-skeleton.js）下次跑时会自动用新的 `state.voice` 覆盖
+- ✅ 步骤 4（generate-skeleton.js）下次跑时会自动用新的 `state.voice` 覆盖
 - ❌ 不会**回滚**步骤 3 之后的所有产物（如 skeleton.json / regions/ / project.json），需要 AI 流程决定是否重做
 
 **典型场景**：
@@ -211,5 +208,5 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录> {skillProjectId} \
 
 ## 下一步
 
-- ✅ 配音音频 + 字幕就绪 → 进入 [步骤2：骨架设计（口播模式）](02-skeleton-design-dubbing.md)
+- ✅ 配音音频 + 字幕就绪 → 进入 [步骤3：骨架设计（口播模式）](03-skeleton-design-dubbing.md)
 - 重新 init 即可（项目模式已固定为口播）

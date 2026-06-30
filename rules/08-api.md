@@ -44,9 +44,8 @@
         ├── project.json
         ├── assets/
         │     ├── images/                  # 用户图片
-        │     └── placeholders/            # 占位素材
-        │           ├── {theme}/           # 主题占位 SVG（white → light/, black → dark/）
-        │           └── bgm/               # BGM 文件
+        │     ├── voice/                  # 配音音频
+        │     └── subtitles/              # 字幕
         ├── output/
         │     └── (构建产物)
         └── <skillProjectId>.zip

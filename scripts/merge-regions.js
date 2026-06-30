@@ -1,13 +1,10 @@
 /**
  * 合并 skeleton + regions 为完整的 project.json
  *
- * 自动转换（新约定）：
- *   - component.subtitles → component.start/end（查 SRT）
- *   - elementIds["#X"].subtitles → elementIds["#X"].start/end（查 SRT）
- *
- * 兼容旧约定（fallback）：
- *   - component.start/end 直接使用
- *   - elementIds["#X"].start/end 直接使用
+ * 合并规则：
+ *   - component 不写 start/end（前端按 region 边界自动推算）
+ *   - elementIds 的 start/end 由 transformHtmlComponent 从 data-subtitle 解析，checkStartEndDefault 判断是否省略
+ *   - background 原样透传，不处理
  *
  * 用法：node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]
  */
@@ -555,35 +552,19 @@ function mergeRegions(workdir, workdirRoot) {
     console.warn(`[W] SRT 加载失败: ${e.message}，元素字幕绑定无法解析`);
   }
 
-  // 2. 计算每个 region 的全局起止时间（直接从 SRT 取：region 字幕段首尾 = region 全局起止）
+  // 2. 直接用 skeleton 的 startTime/endTime（generate-skeleton 已从 SRT 算好）
   const regionTimes = {};
   for (const r of skeleton.regions) {
-    if (r.subtitle_range) {
-      const match = r.subtitle_range.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
-      if (match) {
-        const startId = parseInt(match[1], 10);
-        const endId = match[2] !== undefined ? parseInt(match[2], 10) : startId; // 单条字幕 "3" 等价于 "3-3"
-        const startSub = srtList[startId - 1];
-        const endSub = srtList[endId - 1];
-        if (startSub && endSub) {
-          regionTimes[r.id] = {
-            id: r.id,
-            duration: truncateTo3(endSub.end - startSub.start),
-            startTime: truncateTo3(startSub.start),
-            endTime: truncateTo3(endSub.end)
-          };
-          continue;
-        }
-      }
+    if (typeof r.startTime === 'number' && typeof r.endTime === 'number') {
+      regionTimes[r.id] = {
+        id: r.id,
+        duration: r.duration,
+        startTime: truncateTo3(r.startTime),
+        endTime: truncateTo3(r.endTime)
+      };
+    } else {
+      throw new Error(`region ${r.id} 缺少 startTime/endTime，请先运行 generate-skeleton.js 生成最新骨架`);
     }
-    // fallback：累加
-    const prevEndTime = Object.values(regionTimes).reduce((max, t) => Math.max(max, t.endTime), 0);
-    regionTimes[r.id] = {
-      id: r.id,
-      duration: r.duration,
-      startTime: truncateTo3(prevEndTime),
-      endTime: truncateTo3(prevEndTime + r.duration)
-    };
   }
   const lastRegion = skeleton.regions[skeleton.regions.length - 1];
   const lastTime = regionTimes[lastRegion.id]?.endTime || 0;
@@ -608,16 +589,9 @@ function mergeRegions(workdir, workdirRoot) {
   };
   if (skeleton.source_design_doc) project.source_design_doc = skeleton.source_design_doc;
 
-  // 项目级字幕样式（必填，6 字段）—— 从 skeleton 透传到 project
-  // schema 强约束要求 subtitle 必填；generate-skeleton 已校验 config.subtitle 存在
+  // 项目级字幕样式（可选）
   if (skeleton.subtitle && typeof skeleton.subtitle === 'object') {
     project.subtitle = skeleton.subtitle;
-  } else {
-    throw new Error(
-      '[merge-regions] skeleton.subtitle 缺失或不是对象。' +
-      '项目级字幕样式（color/fontSize/position/weight/background/textShadow）必填，' +
-      '请在 init-project 的 config JSON 里加 subtitle 字段。'
-    );
   }
 
   // 4. 校验缺失 region 文件
@@ -705,19 +679,33 @@ function mergeRegions(workdir, workdirRoot) {
           boundSubRange: compBoundSubRange
         });
 
-        // resolveSubtitles 返回全局 SRT 时间，统一采用绝对时间（避免 component/element 单位不一致）
+        // resolveSubtitles 返回全局 SRT 时间，统一采用绝对时间
         const compAbsoluteStart = truncateTo3(compTime.start);
         const compAbsoluteEnd = truncateTo3(compTime.end);
-        // 中间过程用相对时间做 region 内展示，最终写回绝对时间
-        comp.start = compAbsoluteStart;
-        comp.end = compAbsoluteEnd;
 
         const regionBounds = {
           startTime: regionEntry.startTime,
           endTime: regionEntry.endTime
         };
 
-        // 6.1.5 校验 elementIds 格式（与 selfcheck.js checkHtmlElementIds 对齐）
+        // 6.1.5 校验 background.html/css 非空
+        if (comp.background && typeof comp.background.html === 'string' && comp.background.html.trim() === '') {
+          throw new Error(`HtmlComponent [${comp.id}] background.html 为空`);
+        }
+        if (comp.background && typeof comp.background.css === 'string' && comp.background.css.trim() === '') {
+          throw new Error(`HtmlComponent [${comp.id}] background.css 为空`);
+        }
+
+        // 6.1.6 校验 animation-delay 禁止与 opacity: 0 共用
+        const cssContent = comp.content && comp.content.css || '';
+        const opacityZeroWithDelayRegex = /\.([\w-]+)\s*\{[^}]*opacity\s*:\s*0[^}]*animation[^}]*animation-delay\s*:\s*[^;]+;?[^}]*\}/g;
+        const delayWithOpacityZeroRegex = /\.([\w-]+)\s*\{[^}]*animation[^}]*animation-delay\s*:\s*[^;]+;?[^}]*opacity\s*:\s*0[^}]*\}/g;
+        let m;
+        while ((m = opacityZeroWithDelayRegex.exec(cssContent)) !== null || (m = delayWithOpacityZeroRegex.exec(cssContent)) !== null) {
+          throw new Error(`HtmlComponent [${comp.id}] .${m[1]} 禁止 animation-delay 与 opacity: 0 同时使用（delay 期间元素已在页面会闪）。`);
+        }
+
+        // 6.1.7 校验 elementIds 格式（与 selfcheck.js checkHtmlElementIds 对齐）
         validateHtmlElementIds(comp, project);
 
         // 6.1.6 新约定：调用 transformHtmlComponent，把 AI 写的"标准 H5+CSS"自动转成
@@ -811,21 +799,7 @@ function mergeRegions(workdir, workdirRoot) {
           comp.content.elementIds = resolvedElementIds;
         }
 
-        // 最终：comp.start/end 写绝对时间；如果是默认则不写
-        if (compStartIsDefault) {
-          delete comp.start;
-        } else {
-          comp.start = compAbsoluteStart;
-        }
-        if (compEndIsDefault) {
-          delete comp.end;
-        } else {
-          comp.end = compAbsoluteEnd;
-        }
-        if (comp.content && comp.content.elementIds) {
-          // element 已是绝对时间，无需再加 region.startTime
-        }
-
+        // component 不写 start/end（前端按 region 边界自动推算）
         project.components.push(comp);
       }
     }
@@ -875,6 +849,17 @@ if (require.main === module) {
     }
 
     fs.writeFileSync(finalOutputPath, JSON.stringify(project, null, 2));
+
+    // HTML 三步校验 + 跨 Region ID 防重
+    const { validateAllRegions } = require('./validate-html');
+    const htmlResult = validateAllRegions(workdir);
+    if (htmlResult.errors.length > 0) {
+      for (const err of htmlResult.errors) {
+        console.error(`[HTML 校验] ${err}`);
+      }
+      process.exit(1);
+    }
+
     console.log(`合并完成: ${finalOutputPath}`);
     console.log(`  区域数: ${project.regions.length}`);
     console.log(`  HtmlComponent 数: ${project.components.length}`);

@@ -1,0 +1,49 @@
+{
+  "id": "P1",
+  "name": "开篇引入",
+  "startTime": 0,
+  "endTime": 5,
+  "duration": 5,
+  "subtitles": [1],
+  "components": [
+    {
+      "id": "P1-001",
+      "type": "HtmlComponent",
+      "start": 0,
+      "end": 5,
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "content": {
+        "html": "<div class=\"cover\">\n  <div class=\"cover__bg\"></div>\n  <div class=\"cover__content\">\n    <h1 class=\"cover__title\">CanvasVideo</h1>\n    <p class=\"cover__subtitle\">在线视频编辑器</p>\n  </div>\n  <span class=\"cover__watermark\">我是占位图 · 赶紧换我</span>\n</div>",
+        "css": ".cover { position: relative; width: 780px; height: 585px; overflow: hidden; background: #f5f5f5; }\n.cover__bg { position: absolute; inset: 0; background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%); }\n.cover__content { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; z-index: 1; }\n.cover__title { font-size: 56px; font-weight: 800; color: #1a1a1a; margin: 0 0 16px; letter-spacing: -1px; }\n.cover__subtitle { font-size: 24px; font-weight: 400; color: #666; margin: 0; }\n.cover__watermark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #fff; background: rgba(0,0,0,0.45); letter-spacing: 0.1em; }",
+        "elementIds": ["P1-001"]
+      },
+      "animations": [
+        {
+          "selector": ".cover__title",
+          "keyframes": [
+            { "offset": 0, "opacity": 0, "transform": "translateY(20px)" },
+            { "offset": 0.2, "opacity": 1, "transform": "translateY(0)" }
+          ],
+          "duration": 0.8,
+          "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
+        },
+        {
+          "selector": ".cover__subtitle",
+          "keyframes": [
+            { "offset": 0, "opacity": 0, "transform": "translateY(20px)" },
+            { "offset": 0.3, "opacity": 1, "transform": "translateY(0)" }
+          ],
+          "duration": 0.6,
+          "delay": 0.3,
+          "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
+        }
+      ],
+      "background": "transparent"
+    }
+  ]
+}

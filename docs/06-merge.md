@@ -1,13 +1,13 @@
-# 步骤5：合并
+# 步骤6：合并 + 自检
 
-> 前置步骤：[步骤4：区域设计与生成JSON（口播模式）](04-region-design-dubbing.md)
-> 下一步：[步骤6：素材处理](06-assets.md)
+> 前置步骤：[步骤5：区域设计与生成JSON（口播模式）](05-region-design-dubbing.md) + [步骤2：音频与字幕准备（仅口播模式）](02-voice-prepare.md)
+> 下一步：[步骤7：素材检查](07-assets.md)
 
 ---
 
 ## 目标
 
-合并 skeleton + regions 为完整的 project.json。
+合并 skeleton + regions 为完整的 project.json，然后立即自检，通过后才进入下一步。
 
 ---
 
@@ -17,10 +17,18 @@
 |------|------|--------|
 | 骨架配置 | `skeleton.json` | 必须存在 |
 | 区域配置 | `regions/P{n}.json` | 必须存在，且数量与 `skeleton.json` 中的 `regions` 数组长度一致 |
-| 脚本 | `scripts/merge-regions.js` | — |
+| 脚本 | `scripts/merge-regions.js` + `scripts/validate.js` | — |
 | 引用规则 | `rules/09-selfcheck.md` | — |
 
-> ℹ️ **运行时检查**：`merge-regions.js` 会自动检查所有 region JSON 是否齐全。缺失会直接报错，提示回到 Step 4 补全。
+> ℹ️ **运行时检查**：`merge-regions.js` 会自动检查所有 region JSON 是否齐全。缺失会直接报错，提示回到步骤 5 补全。
+
+---
+
+## 产出
+
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| project.json | `{workdir}/{skillProjectId}/project.json` | 完整配置 |
 
 ---
 
@@ -53,25 +61,32 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 - HtmlComponent 按 start 时间排序
 - 字幕按 start 排序
 
-### 第 4 步：素材清单引用
+### 第 3 步：素材清单引用
 
 把 `design-skeleton-dubbing.md` 素材清单中**所有非空状态的素材**，挂到 HtmlComponent 的 `<img>` 上：
 
 | design-skeleton 状态 | project.json 写法 |
 |---|---|
 | `[已具备]` | `<img src="./assets/images/{file}">`（真实路径） |
-| `[AI 自动生成 - 占位]` | Picsum URL + CSS 叠水印（详见 `templates/placeholders/README.md`） |
-| `[待用户提供]` | 也用占位图，备注列写"用户提供后替换" |
+| `[AI 自动生成]` | Picsum URL + CSS 叠水印（详见 `templates/placeholders/README.md`） |
+| `[待用户提供]` | Picsum + CSS 叠水印，备注列写"用户提供后替换" |
 
 **素材清单实现率必须 = 100%**。
 
----
+### 第 4 步：运行自检脚本
 
-## 产出
+合并完成后立即执行自检，通过才能继续：
 
-| 文件 | 路径 | 说明 |
-|------|------|------|
-| project.json | `{workdir}/{skillProjectId}/project.json` | 完整配置 |
+```bash
+node scripts/validate.js --cwd=<Agent工作目录的绝对路径> {skillProjectId}
+```
+
+**脚本会自动验证**：
+
+1. **骨架设计文档** - 检查 project.json 包含 `source_design_doc` 字段，且对应的设计文档文件存在
+2. **selfcheck 规则** - 节奏档位门槛 + 布局 Y 坐标检查 + HtmlComponent 字段完整性
+
+> ℹ️ 本脚本只跑本地自检。schema 结构 / customStyle 字段等强校验由云端 `upload-video.js` 的 precheck 兜底。
 
 ---
 
@@ -83,10 +98,12 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 - `merge-regions.js` 检查所有 region JSON 是否齐全（缺失即报错）
 - `merge-regions.js` 检查骨架设计文档存在性
-- `merge-regions.js` 两步校验：html 有 class 必有 id；有 id 必有 data-subtitle 或 data-global
+- `merge-regions.js` 两步校验（仅 content.html）：有 class 必有 id；有 id 必有 data-subtitle 或 data-global
 - `selfcheck.js` 检查所有全局字段齐全（name, theme, duration, viewport, canvas, regions, settings, audio, components, source_design_doc）
 - `selfcheck.js` 检查所有 HtmlComponent ID 唯一
 - `merge-regions.js` 自动按 start 排序 HtmlComponent 和字幕
+- `validate.js` 检查 project.json 包含所有全局字段
+- `validate.js` 检查骨架 source_design_doc 存在且引用的设计文档文件存在
 
 ### 时间字段自动填充
 
@@ -118,10 +135,10 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 **AI 写完后自查**：
 
 - [W] 素材清单实现率 = 100%（指所有素材都被挂到 HtmlComponent 上）
-- [W] 两步校验：有 class 必有 id，有 id 必有归属（data-subtitle 或 data-global）
+- [W] 两步校验（仅 content.html）：有 class 必有 id，有 id 必有归属（data-subtitle 或 data-global）
 
 ---
 
 ## 下一步
 
-进入 [步骤6：素材处理](06-assets.md)
+进入 [步骤7：素材检查](07-assets.md)

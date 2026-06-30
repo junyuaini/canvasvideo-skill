@@ -110,6 +110,8 @@ function extractRegions(content, mode) {
   const durationIdx = colIdx('时长');
   const typeIdx = colIdx('类型');
   const subtitleRangeIdx = colIdx('包含字幕');
+  const emotionIdx = colIdx('情绪');
+  const descriptionIdx = colIdx('内容描述');
 
   if (idIdx === -1 && legacyNameIdx === -1) {
     throw new Error(`区域列表表头缺少必填列：区域 ID 或 名称。当前表头：${header.join(', ')}`);
@@ -157,12 +159,22 @@ function extractRegions(content, mode) {
       continue;
     }
 
+    const nameLen = (nameCell || '').replace(/\s/g, '').length;
+    if (!nameCell || nameLen < 4 || nameLen > 12) {
+      throw new Error(`区域名称"${nameCell}"不符合要求：必须为 4-12 个字符（不含空格），当前 ${nameLen} 个字符`);
+    }
     const region = { id: idCell, name: nameCell, duration };
     if (mode === 'dubbing' && subtitleRangeIdx !== -1 && cells[subtitleRangeIdx]) {
       region.subtitle_range = cells[subtitleRangeIdx];
     }
     if (typeIdx !== -1 && cells[typeIdx]) {
       region.type = cells[typeIdx];
+    }
+    if (emotionIdx !== -1 && cells[emotionIdx]) {
+      region.emotion = cells[emotionIdx];
+    }
+    if (descriptionIdx !== -1 && cells[descriptionIdx]) {
+      region.description = cells[descriptionIdx];
     }
     regions.push(region);
   }
@@ -238,23 +250,21 @@ function generateSkeleton(workdirRoot, skillProjectId) {
       console.warn(`[W] region ${region.id} 的"包含字幕"格式不合法: "${region.subtitle_range}"（应为 "1-5" 或 "3"）`);
       continue;
     }
-    const startIdx = parseInt(match[1], 10) - 1; // SRT 字幕 ID 是 1-based，数组是 0-based
-    let endIdx = match[2] !== undefined ? parseInt(match[2], 10) - 1 : startIdx; // 单条字幕 "3" 等价于 "3-3"
-    if (!subtitles[startIdx]) {
+    const startIdx = parseInt(match[1], 10) - 1;
+    let endIdx = match[2] !== undefined ? parseInt(match[2], 10) - 1 : startIdx;
+    if (!subtitles[startIdx] || !subtitles[endIdx]) {
       throw new Error(
         `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
       );
     }
-    if (!subtitles[endIdx]) {
-      throw new Error(
-        `region ${region.id} 的字幕范围 "${region.subtitle_range}" 超出 SRT 字幕数（${subtitles.length} 条）`
-      );
-    }
-    const dur = subtitles[endIdx].end - subtitles[startIdx].start;
+    region.startTime = parseFloat(subtitles[startIdx].start.toFixed(3));
+    region.endTime = parseFloat(subtitles[endIdx].end.toFixed(3));
+    const dur = region.endTime - region.startTime;
     region.duration = parseFloat(dur.toFixed(3));
+    region.subtitles = subtitles.slice(startIdx, endIdx + 1);
     srtCalcCount++;
   }
-  console.log(`[✓] 按 SRT 重算 ${srtCalcCount} 个口播区域时长（3 位小数）`);
+  console.log(`[✓] 按 SRT 重算 ${srtCalcCount} 个口播区域时长 + 起止时间（3 位小数）`);
 
   // 3. 计算总时长（口播=最后一帧字幕 end）
   const totalDuration = lastSubtitleEnd !== null
@@ -265,13 +275,13 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   }
 
   // 4. 自动计算 canvas 尺寸
-  // 新规则：canvas 尺寸 = viewport 的 10 倍
+  // canvas 尺寸 = viewport 的 10 倍
   const viewportWidth = config.viewport?.width || 780;
   const viewportHeight = config.viewport?.height || 585;
   const canvasWidth = viewportWidth * 10;
   const canvasHeight = viewportHeight * 10;
 
-  // 5. 组装 skeleton.json
+  // 5. 组装 skeleton.json（不含 component start/end）
   const skeleton = {
     name: config.name || '',
     description: config.description || '',
@@ -317,17 +327,10 @@ function generateSkeleton(workdirRoot, skillProjectId) {
     skeleton.subtitle_count = projectState.voice.subtitleCount;
   }
 
-  // 项目级字幕样式（必填，6 字段）
-  // schema 强约束要求 project.json 必须带 subtitle，AI 在 init-project 的 config 里没传就 fail-fast
-  if (!config.subtitle || typeof config.subtitle !== 'object') {
-    throw new Error(
-      '[generate-skeleton] config.subtitle 缺失或不是对象。\n' +
-      '字幕样式是项目级必填（color/fontSize/position/weight/background/textShadow）。\n' +
-      '请在 init-project 的 config JSON 里加 subtitle 字段，例如：\n' +
-      '  "subtitle": { "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
-    );
+  // 项目级字幕样式（可选）
+  if (config.subtitle && typeof config.subtitle === 'object') {
+    skeleton.subtitle = config.subtitle;
   }
-  skeleton.subtitle = config.subtitle;
 
   // 项目模式（固定 dubbing）
   skeleton.mode = 'dubbing';
@@ -335,7 +338,6 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   // 6. 保存 skeleton.json
   const skeletonPath = path.join(workdir, 'skeleton.json');
   fs.writeFileSync(skeletonPath, JSON.stringify(skeleton, null, 2));
-
   console.log(`[✓] skeleton.json 已生成: ${skeletonPath}`);
   console.log(`  名称: ${skeleton.name}`);
   console.log(`  时长: ${skeleton.duration}秒`);
@@ -343,6 +345,37 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   console.log(`  区域: ${skeleton.regions.length} 个`);
   console.log(`  音频: ${skeleton.audio.path}`);
   console.log(`  风格: ${skeleton.style || '-'}`);
+
+  // 7. 生成 region 模板文件
+  const regionsDir = path.join(workdir, 'regions');
+  if (!fs.existsSync(regionsDir)) {
+    fs.mkdirSync(regionsDir, { recursive: true });
+  }
+  for (const region of skeleton.regions) {
+    const template = {
+      id: region.id,
+      name: region.name,
+      type: region.type,
+      emotion: region.emotion,
+      description: region.description,
+      startTime: region.startTime,
+      endTime: region.endTime,
+      duration: region.duration,
+      subtitles: region.subtitles,
+      components: [
+        {
+          id: `${region.id}-001`,
+          type: 'HtmlComponent',
+          position: { x: 0, y: 0, w: skeleton.viewport.width, h: skeleton.viewport.height },
+          background: { html: '', css: '' },
+          content: { html: '', css: '' }
+        }
+      ]
+    };
+    const templatePath = path.join(regionsDir, `${region.id}.json`);
+    fs.writeFileSync(templatePath, JSON.stringify(template, null, 2));
+    console.log(`[✓] 区域模板已生成: ${templatePath}`);
+  }
 
   return skeleton;
 }

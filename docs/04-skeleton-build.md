@@ -1,7 +1,7 @@
-# 步骤3：生成骨架JSON
+# 步骤4：生成骨架JSON
 
-> 前置步骤：[步骤2：骨架设计（口播模式）](02-skeleton-design-dubbing.md)
-> 下一步：[步骤4：区域设计（口播模式）](04-region-design-dubbing.md)
+> 前置步骤：[步骤3：骨架设计（口播模式）](03-skeleton-design-dubbing.md)
+> 下一步：[步骤5：区域设计与生成JSON（口播模式）](05-region-design-dubbing.md)
 
 ---
 
@@ -16,6 +16,15 @@
 | 来源 | 说明 |
 |------|------|
 | 上一步产出 | `design-skeleton-dubbing.md` |
+
+---
+
+## 产出
+
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| skeleton.json | `{workdir}/{skillProjectId}/skeleton.json` | 骨架配置 |
+| regions/ | `{workdir}/{skillProjectId}/regions/` | 区域目录 |
 
 ---
 
@@ -77,17 +86,8 @@ node scripts/setup-workdir.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 ---
 
-## 产出
-
-| 文件 | 路径 | 说明 |
-|------|------|------|
-| skeleton.json | `{workdir}/{skillProjectId}/skeleton.json` | 骨架配置 |
-| regions/ | `{workdir}/{skillProjectId}/regions/` | 区域目录 |
-
----
-
 ## 下一步
 
-进入步骤4循环：每个区域执行 [步骤4：区域设计（口播模式）](04-region-design-dubbing.md) → [步骤5：合并](05-merge.md)。
+进入步骤5循环：每个区域执行 [步骤5：区域设计（口播模式）](05-region-design-dubbing.md) → [步骤6：合并 + 自检](06-merge.md) → [步骤7：素材检查](07-assets.md)。
 
-> 注：skeleton.json 只包含区域的 `name` 和 `duration`，**不含** x/y 坐标（前端按网格自动计算）和 components/subtitles 内容（这些在 Step 4-5 填）。
+> 注：skeleton.json 只包含区域的 `name` 和 `duration`，**不含** x/y 坐标（前端按网格自动计算）和 components/subtitles 内容（这些在 Step 5-6 填）。

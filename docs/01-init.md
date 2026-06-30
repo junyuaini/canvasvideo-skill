@@ -1,49 +1,66 @@
-﻿# 步骤1：初始化
+# 步骤1：初始化
 
 > 前置步骤：无（用户首次提出需求）
-> 下一步：[步骤2：骨架设计（口播模式）](02-skeleton-design-dubbing.md)
+> 下一步：[步骤2：音频与字幕准备](02-voice-prepare.md)
 
 ---
 
 ## 目标
 
-初始化工作目录 → 确认模式（口播模式）→ 收集必要信息。
+初始化工作目录，收集项目配置。
 
-> 注：项目仅支持口播模式。用户需提供音频 + SRT 字幕。
+> 注：用户提供音频 + SRT 字幕，AI 按音频节奏排版画面。
 
 ---
 
-## 模式
+## 产出
 
-| 模式 | 用户提供 | 字幕 | AI负责 |
-|------|---------|------|--------|
-| 口播模式 | 音频(.mp3/.wav/.m4a) + SRT字幕 | ✅ 必须有 | 严格按音频/SRT排版 |
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| 项目目录 | `{workdir}/{skillProjectId}/` | 工作目录 |
+| state.json | `{workdir}/.canvasvideo/state.json` | 项目状态 |
 
 ---
 
 ## 操作
 
-### 步骤1：确认模式
+### 第 1 步：收集配置
 
-**口播模式**：用户提供 `.mp3/.wav/.m4a` 音频和 `.srt` 字幕，AI 按音频节奏排版画面。
+从用户意图中提取配置字段：
 
----
-
-### 步骤2：收集信息
-
-> 口播模式 init-project 不收集任何配置字段（音频/字幕/style 等全部在 Step 2 MD 模板中写）。
-
-**向用户确认**：
-```
-已选择口播模式。请提供：
-- 音频文件路径（如 ./voice.mp3）
-- SRT 字幕路径（如 ./subtitle.srt）
-后续在 Step 2 设计文档中写入。
+```json
+{
+  "audioPath":    "./audio.mp3",
+  "subtitlePath": "./subtitle.srt",
+  "theme":        "white",
+  "aspect":       "4:3"
+}
 ```
 
----
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `audioPath` | 是 | 音频文件路径（相对于 workdir） |
+| `subtitlePath` | 是 | 字幕文件路径（相对于 workdir） |
+| `theme` | 否 | 主题：`white`（默认）\| `black` |
+| `aspect` | 否 | 画幅：`4:3`（默认）\| `16:9` |
 
-### 步骤2.5：判断新建 vs 沿用
+**AI 从用户意图中提取或推断**（示例）：
+
+```
+用户："帮我做个视频，音频在 D:/voice.mp3，字幕在 D:/sub.srt，主题黑底"
+→ audioPath: "D:/voice.mp3" → 转换相对路径（复制到 workdir 后用相对路径）
+→ subtitlePath: "D:/sub.srt"
+→ theme: "black"
+→ aspect: 默认 "4:3"
+```
+
+用户未指定的字段：AI 按默认值填写（`theme: "white"`, `aspect: "4:3"`）。
+
+### 第 2 步：新建配置文件
+
+把上一步收集的配置写入 JSON 文件（如 `dubbing-config.json`），供 init-project.js 读取。
+
+### 第 3 步：判断新建 vs 沿用
 
 **这一步是 init-project 跑之前必须做的决策**，对应 [rules/01-principles.md §R2](rules/01-principles.md#r2-项目新建-vs-沿用)。
 
@@ -51,9 +68,9 @@
 
 | state.json | 用户意图 | AI 决策 | 命令 |
 |------------|---------|---------|------|
-| 不存在 | 任何意图 | **新建项目**（不用加 `--new`，默认行为就是新建） | 普通命令 |
+| 不存在 | 任何意图 | **新建项目**（默认行为） | 普通命令 |
 | 存在 | **新主题 / 新内容** | **新建项目** | 命令加 `--new` |
-| 存在 | **修改当前项目** | **沿用项目** | 普通命令（不加 `--new`） |
+| 存在 | **修改当前项目** | **沿用项目** | 普通命令 |
 | 存在 | **意图模糊** | **停下来澄清** | 不调脚本，先问用户 |
 
 **关键词快速判断**（仅作辅助，必须结合上下文）：
@@ -71,35 +88,21 @@
    要继续沿用请回复"沿用"。
 ```
 
----
+### 第 4 步：运行初始化脚本
 
-### 步骤3：初始化项目
+**配置文件**
 
-运行初始化脚本：
-
-**方式1：配置文件（推荐，避免引号问题）**
-
-先创建配置文件：
+先创建配置文件，再运行脚本：
 
 ```bash
-# 口播模式 - 新建项目（推荐，状态文件不存在时默认就是新建）
+# 新建项目
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --config=dubbing-config.json
 
-# 口播模式 - 强制新建项目（已有项目时加 --new，会删除老 state.json）
+# 强制新建项目（已有项目时加 --new，会删除老 state.json）
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --new --config=dubbing-config.json
 
-# 口播模式 - 沿用现有项目（修改/迭代当前视频）
+# 沿用现有项目（修改/迭代当前视频）
 node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --config=dubbing-config.json
-```
-
-**方式2：JSON 字符串（兼容旧方式）**
-
-```bash
-# 口播模式 - 新建
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
-
-# 口播模式 - 强制新建
-node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --new '{"audioPath":"./audio.mp3","subtitlePath":"./subtitle.srt","theme":"white","aspect":"4:3"}'
 ```
 
 **`--new` 标志说明**：
@@ -135,19 +138,11 @@ node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --new '{"a
 1. **远程注册/读取账号**（仅首次需联网，本地有 `.user.json` 则跳过）
 2. 用 userId 的短哈希生成 `skillProjectId`（新格式：`cv_{userShort6}_{timestamp}_{random8}`，如 `cv_a1b2c3_mqtk95pt_0b43fa53`）
 3. 创建工作目录结构
-4. 保存项目配置到 `state.json`（含 `userId`）
-5. 输出项目ID、工作目录路径，**首次创建会同时输出 userId/userToken**
+4. 从 config 提取 `theme` / `aspect` 写入 state
+5. 保存项目配置到 `state.json`
+6. 输出项目ID、工作目录路径，**首次创建会同时输出 userId/userToken**
 
 > 注意：脚本输出的 `skillProjectId` 需要记录，后续步骤会用到。**严禁 LLM 自编或硬编码 skillProjectId**——详见 [rules/01-principles.md §R6](../rules/01-principles.md#r6-skillprojectid-规范)。
-
----
-
-## 产出
-
-| 文件 | 路径 | 说明 |
-|------|------|------|
-| 项目目录 | `{workdir}/{skillProjectId}/` | 工作目录 |
-| state.json | `{workdir}/.canvasvideo/state.json` | 项目状态 |
 
 ---
 
@@ -155,7 +150,7 @@ node scripts/init-project.js --cwd=<Agent工作目录的绝对路径> --new '{"a
 
 > [E] Error — 不符合将阻断 | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-- [E] 模式已确定（口播）
-- [E] 必填信息已获取（audio + subtitle）
+- [E] 配置文件已创建（audioPath + subtitlePath + theme + aspect）
 - [E] 工作目录已创建
 - [E] skillProjectId 已生成
+- [E] state.theme 和 state.aspect 已写入

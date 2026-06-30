@@ -10,9 +10,16 @@
  *
  * 用法：node init-project.js [options]
  *
- * 配置方式（二选一）：
- *   1. JSON 配置文件：--config=
- *   2. JSON 字符串（不推荐，容易引号出错）：'{"audioPath":"..."}'
+ * 配置方式：
+ *   --config=<配置文件路径>
+ *
+ * 配置文件格式（JSON）：
+ *   {
+ *     "audioPath":  "./audio.mp3",    // 音频文件路径（相对于 workdir）
+ *     "subtitlePath": "./subtitle.srt", // 字幕文件路径（相对于 workdir）
+ *     "theme":      "white",          // 主题：white | black
+ *     "aspect":     "4:3"             // 画幅：4:3 | 16:9
+ *   }
  *
  * 项目隔离：
  *   默认情况下，若 workdirRoot 下已有 .canvasvideo/project-state.json，则沿用老项目；
@@ -21,14 +28,11 @@
  *     node init-project.js --new --config=...
  *
  * 示例：
- *   # 方式1：配置文件（推荐）
- *   node init-project.js --config=project-config.json
- *
- *   # 方式2：JSON 字符串（兼容旧方式）
- *   node init-project.js '{"content":"AI学习"}'
+ *   # 新建项目
+ *   node init-project.js --cwd=/path/to/agent --config=dubbing-config.json
  *
  *   # 强制重新建项目（覆盖 state.json）
- *   node init-project.js --new --config=new-topic.json
+ *   node init-project.js --cwd=/path/to/agent --new --config=new-topic.json
  */
 const fs = require('fs');
 const path = require('path');
@@ -47,14 +51,12 @@ function parseArgs(argv) {
   const workdirRoot = path.join(agentWorkdir, 'canvasvideo-workdir');
 
   const args = {
-    workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
-    mode: 'dubbing',  // 固定口播模式
+    workdirRoot,
+    mode: 'dubbing',
     configFile: null,
-    configJson: null,
-    forceNew: false,  // --new 标志：强制重新创建项目（删除老 state.json）
+    forceNew: false,
   };
 
-  // 从剩余参数里找 config
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--cwd=')) continue;
@@ -62,8 +64,6 @@ function parseArgs(argv) {
       args.forceNew = true;
     } else if (arg.startsWith('--config=')) {
       args.configFile = arg.slice('--config='.length);
-    } else if (!args.configJson && !arg.startsWith('--')) {
-      args.configJson = arg;
     }
   }
 
@@ -76,31 +76,19 @@ function parseArgs(argv) {
  * @returns {Object} 配置对象
  */
 function loadConfig(args) {
-  // 优先使用配置文件
-  if (args.configFile) {
-    const configPath = path.resolve(args.configFile);
-    if (!fs.existsSync(configPath)) {
-      throw new Error(`配置文件不存在: ${configPath}`);
-    }
-    try {
-      const content = fs.readFileSync(configPath, 'utf-8');
-      return JSON.parse(content);
-    } catch (e) {
-      throw new Error(`配置文件解析失败: ${e.message}`);
-    }
+  if (!args.configFile) {
+    throw new Error('缺少配置：需要 --config=<配置文件路径>');
   }
-
-  // 其次使用 JSON 字符串
-  if (args.configJson) {
-    try {
-      return JSON.parse(args.configJson);
-    } catch (e) {
-      throw new Error(`JSON 参数解析失败: ${e.message}。建议改用 --config=配置文件.json 方式`);
-    }
+  const configPath = path.resolve(args.configFile);
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`配置文件不存在: ${configPath}`);
   }
-
-  // 默认空配置
-  return {};
+  try {
+    const content = fs.readFileSync(configPath, 'utf-8');
+    return JSON.parse(content);
+  } catch (e) {
+    throw new Error(`配置文件解析失败: ${e.message}`);
+  }
 }
 
 /**
@@ -167,8 +155,14 @@ async function initProject(workdirRoot, config = {}, options = {}) {
   // 写入模式（口播）
   state.mode = mode;
 
-  // 口播模式：配音音频和 SRT 字幕由步骤 1.5（prepare-voice.js）准备
-  // 参考文档：docs/01.5-voice-prepare.md
+  // 从 config 提取 theme / aspect（供后续步骤使用）
+  if (config && typeof config === 'object') {
+    if (config.theme) state.theme = config.theme;
+    if (config.aspect) state.aspect = config.aspect;
+  }
+
+  // 口播模式：配音音频和 SRT 字幕由步骤 2（prepare-voice.js）准备
+  // 参考文档：docs/02-voice-prepare.md
   state.voice = null;  // 由 prepare-voice.js 填充（含 source/audioPath/srtPath/duration/subtitleCount/voiceName）
 
   // 保存状态

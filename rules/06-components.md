@@ -100,7 +100,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | background | object | ✅ | HtmlComponent 的两个基本属性之一（另一个是 content）。{ html, css }：背景 HTML/CSS，建议 position:absolute + inset:0 填满 video-frame |
 | background.html | string | ✅ | 背景 HTML 片段。一般是单个根 div |
 | background.css | string | ✅ | 背景 CSS 样式 |
-| content.elementIds | object | 🆚 | 内部元素时间线，key 为 `#ID` 形式（新约定 R11 下可选，由 HTML id 自动生成） |
+| content.elementIds | object | ✅ | 内部元素时间线。**禁止手写**，固定写 `{}`，merge 时自动从 HTML 的 `id` 属性生成完整对象 |
 | start | number | ✅ | 出现时间（秒） |
 | end | number | ✅ | 消失时间（秒） |
 
@@ -113,17 +113,13 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "background": {
-    "html": "<div class='region-bg'></div>",
+    "html": "<div id='P1-bg' class='region-bg' data-global='true'></div>",
     "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a1530 0%, #1a1a40 50%, #0f0f2a 100%); }"
   },
   "content": {
-    "html": "<div id='P1-002' class='stage'><div id='P1-003' class='title'>标题</div><div id='P1-004' class='subtitle'>副标题</div></div>",
+    "html": "<div id='P1-002' class='stage'><div id='P1-003' class='title' data-subtitle='1-5'>标题</div><div id='P1-004' class='subtitle' data-subtitle='1-5'>副标题</div></div>",
     "css": ".stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #fff; } .subtitle { font-size: 20px; color: #ccc; }",
-    "elementIds": {
-      "#P1-002": { "id": "P1-002", "start": 0,   "end": 5 },
-      "#P1-003": { "id": "P1-003", "start": 0.3, "end": 5 },
-      "#P1-004": { "id": "P1-004", "start": 1.0, "end": 5 }
-    }
+    "elementIds": {}
   },
   "start": 0,
   "end": 5
@@ -137,7 +133,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 **所有 HtmlComponent 必须携带 background 字段**（与 content 平级），作为组件底色/氛围背景：
 - background.html 必填、字符串、非空（一般是单个根 <div>，可嵌套 SVG/渐变/装饰）
 - background.css 必填、字符串、非空（建议 position: absolute; inset: 0; 让背景填满 video-frame）
-- 非 HtmlComponent（如 AggregateComponent）不强制
+- background 必填
 - **校验**：selfcheck.js 在本地会拦、projectValidator.collectErrors 在上传时会 400 拒绝
 
 > 💡 为什么 background 放在组件上而不是 region 上？跟 `content` 一套写法，每个 HtmlComponent 自带底色，区域切换时由前端 `renderRegionBackground` 接管背景层，组件内部背景与组件层互不干扰。
@@ -221,20 +217,18 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ## R7 占位图使用规范
 
-> 本节为 [templates/placeholders/README.md](../../templates/placeholders/README.md) 的具体写法补充，详细说明占位图在 HtmlComponent 中的两种接入方式。
+### R7.1 Picsum 在线图
 
-### R7.1 Picsum 在线图（推荐，AI 自动生成场景）
-
-**URL 范式**（必须用 seed，**严禁不写 seed**，否则每次刷新换图，元素 start/end 失去意义）：
+**URL 范式**（必须用 seed，**严禁不写 seed**）：
 
 ```
 https://picsum.photos/seed/{seed}/{width}/{height}
 ```
 
-- `seed` 用文案/语义关键词（如 `ai-learning`、`tech-cover`），同一概念全程固定一个 seed
+- `seed` 用文案/语义关键词，同一概念全程固定一个 seed
 - `width` / `height` 与 `position.w` / `position.h` 一致
 
-**CSS 水印**（必备，标明"AI 占位图"语义，避免被误认为真实素材）：
+**CSS 水印**（必备）：
 
 ```html
 <div id="P1-002" class="cover">
@@ -255,111 +249,80 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 }
 ```
 
-### R7.2 本地 SVG 兜底（用户未提供素材、AI 离线生成场景）
-
-`templates/placeholders/{light|dark}/` 下 7 张标准 SVG，自带水印（与 scaffold.js 复制规则一致）：
-
-| 用途 | hint 关键词 |
-|------|------------|
-| HOOK | `hook` |
-| SCENE | `scene` |
-| PAIN | `pain` |
-| SOLVE | `solve` |
-| RESULT | `result` |
-| CTA | `cta` |
-| 通用 | `generic` |
-
-**HtmlComponent 中引用**（路径相对 workdir 根，由 `scripts/scaffold.js` 自动复制到 `assets/placeholders/{theme}/`）：
-
-```html
-<img id="P2-003" class="cover" src="./assets/placeholders/dark/scene.svg" />
-```
-
-> ⚠️ **路径里的 `{theme}` 必须与 skeleton.json 的 `theme` 字段一致**（`white` → `light/`、`black` → `dark/`）。Scaffold 脚本会按 theme 自动复制对应子目录。
-
-### R7.3 状态选择规则
+### R7.2 状态选择规则
 
 | 素材来源 | project.json 写法 |
 |---------|-----------------|
 | 用户已提供真实图 | `<img src="./assets/images/{file}">`（真实路径，无水印） |
-| AI 自动生成（在线） | Picsum URL + CSS 水印（R7.1） |
-| AI 自动生成（离线 / fallback） | 本地 SVG 占位图（R7.2，自带水印） |
-| 待用户提供 | 用占位图，备注列写"用户提供后替换" |
+| AI 自动生成 | Picsum URL + CSS 水印（R7.1） |
+| 待用户提供 | Picsum + CSS 水印，备注列写"用户提供后替换" |
 
-**素材清单实现率必须 = 100%**——每个 `<img>` / 占位图位置必须有一种来源，不允许"裸空"。
+**素材清单实现率必须 = 100%**——每个 `<img>` 必须有一种来源，不允许"裸空"。
 
-### R7.4 校验清单
+### R7.3 校验清单
 
-- [E] `<img>` 必须有 `id` 属性，元素 ID 出现在 `content.elementIds`
+- [E] `<img>` 必须有 `id` 属性
 - [E] Picsum URL 必须含 `seed` 参数
-- [E] 占位图必须有水印（Picsum 走 CSS 水印 / 本地 SVG 自带水印）
-- [W] `<img>` 的尺寸与 `position` 协调（避免拉伸变形）
+- [E] 占位图必须有水印（CSS 水印）
+- [W] `<img>` 的尺寸与 `position` 协调
 
 ---
 
-## R8 字幕样式项目级必填
+## R8 字幕渲染配置
 
-**AI 必须在 init-project 的 config JSON 里提供 `subtitle` 字段，6 字段全要。字幕样式从"主题控制"改为"项目级必填"。**
+`project.subtitle` 控制字幕开关和自定义渲染。字幕内容（时间轴）来自 `subtitles` 数组；字幕 UI 由本节字段决定。
 
 ### 字段结构
 
 ```json
 "subtitle": {
-  "color":      "#FFFFFF",                       // 文字颜色，hex 或 rgba
-  "fontSize":   "36px",                           // 字号，CSS 长度
-  "position":   "bottom-center",                  // 9 档：top/middle/bottom + left/center/right
-  "weight":     700,                              // 字重，100-900 整百
-  "background": "rgba(0,0,0,0.5)",                // 背景色，transparent/hex/rgba
-  "textShadow": "0 1px 3px rgba(0,0,0,0.8)"       // 描边/阴影
+  "enabled": true,
+  "html": "<div class='subtitle-bar'><span class='subtitle-text'></span></div>",
+  "css": ".subtitle-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 24px; display: flex; justify-content: center; pointer-events: none; z-index: 200; }\n.subtitle-text { display: inline-block; padding: 4px 12px; border-radius: 6px; background: rgba(0,0,0,0.6); color: #fff; font-size: 28px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.9); line-height: 1.4; }"
 }
 ```
 
-### 9 档 position 枚举
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `enabled` | 否 | 字幕开关，默认 `true`。设为 `false` 前端不渲染字幕。 |
+| `html` | 否 | 字幕容器 HTML 片段，前端注入到视口。**必须包含 `.subtitle-text` 元素**，供文字写入。 |
+| `css` | 否 | 字幕 CSS，注入到页面 `<head>`。 |
 
-```
-top-left      top-center      top-right
-middle-left   middle-center   middle-right
-bottom-left   bottom-center   bottom-right
-```
+### 默认行为
 
-### 推荐默认值（AI 自主决定，不主动问用户）
+- `enabled` 不写默认 `true`
+- `html` / `css` 不写：前端不注入，字幕不显示
+- `enabled: false`：完全禁用字幕（前端不渲染）
 
-| 风格 | color | fontSize | position | weight | background | textShadow |
-|------|-------|----------|----------|--------|------------|------------|
-| 暗色科技 | `#FFFFFF` | `36px` | `bottom-center` | `700` | `rgba(0,0,0,0.55)` | `0 1px 3px rgba(0,0,0,0.9)` |
-| 亮色商务 | `#1a1a1a` | `34px` | `bottom-center` | `600` | `rgba(255,255,255,0.7)` | `0 1px 2px rgba(255,255,255,0.6)` |
-| 暗色情绪 | `#F5E8EC` | `40px` | `middle-center` | `800` | `transparent` | `0 2px 6px rgba(0,0,0,0.95)` |
-| 亮色清新 | `#2C3E50` | `32px` | `bottom-left` | `500` | `rgba(255,255,255,0.6)` | `none` |
+### HTML 约定
+
+- 必须有 `.subtitle-text` 元素，AI 写文案时不关心其内容（由前端自动写入当前时间对应的字幕文本）
+- 容器用绝对定位包裹，覆盖整个视口
+- `pointer-events: none` 确保字幕层不阻挡交互
+
+### CSS 约定
+
+- 定位写 `position: absolute; left: 0; right: 0;` 以覆盖视口
+- `z-index` 足够高（如 200）确保字幕在最上层
+- `.subtitle-text` 控制文字样式（字号/颜色/背景等）
 
 ### 决策权
 
-- ✅ **AI 自己决定**（用户没指定时）：按上表选值
-- ❌ **AI 不主动问用户**：除非用户明确说"字幕我要 XXX"
+- ✅ **AI 自己决定**（用户没指定时）：按默认模板生成
+- ❌ **AI 不主动问用户**：除非用户明确说"字幕样式要 XXX"
 
-### 校验层级（3 道防线）
+### 校验
 
 | 层级 | 时机 | 行为 |
 |------|------|------|
-| 1. `generate-skeleton.js` | 生成骨架时 | 缺 `config.subtitle` → fail-fast 抛错 + 给补字段示例 |
-| 2. `selfcheck.js` | 本地校验 | 6 字段缺任一 → 输出 `[必填] project.subtitle.X 缺失`；position 不在 9 档 → `[枚举]`；weight 不在 100-900 整百 → `[范围]` |
-| 3. `server validate`（ajv schema） | 上传时 | 校验失败 → 返回 400 |
-
-### 严禁
-
-- ❌ AI 在 config 里偷懒不写 subtitle（理由："主题应该会处理"）——主题**不**再控制字幕
-- ❌ 沿用老项目时省略 subtitle（schema 不兼容，老项目上传会被拒）
-- ❌ 让用户填 subtitle 字段（除非用户主动指定）
-- ❌ 改主题的 `colors.subtitle` 来"曲线救国"——前端不再从 theme 读字幕样式
-
-### 与其他规则的关系
-
-- **R8 与骨架/沿用规则**：新建/沿用都要带 subtitle，沿用时**不能少**；强制重置（`--new`）后也必须重新带 subtitle
+| `selfcheck.js` | 本地校验 | `subtitle` 整体可选，不校验内部字段 |
+| `server validate`（ajv schema） | 上传时 | 校验 `subtitle` 结构合法（enabled 为 boolean，html/css 为 string） |
 
 ---
 
 ## R11 元素动画新约定（CSS keyframes + data-subtitle / data-global）
 
-> **新约定（推荐）**：AI 不再手填 `elementIds.start/end`，改用 CSS keyframes + `data-subtitle` / `data-global` 控制元素出现时机和动画效果。
+> **新约定（强制）**：AI 不再手填 `elementIds`，改用 CSS keyframes + `data-subtitle` / `data-global` 控制元素出现时机和动画效果。`content.elementIds` 固定写 `{}`，merge 时由 `transformHtmlComponent` 自动从 HTML 的 `id` 属性生成。
 
 ### R11.1 核心原则
 
@@ -398,9 +361,11 @@ bottom-left   bottom-center   bottom-right
 **第一步：有 class 必有 id**
 - 有 `class` 属性的元素必须也有 `id`
 - SVG 内部图形原子豁免：`circle/path/line/rect/polygon/polyline/ellipse/g/text/tspan/use/image/defs/linearGradient/radialGradient/stop/animate/animateTransform/animateMotion`
+- **`background.html` 中的元素也适用此规则**：即使背景元素不需要动画，也必须写 `id` 和归属属性
 
 **第二步：有 id 必有归属属性**
 - 有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
+- **背景元素统一用 `data-global="true"`**：背景层跟随 region 全生命周期
 
 ```html
 <!-- 错：class 无 id -->
@@ -434,9 +399,8 @@ bottom-left   bottom-center   bottom-right
 
 ### R11.6 elementIds 字段
 
-- **新约定下 elementIds 字段可选**：merge 脚本会从 HTML id 自动生成
+- **禁止手写 elementIds**：固定写 `"elementIds": {}`，merge 时由 `transformHtmlComponent` 自动从 HTML 的 `id` 属性生成
 - 旧 elementIds（带 start/end 数字）**仍兼容**，前端自动降级到 `_legacyUpdateElementVisibility`
-- AI 写新项目时**推荐**省略 elementIds 字段，由系统自动生成
 
 ### R11.7 与旧约定的兼容
 
@@ -457,7 +421,7 @@ bottom-left   bottom-center   bottom-right
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "background": {
-    "html": "<div id='P1-016' class='region-bg' data-global='true'></div>",
+    "html": "<div class='region-bg'></div>",
     "css": ".region-bg { position: absolute; inset: 0; background: #0a0a0f; }"
   },
   "content": {

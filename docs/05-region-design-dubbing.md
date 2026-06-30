@@ -1,16 +1,33 @@
-# 区域设计（口播模式）
+# 步骤5：区域设计与生成JSON（口播模式）
+
+> 前置步骤：[步骤4：生成骨架JSON](04-skeleton-build.md)
+> 下一步：[步骤6：合并 + 自检](06-merge.md)
+
+---
+
+## 目标
+
+基于 skeleton.json 中的区域配置，为每个区域编写 HtmlComponent JSON（含 HTML 模板和 CSS 动画）。
 
 > **核心原则**：AI 不再手填时间数字，所有元素出现/消失/动画由 **CSS keyframes** 决定，时间由 `data-subtitle` 或 `data-global` 自动从 SRT 推算。
 
 ---
 
-## 与旧约定的区别
+## 输入
 
-| 维度 | 旧约定 | 新约定 |
-|------|--------|--------|
-| 时间字段 | `elementIds["#X"].start/end` 手动数字 | `data-subtitle="3"` 字幕 ID 或 `data-global="true"` |
-| 出现/消失 | JS `display: none/block` 闪现 | CSS `animation` 自带过渡 |
-| AI 要学什么 | 嵌套对象 + 时间数学 | 写 HTML 标签 + CSS keyframes |
+| 来源 | 说明 |
+|------|------|
+| 骨架配置 | `skeleton.json`（由 [步骤4](04-skeleton-build.md) 产出，含 regions 数组） |
+| 区域模板 | `regions/P{n}.json`（由步骤4同时生成，含 region 基本信息和 component 基本框架，背景/内容 HTML/CSS 为空） |
+| 引用规则 | [rules/06-components.md §R11](rules/06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)（CSS animation + data-subtitle 模式） |
+
+---
+
+## 产出
+
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| `regions/P{n}.json` | `{workdir}/{skillProjectId}/regions/P{n}.json` | 每个区域一个 JSON 文件 |
 
 ---
 
@@ -51,28 +68,35 @@
 
 ---
 
-## 两步校验（merge 脚本自动执行）
+## 两步校验（merge 脚本自动执行，仅针对 content）
 
-merge 脚本 6.3 节会自动校验 html：
+merge 脚本会校验 **content.html**：
 
 **第一步：有 class 必有 id**
-- 有 `class` 属性的元素必须也有 `id`（SVG 内部图形原子 `circle/path/line/rect/polygon/polyline/ellipse/g/text/tspan/use/image/defs/linearGradient/radialGradient/stop/animate/animateTransform/animateMotion` 豁免）
+- content.html 中有 `class` 属性的元素必须也有 `id`（SVG 图形原子豁免）
 
 **第二步：有 id 必有归属属性**
-- 有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
+- content.html 中有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
+
+> **background.html 元素不需要任何属性**：merge 不处理 background，background.html 是普通 HTML，背景效果直接写 CSS 即可。
 
 ```html
+<!-- content.html 示例 -->
+
 <!-- 错：class 无 id -->
 <div class='clock-num'>12</div>
 
 <!-- 错：id 无归属属性 -->
 <div id='P1-002'>元素</div>
 
-<!-- 对：专属元素绑定字幕 -->
+<!-- 对：绑定字幕 -->
 <div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
 
-<!-- 对：装饰/背景元素用全局 -->
+<!-- 对：全局装饰 -->
 <div id='P1-016' class='corner-deco' data-global='true'></div>
+
+<!-- background.html 示例（普通 HTML，不需要 id 或 data-global） -->
+<div class='region-bg'></div>
 ```
 
 ---
@@ -151,18 +175,19 @@ merge 脚本 6.3 节会自动校验 html：
 
 ## AI 不需要做的事
 
-- ❌ 写 `start` / `end` 数字
+- ❌ 写 `start` / `end` 数字（步骤4已生成，合并时不重新计算）
+- ❌ 写 `elementIds` 字段（merge 脚本会从 HTML 的 `data-subtitle` 自动生成）
+- ❌ 写 `background` 的 id 或 data-global
 - ❌ 算 `animation-delay` 时间
-- ❌ 写 `elementIds` 字段（merge 脚本会从 HTML 自动生成）
-- ❌ 维护时间数学
 
 ## AI 需要做的事
 
-- ✅ 给元素写 `id`（格式：`P{区域编号}-{三位数字}`，如 `P1-001`）
-- ✅ 给元素写 `data-subtitle` 或 `data-global="true"`（二选一）
+- ✅ 直接在模板 `regions/P{n}.json` 上填写，不新建文件
+- ✅ 给 background 写 HTML/CSS（普通 HTML，不需要 id 或 data-global）
+- ✅ 给 content 写 HTML/CSS，所有有 `id` 的元素必须写 `data-subtitle`
 - ✅ 写 CSS keyframes（标准 CSS 动画）
 - ✅ 给元素 class，用 class 应用 animation
-- ✅ 两步校验：有 class 必有 id，有 id 必有归属
+- ✅ 两步校验（仅 content.html）：有 class 必有 id，有 id 必有归属
 
 ---
 
@@ -241,3 +266,9 @@ selfcheck 会校验：
 3. `data-subtitle` 多选/范围必须合法
 4. CSS 中引用的 keyframes 必须有 `@keyframes` 定义
 5. `animation` 简写建议带 `forwards`
+
+---
+
+## 下一步
+
+进入 [步骤6：合并 + 自检](06-merge.md)

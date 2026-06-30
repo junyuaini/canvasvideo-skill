@@ -27,6 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const { selfcheck } = require('./selfcheck');
 const { resolveAgentWorkdir } = require('./scaffold');
+const { validateAllRegions } = require('./validate-html');
 
 /**
  * 验证项目的设计文档来源
@@ -66,7 +67,7 @@ function validateDesignDocSources(project, workdir) {
 function validate(projectOrPath, workdir) {
   let project;
   let projectFilePath;
-  
+
   if (typeof projectOrPath === 'string') {
     try {
       projectFilePath = projectOrPath;
@@ -77,16 +78,22 @@ function validate(projectOrPath, workdir) {
   } else {
     project = projectOrPath;
   }
-  
+
   // 如果没有提供 workdir，尝试从 project.json 路径推断
   let workdirPath = workdir;
   if (!workdirPath && projectFilePath) {
     workdirPath = path.dirname(projectFilePath);
   }
-  
+
+  // HTML 校验 + 跨 Region ID 防重（读 region 原始文件）
+  const htmlErrors = [];
+  if (workdirPath) {
+    htmlErrors.push(...validateAllRegions(workdirPath).errors);
+  }
+
   // 运行 selfcheck（节奏 4 门槛 + 布局 Y 坐标）
   const sc = selfcheck(project);
-  
+
   // 验证设计文档来源
   let designDocErrors = [];
   if (workdirPath) {
@@ -94,10 +101,10 @@ function validate(projectOrPath, workdir) {
   } else {
     designDocErrors.push('[W] 未提供工作目录路径，无法验证设计文档来源');
   }
-  
+
   const result = {
-    valid: sc.errors.length === 0 && designDocErrors.filter(e => e.startsWith('[E]')).length === 0,
-    errors: [...sc.errors, ...designDocErrors.filter(e => e.startsWith('[E]'))],
+    valid: sc.errors.length === 0 && designDocErrors.filter(e => e.startsWith('[E]')).length === 0 && htmlErrors.length === 0,
+    errors: [...htmlErrors, ...sc.errors, ...designDocErrors.filter(e => e.startsWith('[E]'))],
     warnings: [...sc.warnings, ...designDocErrors.filter(e => e.startsWith('[W]'))],
     mode: sc.mode,
   };

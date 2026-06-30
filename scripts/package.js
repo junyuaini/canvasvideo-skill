@@ -1,5 +1,5 @@
 /**
- * 打包 project.json 与 assets 为 zip
+ * 打包 project.json 为 zip
  * 用法：node package.js --cwd=<Agent工作目录> <skillProjectId> [输出zip路径]
  *
  * 示例：
@@ -11,119 +11,34 @@ const path = require('path');
 const AdmZip = require('adm-zip');
 const { resolveAgentWorkdir } = require('./scaffold');
 
-/**
- * 检查 project.json 中引用的资源文件是否存在
- * @param {string} workdir - 工作目录路径
- * @returns {string[]} 缺失文件列表
- */
-function checkMissingAssets(workdir) {
-  const missing = [];
-  const projectJsonPath = path.join(workdir, 'project.json');
-  
-  if (!fs.existsSync(projectJsonPath)) {
-    return missing;
-  }
-  
-  try {
-    const project = JSON.parse(fs.readFileSync(projectJsonPath, 'utf-8'));
-    
-    // 检查 audio.path
-    if (project.audio && project.audio.path) {
-      const audioPath = path.join(workdir, project.audio.path.replace(/^\.\//, ''));
-      if (!fs.existsSync(audioPath)) {
-        missing.push(`audio: ${project.audio.path} (文件不存在)`);
-      } else {
-        // 检查 mp3 文件大小：合法 mp3 至少有几百 KB（占位模板都是 0.3MB ~ 6.6MB）。
-        // < 50KB 的通常是"空壳 mp3"（只有 MPEG header 没有音频帧），浏览器 audio.play() 会触发 error 事件导致无声。
-        const stat = fs.statSync(audioPath);
-        const MIN_MP3_SIZE = 50 * 1024; // 50KB
-        if (stat.size < MIN_MP3_SIZE) {
-          missing.push(
-            `audio: ${project.audio.path} (文件大小仅 ${stat.size} 字节 < ${MIN_MP3_SIZE} 字节，疑似空壳 mp3：` +
-            `只有 MPEG header 没有实际音频数据，浏览器将无法播放。请重新从 templates/bgm/ 拷贝正常 mp3。)`
-          );
-        }
-      }
-    }
-    
-    // 检查 components 中的图片/资源路径
-    if (Array.isArray(project.components)) {
-      project.components.forEach((comp, idx) => {
-        if (comp.content && comp.content.image) {
-          const imgPath = comp.content.image;
-          // 跳过外部 URL（如 Picsum）
-          if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
-            return;
-          }
-          const localPath = path.join(workdir, imgPath.replace(/^\.\//, ''));
-          if (!fs.existsSync(localPath)) {
-            missing.push(`component[${idx}] image: ${imgPath}`);
-          }
-        }
-        if (comp.content && comp.content.icon) {
-          const iconPath = comp.content.icon;
-          // 跳过外部 URL
-          if (iconPath.startsWith('http://') || iconPath.startsWith('https://')) {
-            return;
-          }
-          const localPath = path.join(workdir, iconPath.replace(/^\.\//, ''));
-          if (!fs.existsSync(localPath)) {
-            missing.push(`component[${idx}] icon: ${iconPath}`);
-          }
-        }
-      });
-    }
-  } catch (e) {
-    // project.json 解析失败，跳过资源检查
-  }
-  
-  return missing;
-}
-
-/**
- * 打包工作目录为 zip
- * @param {string} workdir - 工作目录路径
- * @param {string} outputZip - 输出 zip 路径
- * @returns {string} zip 路径
- */
 function package(workdir, outputZip) {
-  // 先检查资源文件是否存在
-  const missing = checkMissingAssets(workdir);
-  if (missing.length > 0) {
-    throw new Error(
-      `打包失败：以下引用的资源文件不存在，请先确保文件已复制到 workdir：\n` +
-      missing.map(m => `  - ${m}`).join('\n')
-    );
-  }
-  
-  const zip = new AdmZip();
-  
-  // 添加 project.json
   const projectJsonPath = path.join(workdir, 'project.json');
+
   if (!fs.existsSync(projectJsonPath)) {
     throw new Error('workdir 中缺少 project.json');
   }
-  zip.addLocalFile(projectJsonPath, '');
-  
-  // 添加 assets 目录
-  const assetsDir = path.join(workdir, 'assets');
-  if (fs.existsSync(assetsDir)) {
-    zip.addLocalFolder(assetsDir, 'assets');
+
+  const project = JSON.parse(fs.readFileSync(projectJsonPath, 'utf-8'));
+
+  const audioStr = typeof project.audio === 'string' ? project.audio : (project.audio && project.audio.base64);
+  if (!audioStr || !audioStr.startsWith('data:')) {
+    throw new Error('project.json.audio 不是有效的数据 URI，请先执行步骤 7 素材编码');
   }
-  
-  // 写入 zip
+
+  const zip = new AdmZip();
+  zip.addLocalFile(projectJsonPath, '');
+
   const zipDir = path.dirname(outputZip);
   if (!fs.existsSync(zipDir)) {
     fs.mkdirSync(zipDir, { recursive: true });
   }
-  
+
   zip.writeZip(outputZip);
-  console.log(`已打包: ${outputZip}`);
-  
+  console.log(`[✓] 已打包: ${outputZip}`);
+
   return outputZip;
 }
 
-// CLI 模式
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const agentWorkdir = resolveAgentWorkdir(argv);
@@ -145,20 +60,19 @@ if (require.main === module) {
     console.error('');
     console.error('示例:');
     console.error('  node package.js --cwd=/path/to/agent/workspace cv_abc123');
-    console.error('  node package.js --cwd=/path/to/agent/workspace cv_abc123 ./output/video.zip');
     process.exit(1);
   }
-  
+
   const workdir = path.join(workdirRoot, skillProjectId);
   const finalOutputZip = outputZip || path.join(workdir, `${skillProjectId}.zip`);
-  
+
   try {
     package(workdir, finalOutputZip);
     process.exit(0);
   } catch (err) {
-    console.error('打包失败:', err.message);
+    console.error('[✗] 打包失败:', err.message);
     process.exit(1);
   }
 }
 
-module.exports = { package, checkMissingAssets };
+module.exports = { package };

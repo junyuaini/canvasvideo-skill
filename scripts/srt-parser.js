@@ -34,7 +34,7 @@ function timeToSeconds(timeStr) {
 /**
  * 解析 SRT 文件内容
  * @param {string} content - SRT 文件完整内容
- * @returns {Array<{start: number, end: number, text: string}>}
+ * @returns {Array<{id: number|null, start: number, end: number, text: string}>}
  */
 function parseSrtContent(content) {
   const subtitles = [];
@@ -70,7 +70,7 @@ function parseSrtContent(content) {
           const end = timeToSeconds(altMatch[2]);
           const text = lines.slice(2).join('\n');
           if (text) {
-            subtitles.push({ start, end, text });
+            subtitles.push({ id: null, start, end, text });
           }
           continue;
         }
@@ -83,9 +83,10 @@ function parseSrtContent(content) {
 
     // 剩余行是字幕文本（可能有多行）
     const text = lines.slice(lineIndex + 1).join('\n');
+    const id = lines[0] && /^\d+$/.test(lines[0]) ? parseInt(lines[0], 10) : null;
 
     if (text) {
-      subtitles.push({ start, end, text });
+      subtitles.push({ id, start, end, text });
     }
   }
 

@@ -78,7 +78,6 @@ npm install
 视频上线后随时迭代：
 
 ```
-把背景音乐换成 D:/new-music.mp3
 第二章节改成讲混合检索
 ```
 
@@ -105,13 +104,12 @@ canvasvideo-skill/
 │
 ├── docs/                      # 📋 执行步骤（9 步流程）
 │   ├── 01-init.md                       # 步骤1：初始化
-│   ├── 01.5-voice-prepare.md            # 步骤1.5：音频与字幕准备
-│   ├── 02-skeleton-design-dubbing.md    # 步骤2：骨架设计
-│   ├── 03-skeleton-build.md             # 步骤3：MD → skeleton.json
-│   ├── 04-region-design-dubbing.md      # 步骤4：区域设计
-│   ├── 05-merge.md                      # 步骤5：合并 skeleton + regions → project.json
-│   ├── 06-assets.md                     # 步骤6：素材处理
-│   ├── 07-validate.md                   # 步骤7：校验
+│   ├── 02-voice-prepare.md              # 步骤2：音频与字幕准备（口播）
+│   ├── 03-skeleton-design-dubbing.md    # 步骤3：骨架设计（口播）
+│   ├── 04-skeleton-build.md             # 步骤4：MD → skeleton.json
+│   ├── 05-region-design-dubbing.md      # 步骤5：区域设计
+│   ├── 06-merge.md                      # 步骤6：合并 + 自检
+│   ├── 07-assets.md                     # 步骤7：素材检查
 │   ├── 08-package.md                    # 步骤8：打包 zip
 │   └── 09-upload.md                     # 步骤9：上传
 │
@@ -135,11 +133,11 @@ canvasvideo-skill/
 │
 └── scripts/                   # 🛠️ Node.js 工具脚本
     ├── init-project.js      # 步骤1：初始化（生成 state.json + skillProjectId）
- │   ├── prepare-voice.js     # 步骤1.5：音频与字幕准备
-    ├── tts.js               # 步骤1.5 内部依赖：TTS 引擎（基于 node-edge-tts）
-    ├── generate-skeleton.js # 步骤3：MD → skeleton.json
-    ├── merge-regions.js     # 步骤5：合并 skeleton + regions → project.json
- │   ├── setup-assets.js      # 步骤6：复制占位素材
+    ├── prepare-voice.js     # 步骤2：音频与字幕准备
+    ├── tts.js               # 步骤2 内部依赖：TTS 引擎（基于 node-edge-tts）
+    ├── generate-skeleton.js # 步骤4：MD → skeleton.json
+    ├── merge-regions.js     # 步骤6：合并 skeleton + regions → project.json
+    ├── setup-assets.js      # 步骤7：素材检查
     ├── validate.js          # 步骤7：本地校验入口
     ├── selfcheck.js         # 步骤7：自检规则（ID 格式 + 重复 + 时间轴）
     ├── package.js           # 步骤8：打包 zip
@@ -167,7 +165,7 @@ canvasvideo-skill/
 │            ↓                                              │
 │ ┌─ 步骤文档 ──────────────────────────────────┐           │
 │ │ docs/01-init.md ~ 09-upload.md               │           │
-│ │ 步骤 1~10 执行流程                            │           │
+│ │ 步骤 1~9 执行流程                              │           │
 │ └────────────────────────────────────────────┘           │
 └────────────────────────────────────────────────────────────┘
               ↓ 引用（横切）
@@ -223,8 +221,7 @@ AI 第一次给你做视频时大致会这样走：
    │
    ▼
 [步骤 7] 素材处理
-   │  ├─ 查 templates/placeholders/README.md
-   │  └─ 查 templates/bgm/README.md
+   │  └─ 查 templates/placeholders/README.md
    │
    ▼
 [步骤 8] 校验
@@ -249,7 +246,7 @@ AI 第一次给你做视频时大致会这样走：
 | **执行步骤** | `docs/01-init.md` ~ `09-upload.md` | AI（按步骤执行） |
 | **AI 设计知识库** | `rules/*.md` | AI（设计阶段查阅） |
 | **AI 生成模板** | `templates/projects/*/` | AI（作样板复制改写） |
-| **AI 资源库** | `templates/placeholders/` | AI（写 project.json 时直接引用） |
+| **AI 资源库** | `templates/placeholders/README.md` | AI（写 project.json 时查阅占位图规范） |
 | **结构校验** | 云端 `/api/projects/validate` | upload-video.js 自动调用 |
 | **执行脚本** | `scripts/*.js` | AI（工作流中调用） |
 | **局部速查** | `templates/projects/README.md`、`templates/placeholders/README.md` | AI（局部速查） |

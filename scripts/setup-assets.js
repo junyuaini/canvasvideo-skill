@@ -1,46 +1,51 @@
 /**
- * 素材设置脚本
+ * 素材编码脚本
  *
- * 功能：
- *  - 复制占位素材到工作目录
- *  - 复制 BGM 到工作目录
- *  - 支持同时执行或单独执行
+ * 功能：将音频和图片转为 Base64，内联到 project.json
  *
- * 用法：node setup-assets.js <skillProjectId> [options]
- *   options:
- *     --theme=<white|black>    主题色（默认 white）
- *     --bgm=<style>            BGM 风格（如 tech-pulse，不传则不复制 BGM）
- *
- * 示例：
- *   node setup-assets.js cv_abc123 --theme=white --bgm=tech-pulse
- *   node setup-assets.js cv_abc123 --theme=black
- *   node setup-assets.js cv_abc123
+ * 用法：node setup-assets.js --cwd=<Agent工作目录> <skillProjectId>
  */
+const fs = require('fs');
 const path = require('path');
-const { ensurePlaceholders, ensureBgm, resolveAgentWorkdir } = require('./scaffold');
+const { resolveAgentWorkdir } = require('./scaffold');
+
+const MIME_MAP = {
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4',
+  '.ogg': 'audio/ogg',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+};
+
+function getMimeType(ext) {
+  return MIME_MAP[ext.toLowerCase()] || 'application/octet-stream';
+}
+
+function fileToBase64(filePath) {
+  const ext = path.extname(filePath);
+  const mime = getMimeType(ext);
+  const data = fs.readFileSync(filePath);
+  return `data:${mime};base64,${data.toString('base64')}`;
+}
 
 function parseArgs(argv) {
-  // argv 去掉 node 路径和脚本路径
   const userArgs = argv.slice(2);
-  // workdir 在 parseArgs 头部已通过 resolveAgentWorkdir 解析
-  // 严禁再走 process.cwd()，避免 workdir 飘到脚本运行时目录
   const workdirRoot = path.join(resolveAgentWorkdir(userArgs), 'canvasvideo-workdir');
 
   const args = {
-    workdirRoot,  // 已在 parseArgs 头部通过 resolveAgentWorkdir 解析
-    skillProjectId: null,
-    theme: 'white',
-    bgm: null
+    workdirRoot,
+    skillProjectId: null
   };
 
   for (let i = 0; i < userArgs.length; i++) {
     const arg = userArgs[i];
     if (arg.startsWith('--cwd=')) continue;
-    if (arg.startsWith('--theme=')) {
-      args.theme = arg.slice('--theme='.length);
-    } else if (arg.startsWith('--bgm=')) {
-      args.bgm = arg.slice('--bgm='.length);
-    } else if (!args.skillProjectId && !arg.startsWith('--')) {
+    if (!args.skillProjectId && !arg.startsWith('--')) {
       args.skillProjectId = arg;
     }
   }
@@ -48,29 +53,65 @@ function parseArgs(argv) {
   return args;
 }
 
-function setupAssets(workdirRoot, skillProjectId, options = {}) {
+function encodeAssets(workdirRoot, skillProjectId) {
   if (!skillProjectId) {
     throw new Error('参数错误：skillProjectId 是必填项');
   }
 
-  const theme = options.theme || 'white';
-  const bgmStyle = options.bgm || null;
+  const workdir = path.join(workdirRoot, skillProjectId);
+  const statePath = path.join(workdirRoot, '.canvasvideo', 'project-state.json');
+  const projectPath = path.join(workdir, 'project.json');
 
-  // 1. 复制占位素材
-  const placeholders = ensurePlaceholders(workdirRoot, skillProjectId, theme);
-  console.log(`[✓] 占位素材已复制 (${placeholders.copied.length} 个)`);
-
-  // 2. 复制 BGM（如果指定了风格）
-  if (bgmStyle) {
-    const bgm = ensureBgm(workdirRoot, skillProjectId, bgmStyle);
-    if (bgm.hasBgm) {
-      console.log(`[✓] BGM 已复制: ${bgmStyle}`);
-    } else {
-      console.warn(`[W] BGM 复制失败: templates/bgm/ 下没有 ${bgmStyle} 对应的音频文件`);
-    }
+  if (!fs.existsSync(statePath)) {
+    throw new Error('project-state.json 不存在，请先执行步骤 1');
   }
 
-  console.log(`[✓] 素材设置完成`);
+  if (!fs.existsSync(projectPath)) {
+    throw new Error('project.json 不存在，请先执行步骤 6');
+  }
+
+  const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+  const voice = state.voice;
+  if (!voice) {
+    throw new Error('state.voice 不存在，请先执行步骤 2');
+  }
+
+  let projectStr = fs.readFileSync(projectPath, 'utf-8');
+
+  const audioPath = path.resolve(workdir, voice.audioPath);
+  if (!fs.existsSync(audioPath) || fs.statSync(audioPath).size === 0) {
+    throw new Error(`音频文件不存在或为空: ${audioPath}`);
+  }
+
+  const audioBase64 = fileToBase64(audioPath);
+
+  // 音频 base64：直接替换 audio 字段为数据 URI
+  projectStr = projectStr.replace(/"audio"\s*:\s*"[^"]*"/, `"audio": "${audioBase64}"`);
+  projectStr = projectStr.replace(/"audio"\s*:\s*\{[^}]*\}/, `"audio": "${audioBase64}"`);
+
+  // 图片 base64：替换 <img src="./..." 为 data URI
+  const imgSrcRegex = /<img([^>]+)src="(\.\/[^"]+)"/g;
+  let imgMatch;
+  while ((imgMatch = imgSrcRegex.exec(projectStr)) !== null) {
+    const imgSrc = imgMatch[2];
+    if (imgSrc.startsWith('data:') || imgSrc.startsWith('http://') || imgSrc.startsWith('https://')) {
+      continue;
+    }
+    const imgFullPath = path.resolve(workdir, imgSrc.replace(/^\.\//, ''));
+    if (!fs.existsSync(imgFullPath)) {
+      throw new Error(`图片文件不存在: ${imgFullPath}`);
+    }
+    const imgBase64 = fileToBase64(imgFullPath);
+    projectStr = projectStr.replace(
+      `<img${imgMatch[1]}src="${imgSrc}"`,
+      `<img${imgMatch[1]}src="${imgBase64}"`
+    );
+  }
+
+  fs.writeFileSync(projectPath, projectStr, 'utf-8');
+
+  console.log(`[✓] 音频 Base64 已写入 project.json.audio (${(audioBase64.length / 1024).toFixed(1)} KB)`);
+  console.log(`[✓] 素材编码完成`);
 }
 
 // CLI 模式
@@ -78,29 +119,17 @@ if (require.main === module) {
   const args = parseArgs(process.argv);
 
   if (!args.skillProjectId) {
-    console.error('用法: node setup-assets.js --cwd=<Agent工作目录> <skillProjectId> [options]');
-    console.error('');
-    console.error('必传: --cwd=<Agent工作目录的绝对路径>');
-    console.error('选项:');
-    console.error('  --theme=<white|black>    主题色（默认 white）');
-    console.error('  --bgm=<style>            BGM 风格（如 tech-pulse）');
-    console.error('');
-    console.error('示例:');
-    console.error('  node setup-assets.js --cwd=/path/to/agent/workspace cv_abc123 --theme=white --bgm=tech-pulse');
-    console.error('  node setup-assets.js --cwd=/path/to/agent/workspace cv_abc123 --theme=black');
+    console.error('用法: node setup-assets.js --cwd=<Agent工作目录> <skillProjectId>');
     process.exit(1);
   }
 
   try {
-    setupAssets(args.workdirRoot, args.skillProjectId, {
-      theme: args.theme,
-      bgm: args.bgm
-    });
+    encodeAssets(args.workdirRoot, args.skillProjectId);
     process.exit(0);
   } catch (err) {
-    console.error('素材设置失败:', err.message);
+    console.error('[✗] 素材编码失败:', err.message);
     process.exit(1);
   }
 }
 
-module.exports = { setupAssets };
+module.exports = { encodeAssets };

@@ -5,7 +5,6 @@
  *  - resolveAgentWorkdir     ：解析 --cwd=<path> 参数，返回 Agent 工作目录绝对路径（核心）
  *  - ensureWorkdirRoot       ：确保工作根目录 canvasvideo-workdir/ 存在
  *  - ensureProjectWorkdir    ：确保某个项目的工作目录存在（含 assets/ 与 assets/images/）
- *  - ensurePlaceholders      ：把占位 SVG 复制到工作目录的 assets/placeholders/{theme}/
  *  - scaffoldWorkdir         ：根据素材清单批量创建占位文件
  *  - writeDesignMd / readDesignMd ：读写设计文档
  *  - copyUserAsset           ：把用户提供的素材安全拷贝到 assets/，校验路径不越界
@@ -13,11 +12,6 @@
 const fs = require('fs');
 const path = require('path');
 
-
-/**
- * 7 个标准 hint 关键词（与 templates/placeholders/{theme}/{hint}.svg 一一对应）
- */
-const PLACEHOLDER_HINTS = ['hook', 'scene', 'pain', 'solve', 'result', 'cta', 'generic'];
 
 /**
  * 解析 --cwd=<path> 参数，返回 Agent 工作目录绝对路径。
@@ -103,41 +97,6 @@ function ensureProjectWorkdir(workdirRoot, skillProjectId) {
 }
 
 /**
- * 把 templates/placeholders/{theme}/*.svg 复制到工作目录的
- * assets/placeholders/{theme}/，方便 LLM 直接在 project.json 引用本地 SVG。
- *
- * @param {string} workdirRoot
- * @param {string} skillProjectId
- * @param {string} theme - 'white' | 'black'，默认 'white'
- * @returns {Object} { copied: string[], targetDir: string }
- */
-function ensurePlaceholders(workdirRoot, skillProjectId, theme = 'white') {
-  const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
-  const themeDir = themeToPlaceholderDir(theme);
-
-  // Skill 端的占位图源目录（templates/placeholders/{light|dark}/）
-  const sourceDir = path.resolve(__dirname, '..', 'templates', 'placeholders', themeDir);
-  if (!fs.existsSync(sourceDir)) {
-    throw new Error(`占位图模板目录不存在：${sourceDir}`);
-  }
-
-  // 工作目录的占位图目录
-  const targetDir = path.join(workdir, 'assets', 'placeholders', themeDir);
-  fs.mkdirSync(targetDir, { recursive: true });
-
-  const copied = [];
-  for (const hint of PLACEHOLDER_HINTS) {
-    const src = path.join(sourceDir, `${hint}.svg`);
-    const dst = path.join(targetDir, `${hint}.svg`);
-    if (fs.existsSync(src) && !fs.existsSync(dst)) {
-      fs.copyFileSync(src, dst);
-      copied.push(`assets/placeholders/${themeDir}/${hint}.svg`);
-    }
-  }
-  return { copied, targetDir };
-}
-
-/**
  * BGM 标准风格列表（与 templates/bgm/bgm-catalog.md 一致）
  */
 const BGM_STYLES = ['tech-pulse', 'warm-cafe', 'uplifting', 'corporate', 'light-pop', 'cinematic'];
@@ -192,9 +151,6 @@ function ensureBgm(workdirRoot, skillProjectId, styleHint) {
 function scaffoldWorkdir(workdirRoot, skillProjectId, assetChecklist = {}, options = {}) {
   const theme = options.theme || 'white';
   const workdir = ensureProjectWorkdir(workdirRoot, skillProjectId);
-
-  // 不论素材清单怎么样，先把整套占位 SVG 复制到 workdir，作为兜底
-  ensurePlaceholders(workdirRoot, skillProjectId, theme);
 
   for (const [, items] of Object.entries(assetChecklist)) {
     if (!Array.isArray(items)) continue;
@@ -301,13 +257,11 @@ function isPathInside(child, parent) {
 module.exports = {
   ensureWorkdirRoot,
   ensureProjectWorkdir,
-  ensurePlaceholders,
   ensureBgm,
   scaffoldWorkdir,
   writeDesignMd,
   readDesignMd,
   copyUserAsset,
   resolveAgentWorkdir,
-  PLACEHOLDER_HINTS,
   BGM_STYLES,
 };

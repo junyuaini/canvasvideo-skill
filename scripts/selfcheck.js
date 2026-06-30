@@ -73,7 +73,7 @@ function checkRegionSchema(regions) {
  * - background 是 HtmlComponent 的两个基本属性之一（另一个是 content）
  * - background.html 必填、字符串、非空（一般是单个根 div，承载 SVG/渐变/装饰）
  * - background.css 必填、字符串、非空（建议 position: absolute + inset: 0 让背景填满 video-frame）
- * - 非 HtmlComponent（如 AggregateComponent）不强制要求 background
+ * - background 必填
  * - 递归检查 children
  */
 function checkHtmlComponentBackground(components) {
@@ -593,31 +593,10 @@ function selfcheck(project) {
     );
   }
 
-  // [必填] project.subtitle —— 项目级字幕样式（color/fontSize/position/weight/background/textShadow）
-  const REQUIRED_SUBTITLE_FIELDS = ['color', 'fontSize', 'position', 'weight', 'background', 'textShadow'];
-  const VALID_POSITIONS = [
-    'top-left', 'top-center', 'top-right',
-    'middle-left', 'middle-center', 'middle-right',
-    'bottom-left', 'bottom-center', 'bottom-right'
-  ];
-  if (!project.subtitle || typeof project.subtitle !== 'object') {
-    errors.push(
-      '[必填] project.subtitle 缺失或不是对象。字幕样式必填（6 字段全要）：' +
-      'color / fontSize / position / weight / background / textShadow。' +
-      '请在 init-project 的 config JSON 里加 subtitle 字段，例如：' +
-      '{ "color": "#FFFFFF", "fontSize": "36px", "position": "bottom-center", "weight": 700, "background": "rgba(0,0,0,0.5)", "textShadow": "0 1px 3px rgba(0,0,0,0.8)" }'
-    );
-  } else {
-    for (const f of REQUIRED_SUBTITLE_FIELDS) {
-      if (project.subtitle[f] === undefined || project.subtitle[f] === null || project.subtitle[f] === '') {
-        errors.push(`[必填] project.subtitle.${f} 缺失。6 字段全必填：color / fontSize / position / weight / background / textShadow。`);
-      }
-    }
-    if (project.subtitle.position && !VALID_POSITIONS.includes(project.subtitle.position)) {
-      errors.push(`[枚举] project.subtitle.position "${project.subtitle.position}" 不在 9 档之内，应为：${VALID_POSITIONS.join(' / ')}`);
-    }
-    if (project.subtitle.weight !== undefined && (!Number.isFinite(project.subtitle.weight) || project.subtitle.weight < 100 || project.subtitle.weight > 900 || project.subtitle.weight % 100 !== 0)) {
-      errors.push(`[范围] project.subtitle.weight 必须是 100-900 的整百数（实际: ${project.subtitle.weight}）`);
+  // project.subtitle —— 字幕渲染配置（可选）
+  if (project.subtitle && typeof project.subtitle === 'object') {
+    if (project.subtitle.enabled !== undefined && typeof project.subtitle.enabled !== 'boolean') {
+      errors.push('[类型] project.subtitle.enabled 必须是 boolean');
     }
   }
 

@@ -1,13 +1,13 @@
 # 步骤8：打包
 
-> 前置步骤：[步骤7：校验](07-validate.md)
+> 前置步骤：[步骤7：素材编码](07-assets.md)
 > 下一步：[步骤9：上传](09-upload.md)
 
 ---
 
 ## 目标
 
-将 project.json 和 assets 打包为 zip。
+将 project.json 打包为 zip。
 
 ---
 
@@ -15,9 +15,16 @@
 
 | 来源 | 说明 |
 |------|------|
-| project.json | 完整配置 |
-| assets/ | 素材目录 |
+| project.json | 完整配置（步骤6产出，步骤7已内联所有素材） |
 | 脚本 | `scripts/package.js` |
+
+---
+
+## 产出
+
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| `<skillProjectId>.zip` | `{workdir}/{skillProjectId}/<skillProjectId>.zip` | 打包文件 |
 
 ---
 
@@ -40,27 +47,19 @@ node scripts/package.js --cwd=/path/to/agent/workspace cv_abc123
 ```
 
 脚本会自动完成：
-1. 检查 project.json 中引用的资源文件是否存在
-2. 把 project.json + assets/ 打包为 zip
+1. 检查 project.json 存在且 `audio.base64` 非空
+2. 把 project.json 打包为 zip
 3. 输出 zip 路径
-
----
-
-## 产出
-
-| 文件 | 路径 | 说明 |
-|------|------|------|
-| `<skillProjectId>.zip` | `{workdir}/{skillProjectId}/<skillProjectId>.zip` | 打包文件 |
 
 ---
 
 ## 自检
 
-> [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
+> [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量
 
 **脚本自动校验**（运行 `package.js` 时检查）：
 
-- project.json 中引用的资源文件全部存在（缺失则报错）
+- project.json 中 `audio.base64` 非空
 - zip 文件已生成
 - 无打包错误
 
