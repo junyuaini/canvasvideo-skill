@@ -16,9 +16,9 @@
   - `skeleton.json` — 骨架，定义全局元信息（theme/viewport/audio）和 regions 时长分配
   - `regions/P1.json` — 单个区域的 components，由该区域单独设计
   - `regions/P2.json` — 同上
-  - `merged.json` — 由 `node scripts/merge-regions.js` 合并产物
+  - `project.json` — 由 `node scripts/merge-regions.js` 合并产物（已含 start/end，无需再手动生成）
 
-每个区域一个 HtmlComponent。HTML/CSS 用 absolute 定位还原原 position 坐标，元素时间线通过 `content.elementIds` 控制。
+每个区域一个 HtmlComponent。HTML/CSS 用 absolute 定位还原原 position 坐标，元素时间线通过 `data-subtitle` 或 `data-global` + CSS `animation` 控制（新约定 R11，推荐）。
 
 ---
 

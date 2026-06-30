@@ -11,10 +11,10 @@
 |------|------|---------|------|
 | R01 | 基本原则 | 所有交互 | [01-principles.md](01-principles.md) |
 | R02 | 项目新建 vs 沿用 | 步骤1（init-project）决策 `--new` | [01-principles.md §R2](01-principles.md#r2-项目新建-vs-沿用) |
-| R06 | 组件规则 | HtmlComponent 选型、API 调用 | [06-components.md](06-components.md) |
+| R06 | 组件规则 | HtmlComponent 选型、API 调用、元素动画（R11 新约定） | [06-components.md](06-components.md) |
 | R08 | API | 服务端交互 | [08-api.md](08-api.md) |
-| R09 | 自检 | 本地检查（ID格式+重复） | [09-selfcheck.md](09-selfcheck.md) |
-| R10 | 场景问答 | 常见场景判断标准 | [10-qa.md](10-qa.md) |
+| R09 | 自检 | 本地检查（ID格式+重复+elementIds 可选） | [09-selfcheck.md](09-selfcheck.md) |
+| R11 | 元素动画新约定 | CSS keyframes + data-subtitle / data-global 模式 | [06-components.md §R11](06-components.md#r11-元素动画新约定css-keyframes--data-subtitle-data-global) |
 
 ---
 
@@ -22,12 +22,12 @@
 
 ### 设计阶段
 - HtmlComponent 选型 → [06-components.md](06-components.md)
+- 元素动画新约定（CSS animation） → [06-components.md §R11](06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)
 
 ### 项目初始化
 - 新建 vs 沿用决策（`--new`） → [01-principles.md §R2](01-principles.md#r2-项目新建-vs-沿用)
 - 项目模式固定 dubbing（口播模式） → [06-components.md §R0](06-components.md#r0-项目级必填字段总览)
 - 字幕样式必填（color/fontSize/position/weight/background/textShadow） → [06-components.md §R8](06-components.md#r8-字幕样式项目级必填)
-- 字幕 validateElementDesign 必填（30-200字 + element id，强制 AI 自检） → [06-components.md §R10](06-components.md#r10-字幕-validateelementdesign-必填口播模式--强制-ai-自检)
 - skillProjectId 格式约束 → [01-principles.md §R6](01-principles.md#r6-skillprojectid-规范)
 
 ### API 调用

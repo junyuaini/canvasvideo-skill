@@ -83,28 +83,42 @@ node scripts/merge-regions.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 - `merge-regions.js` 检查所有 region JSON 是否齐全（缺失即报错）
 - `merge-regions.js` 检查骨架设计文档存在性
+- `merge-regions.js` 两步校验：html 有 class 必有 id；有 id 必有 data-subtitle 或 data-global
 - `selfcheck.js` 检查所有全局字段齐全（name, theme, duration, viewport, canvas, regions, settings, audio, components, source_design_doc）
 - `selfcheck.js` 检查所有 HtmlComponent ID 唯一
 - `merge-regions.js` 自动按 start 排序 HtmlComponent 和字幕
 
-### 时间字段自动填充（新）
+### 时间字段自动填充
 
 | 字段 | 来源 | 说明 |
 |------|------|------|
 | `region.startTime / endTime` | 从 SRT 字幕范围取 | merge 自动写入 |
 | `component.start / end` | subtitles（查 SRT）/ 旧 start/end / 缺省=region 起止 | merge 自动写入 |
-| `elementIds[].start / end` | 同上 | merge 自动写入 |
+| `elementIds[].start / end` | subtitles（查 SRT）→ start/end；无 subtitles 有 start/end → 反推字幕 ID 再走 default 检测；既无 subtitles 也无 start/end → 静默保留（data-global 元素属正常） | merge 自动写入 |
+| `animation-delay` | 扫描 HTML `data-subtitle` → 查 SRT → 注入到 CSS | merge 自动注入 |
 
 **优先级**：subtitles > 旧 start/end > fallback to region
 
+**省略规则**（自动生效，不需要手动指定）：
+- 元素首字幕 == region 首字幕 → 自动省略 start
+- 元素末字幕 == region 末字幕 → 自动省略 end
+- 两者都成立 → 只写 id，无 start/end（等同于 data-global 效果）
+
+**elementIds 字段**：
+- AI 在区域 JSON 里**不需要写** `content.elementIds`
+- merge 脚本会从 HTML `id` 自动生成 elementIds
+- 元素出现/消失时间由 HTML `data-subtitle` 或 `data-global` 属性 + CSS `animation` 控制
+- merge 脚本自动注入 `animation-delay` 到 CSS，让元素出现时机精准对齐字幕
+
 **缺省规则**：所有时间字段都可省略不填
-- 组件 start/end 未填 → 展示整个 region（与背景切换规则保持一致）
-- 元素 start/end 未填 → 展示整个所属 HtmlComponent
+- 组件 start/end 未填 → 展示整个 region
+- 元素 start/end 未填 → 展示整个所属 HtmlComponent；data-global 元素前端用 region 边界兜底
 - 前端会在 createMany 之前再补一次作为兜底（即使 merge 没跑过）
 
 **AI 写完后自查**：
 
 - [W] 素材清单实现率 = 100%（指所有素材都被挂到 HtmlComponent 上）
+- [W] 两步校验：有 class 必有 id，有 id 必有归属（data-subtitle 或 data-global）
 
 ---
 

@@ -2,6 +2,8 @@
 
 > 项目级（project.json）字段、HtmlComponent 写法、字幕/主题/图片等公共资源使用规范。
 > 改组件写法、看不懂字段、不知道该用谁，**先看本文件**。
+> 
+> 📌 **新约定 R11（CSS keyframes + data-subtitle）**：元素动画推荐用 §R11 的写法（详见末尾章节）。R11 下 `elementIds` 字段可选，由 HTML id 自动生成。
 
 ---
 
@@ -98,7 +100,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | background | object | ✅ | HtmlComponent 的两个基本属性之一（另一个是 content）。{ html, css }：背景 HTML/CSS，建议 position:absolute + inset:0 填满 video-frame |
 | background.html | string | ✅ | 背景 HTML 片段。一般是单个根 div |
 | background.css | string | ✅ | 背景 CSS 样式 |
-| content.elementIds | object | ✅ | 内部元素时间线，key 为 `#ID` 形式 |
+| content.elementIds | object | 🆚 | 内部元素时间线，key 为 `#ID` 形式（新约定 R11 下可选，由 HTML id 自动生成） |
 | start | number | ✅ | 出现时间（秒） |
 | end | number | ✅ | 消失时间（秒） |
 
@@ -162,6 +164,8 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 **merge 自动填充**（输出到 project.json 时）：
 - `element.start` = subtitles 第一字幕 start
 - `element.end` = subtitles 最后字幕 end
+
+> 💡 **R11 新约定下推荐省略 elementIds 字段**：详见 [§R11](06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)。
 
 **优先级**：subtitles > 旧 start/end（兼容）> fallback to parent
 
@@ -353,81 +357,122 @@ bottom-left   bottom-center   bottom-right
 
 ---
 
-## R10 字幕 validateElementDesign 必填（口播模式 · 强制 AI 自检）
+## R11 元素动画新约定（CSS keyframes + data-subtitle / data-global）
 
-**AI 在生成区域 JSON 时，必须为每条字幕填写 `validateElementDesign` 字段，让 AI 强制自我审视"该字幕时间窗口内，画面上正在显示的元素组合起来是否构成一个完整、合理、符合字幕语义的画面"。**
+> **新约定（推荐）**：AI 不再手填 `elementIds.start/end`，改用 CSS keyframes + `data-subtitle` / `data-global` 控制元素出现时机和动画效果。
 
-> ⚠️ **本字段的语义是"分析已有画面"，不是"为字幕设计新元素"**。每条字幕对应一个时间窗口 [start, end]，AI 必须先找出"在这个时间窗口内正在显示的元素"（即 `element.start/end` 与字幕时间窗有重叠的元素），再分析这些元素组合成的画面是否完整、是否合理、是否匹配字幕语义。
+### R11.1 核心原则
 
-### 字段位置
+| 维度 | 旧约定（R4） | 新约定（R11） |
+|------|-------------|---------------|
+| 时间字段 | `elementIds["#X"].start/end` 数字 | `data-subtitle="3"` 字幕 ID 或 `data-global="true"` |
+| 出现/消失 | JS `display: none/block` 闪现 | CSS `animation` 自带过渡 |
+| AI 要学什么 | 嵌套对象 + 时间数学 | 写 HTML 标签 + CSS keyframes |
 
-`project.subtitles[i].validateElementDesign`（SRT 解析时自动映射，AI 在 Step 4 区域设计时填写）
+### R11.2 HTML 写法（四种）
 
-### 字段规范
+```html
+<!-- 1. 区域全局（装饰/背景）：跟随 region 全生命周期，前端用 region 边界兜底 -->
+<div id='P1-016' class='corner-deco' data-global='true'></div>
 
-| 项 | 规则 |
-|----|------|
-| 长度 | 30-200 字（trim 后） |
-| 必含 element id | 至少 1 个 `P{n}-{nnn}` 格式（如 `P1-002`、`P3-005`），**且该 id 必须在字幕时间窗口 [subtitle.start, subtitle.end] 内正在显示**（即 element.start/end 与字幕时间窗有重叠） |
-| 必含内容 | (1) 该字幕时间窗口内**正在显示**的元素清单（id + 各自的视觉功能/位置/层级）；(2) 这些元素组合成的画面是否完整 / 是否合理 / 是否与字幕语义匹配；(3) 整体评价（合理 / 不合理 + 原因） |
+<!-- 2. 单条字幕：出现=字幕3.start，消失=字幕3.end -->
+<div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
 
-### 正确理解：什么是"字幕对应的元素"？
+<!-- 3. 范围字幕：出现=字幕3.start，消失=字幕5.end -->
+<div id='P1-001-title' class='title' data-subtitle='3-5'>标题</div>
 
-| 错误理解 ❌ | 正确理解 ✅ |
-|------------|-----------|
-| 把当前组件当作"字幕对应的元素"，列出该组件里所有元素 | 找出 `element.start/end` 与 `subtitle.start/end` 有重叠的元素（**只列正在显示的**） |
-| 把所有元素都堆进去（不看时间窗口） | 严格按时间窗口过滤：只有该字幕说出口时画面上**正显示**的元素才算 |
-| 写元素设计意图（"为字幕设计了什么"） | 写元素组合分析（"画面上正在显示的 X、Y、Z，组合成什么画面，是否合理"） |
+<!-- 4. 多选字幕（断续）：字幕3段显示，字幕4段隐藏，字幕5段再显示 -->
+<div id='P1-001-badge' class='badge' data-subtitle='3,5'>徽章</div>
+```
 
-### 正例
+### R11.3 省略规则（merge 脚本自动生效）
 
-```json
-{
-  "start": 3.5,
-  "end": 6.0,
-  "text": "P1001 一般是主键",
-  "validateElementDesign": "此时画面上正在显示 P1-002（表格容器，淡灰底 760x400 居中）、P1-003（表头行，4 列表头加粗）、P1-004（数据行 3 条，第一列'ID'为金色高亮表示主键）。这些元素组合成一张'带主键高亮的示例数据表'画面，完整呈现了字幕'P1001 一般是主键'的含义，整体合理。"
+| 条件 | 结果 |
+|------|------|
+| 元素首字幕 == region 首字幕 | 自动**省略** start |
+| 元素末字幕 == region 末字幕 | 自动**省略** end |
+| 两者都成立 | 只写 id，无 start/end（等同于 data-global 效果） |
+
+### R11.4 两步校验（merge 脚本 6.3 节自动执行）
+
+**第一步：有 class 必有 id**
+- 有 `class` 属性的元素必须也有 `id`
+- SVG 内部图形原子豁免：`circle/path/line/rect/polygon/polyline/ellipse/g/text/tspan/use/image/defs/linearGradient/radialGradient/stop/animate/animateTransform/animateMotion`
+
+**第二步：有 id 必有归属属性**
+- 有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
+
+```html
+<!-- 错：class 无 id -->
+<div class='clock-num'>12</div>
+
+<!-- 错：id 无归属属性 -->
+<div id='P1-002'>元素</div>
+
+<!-- 错：同时写了两个归属属性（互斥） -->
+<div id='P1-002' class='card' data-subtitle='5' data-global='true'>元素</div>
+```
+
+### R11.5 CSS 动画写法
+
+```css
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.title {
+  animation: fade-in 0.5s ease-out forwards;
 }
 ```
 
-### 反例（会被 fail-fast）
+**关键约束**：
+- ✅ 必须用 `forwards` — 否则动画跑完元素回到初始态（opacity: 0）不可见
+- ✅ delay 不需要写 — merge 脚本自动根据 `data-subtitle` 注入 `animation-delay`
+- ✅ duration 写元素本身 — 0.3s~0.8s 是常见值
+- ❌ CSS 用 id 选择器 — 受 @scope 影响会失效，用 class
 
-- ❌ `"合理"` —— 太短且无 element id
-- ❌ `"P1-001 元素布局合理，3 个元素组成"` —— P1-001 是组件不是元素；且未指明哪些元素 + 是否在该时间窗
-- ❌ `"画面有 P1-002（主键高亮）、P1-005（标题），布局合理"` —— 引用了 P1-005 但 P1-005 的显示时间可能不在该字幕时间窗内
-- ❌ `""` —— 空
-- ❌ `"P1-002 看起来还行"` —— 含 id 但太短且无具体说明
-- ❌ 复制粘贴同一条 validateElementDesign 给所有字幕 —— 失去自检意义
+### R11.6 elementIds 字段
 
-### 校验链路
+- **新约定下 elementIds 字段可选**：merge 脚本会从 HTML id 自动生成
+- 旧 elementIds（带 start/end 数字）**仍兼容**，前端自动降级到 `_legacyUpdateElementVisibility`
+- AI 写新项目时**推荐**省略 elementIds 字段，由系统自动生成
 
-| 校验点 | 行为 |
-|--------|------|
-| `selfcheck.js`（Skill 端） | ① 缺失/过短 → 输出 `[口播模式] subtitles[N].validateElementDesign ...` 错误；② 提取所有 element id 后做 3 项交叉校验：id 必须在 components 中存在、id 必须在字幕时间窗口内显示 |
-| `projectValidator.js`（Server 端） | 同上 |
-| `project.schema.json`（ajv） | 缺失 → 返回 400；pattern 强制 P\d+-\d{3} 格式 |
+### R11.7 与旧约定的兼容
 
-### Cross 校验伪代码（便于理解校验逻辑）
+| 旧项目状态 | 前端行为 |
+|-----------|---------|
+| elementIds 缺失 + HTML 有 id + data-subtitle | 新约定：CSS animation 播放，时间由 data-subtitle 驱动 |
+| elementIds 缺失 + HTML 有 id + data-global | 新约定：CSS animation 播放，时间跟随 region 全生命周期 |
+| elementIds 缺失 + HTML 无 id | 全部元素都显示，无动画 |
+| elementIds 有 start/end + HTML 有 id | 优先 CSS animation（新） |
+| elementIds 有 start/end + HTML 无 id | 旧约定：JS display 控制 |
 
+### R11.8 完整示例
+
+```json
+{
+  "id": "P1-001",
+  "regionId": "P1",
+  "type": "HtmlComponent",
+  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+  "background": {
+    "html": "<div id='P1-016' class='region-bg' data-global='true'></div>",
+    "css": ".region-bg { position: absolute; inset: 0; background: #0a0a0f; }"
+  },
+  "content": {
+    "html": "<div id='P1-002' class='frame' data-subtitle='3-5'><div class='frame-title'>核心观点</div></div><div id='P1-003' class='title' data-subtitle='3'>Skill 是什么</div><div id='P1-004' class='desc' data-subtitle='4'>它的核心定义与作用</div><div id='P1-005' class='badge' data-subtitle='5'>重要</div>",
+    "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes slide-in { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } } @keyframes scale-pop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } } .region-bg { animation: fade-in 0.5s ease-out forwards; } .frame { animation: fade-in 0.5s ease-out forwards; } .title { animation: fade-in 0.5s ease-out forwards; } .desc { animation: slide-in 0.4s ease-out forwards; } .badge { animation: scale-pop 0.4s ease-out forwards; }"
+  }
+}
 ```
-对每条字幕 (sub.start, sub.end)：
-  提取 validateElementDesign 中所有形如 P{n}-{nnn} 的 id（去重）
-  对每个引用的 id：
-    在 components[].content.elementIds 中查找
-    若不存在 → 错误：引用了不存在的 element
-    若 element.end < sub.start 或 element.start > sub.end → 错误：该元素在该字幕时间窗内不显示
-```
 
-### 严禁
+### R11.9 校验规则
 
-- ❌ AI 写"合理"两个字就完事 —— 字数不够且无 element id
-- ❌ 把当前组件 id（P1-001）当作元素 id 写入 —— 组件是容器不是元素
-- ❌ 引用不在该字幕时间窗口内的元素（用 element.start/end 与 subtitle.start/end 是否重叠来判断）
-- ❌ 复制粘贴同一条 validateElementDesign 给所有字幕 —— 每条字幕时间窗不同，画面元素组合也不同
-- ❌ 跳过填写（依赖 SRT 自动填充）—— SRT 是标准格式，无此字段
-
-### 与其他规则的关系
-
-- **R10 与 R8**：R8 控制项目级字幕样式（color/fontSize/...），R10 控制每条字幕对应的画面自检说明，两者正交
-- **R10 与 R4（elementId 规则）**：R4 规定 element.start/end 必填数字+非负，R10 反向校验 validateElementDesign 引用的 element id 必须"在 subtitle 时间窗内显示"
-- **R10 与 R2（组件）**：R2 的 component id（如 P1-001）是组件容器 id，**不是元素 id**；R10 引用的是 component.content.elementIds 里的元素 id（如 P1-002）
+selfcheck 会校验：
+1. 每个有 `id` 的元素必须格式 `P{数字}-{三位数字}`
+2. `data-subtitle` 引用的字幕 ID 必须存在
+3. `data-subtitle` 多选/范围必须合法
+4. CSS 中引用的 keyframes 必须有 `@keyframes` 定义
+5. `animation` 简写建议带 `forwards`
+6. 两步校验：有 class 必有 id；有 id 必有 data-subtitle 或 data-global（merge 脚本自动执行）

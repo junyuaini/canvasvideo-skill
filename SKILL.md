@@ -92,7 +92,7 @@ sequenceDiagram
 | **1.5** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [01.5-voice-prepare.md](docs/01.5-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） | **仅口播** |
 | 2 | 骨架设计 | `design-skeleton-dubbing.md` | [02-skeleton-design-dubbing.md](docs/02-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) | 通用 |
 | 3 | 生成骨架JSON | `skeleton.json` | [03-skeleton-build.md](docs/03-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） | 通用 |
-| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | [06-components.md §R10](rules/06-components.md#r10-字幕-validateelementdesign-必填口播模式--强制-ai-自检)（字幕 validateElementDesign 必填） | 通用 |
+| 4 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [04-region-design-dubbing.md](docs/04-region-design-dubbing.md) | — | — | [06-components.md §R11](rules/06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)（CSS animation + data-subtitle 模式） | 通用 |
 | 5 | 合并为 project.json | `project.json` | [05-merge.md](docs/05-merge.md) | `merge-regions.js` | — | — | 通用 |
 | 6 | 素材处理 | 资源文件 | [06-assets.md](docs/06-assets.md) | `setup-assets.js` | — | — | 通用 |
 | 7 | 校验 | 校验报告 | [07-validate.md](docs/07-validate.md) | `selfcheck.js` | — | [09-selfcheck.md](rules/09-selfcheck.md) | 通用 |
@@ -107,7 +107,9 @@ sequenceDiagram
 
 0. **严格按流程执行**：CanvasVideo Skill 有严格 9 步流程，AI 必须按顺序执行每一步（设计→骨架→区域→素材→合并→自检→打包→上传），不得跳步或省略环节。
 
-1. **视频生成后不回设计**：所有迭代直接改 project.json
+1. **视频生成后修改需要重新走流程**：迭代时先改骨架设计文档/区域JSON，再重新跑 `merge-regions.js → package.js → upload-video.js`，禁止直接改 project.json（上次流程产物的中间状态会被覆盖）
+
+1b. **需要 AI 直接生成的只有以下 3 项**：口播文案（用户未提供时）、骨架设计文档、区域 JSON。其余一切必须走脚本（init-project / merge-regions / package.js / upload-video.js 等），禁止手写 JSON 或跳过流程。
 
 4. **固定 skillProjectId**：同一项目多次上传使用相同 ID，服务器复用 previewToken
 

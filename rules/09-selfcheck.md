@@ -1,6 +1,6 @@
 # 自检规则
 
-> 本地自检做 5 项检查：ID 格式、ID 唯一性、顶级组件 regionId、时间层次约束、HtmlComponent elementIds。其余交给云端。
+> 本地自检做 5 项检查：ID 格式、ID 唯一性、顶级组件 regionId、时间层次约束、HtmlComponent elementIds（R11 新约定下可选）。其余交给云端。
 
 ---
 
@@ -82,7 +82,11 @@
 
 ### 5. HtmlComponent elementIds 检查
 
-- HtmlComponent 必须配置 `content.elementIds`
+> **新约定（R11）下 elementIds 字段可选**：merge 脚本会从 HTML id 自动生成，支持 `data-subtitle` 和 `data-global` 两种归属模式。
+
+#### 5.1 旧约定（R4，向后兼容）
+
+- HtmlComponent 可配置 `content.elementIds`
 - elementIds 必须是非空对象
 - elementIds 的 **key 必须是 `#ID` 形式**（如 `#P1-002`），不再支持 class/tag 等其他 CSS 选择器
 - HTML 字符串里必须有对应的 `id` 属性（如 `<div id="P1-002">`）
@@ -91,6 +95,35 @@
 - 元素 `id` 必须以所属区域的 `regionId` 为前缀（如区域为 P1，则 id 必须以 P1- 开头）
 - `start` 和 `end` 必填（**有限**数字、非负），且 `start <= end`（**不允许 Infinity**）
 - 元素时间范围必须落在所属 HtmlComponent 时间范围内（见第 4 节）
+
+#### 5.2 新约定（R11，CSS animation 模式，推荐）
+
+- elementIds 字段**可选** — 缺失时由 merge 脚本从 HTML `id` 自动生成
+- HTML 子元素必须写 `id` 属性（标准 HTML 规范）
+- HTML 子元素归属属性（二选一，互斥）：
+  - `data-subtitle="3"` / `"3-5"` / `"3,5"` — 绑定字幕区间
+    - `"3"` = 字幕3 出现到结束
+    - `"3-5"` = 字幕3 出现到字幕5 结束
+    - `"3,5"` = 字幕3 段显示 + 字幕5 段显示（断续）
+  - `data-global="true"` — 跟随 region 全生命周期，前端用 region 边界兜底
+- **省略规则**（merge 脚本自动生效）：
+  - 元素首字幕 == region 首字幕 → 自动省略 start
+  - 元素末字幕 == region 末字幕 → 自动省略 end
+- **两步校验**（merge 脚本 6.3 节自动执行）：
+  - 有 `class` 必有 `id`（SVG 内部图形原子豁免）
+  - 有 `id` 必有 `data-subtitle` 或 `data-global`（二选一，互斥）
+- CSS 中引用 keyframes 必须有 `@keyframes` 定义
+- `animation` 简写**建议带 `forwards`** — 否则动画跑完元素回到初始态
+
+#### 5.3 兼容性矩阵
+
+| elementIds | HTML 有 id | 归属属性 | 前端行为 | 校验 |
+|-----------|-----------|---------|---------|------|
+| 缺失 | ✅ | data-subtitle | 新约定：CSS animation 播放，时间由字幕驱动 | OK |
+| 缺失 | ✅ | data-global | 新约定：CSS animation 播放，时间跟随 region | OK |
+| 缺失 | ❌ | — | 全部元素都显示，无动画 | 警告：建议为元素加 id |
+| 旧（R4） | ✅ | — | 优先 CSS animation | OK（兼容） |
+| 旧（R4） | ❌ | — | 旧约定：JS display 控制 | OK（兼容） |
 
 ---
 

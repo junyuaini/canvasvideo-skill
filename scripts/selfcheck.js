@@ -236,16 +236,14 @@ function checkHtmlElementIds(components, allIds) {
       if (comp.type === 'HtmlComponent') {
         const labelId = comp.id || '未知';
 
-        // elementIds 必填
+        // elementIds 可选（R11 新约定），缺失时跳过 elementIds 校验
         if (!comp.content || !comp.content.elementIds || typeof comp.content.elementIds !== 'object') {
-          errors.push(`HtmlComponent [${labelId}] 缺少 elementIds：必须为内部元素配置独立时间线。`);
           return;
         }
 
         // elementIds 非空
         const elementIds = comp.content.elementIds;
         if (Object.keys(elementIds).length === 0) {
-          errors.push(`HtmlComponent [${labelId}] elementIds 不能为空，至少配置一个元素。`);
           return;
         }
 
@@ -312,16 +310,17 @@ function checkHtmlElementIds(components, allIds) {
           }
 
           // [层级 3 / element] 元素时间范围必须在所属 component 范围内
+          const eps = 0.001;
           if (
             typeof comp.start === 'number' && Number.isFinite(comp.start) &&
             typeof comp.end === 'number' && Number.isFinite(comp.end) &&
             typeof value.start === 'number' && Number.isFinite(value.start) &&
             typeof value.end === 'number' && Number.isFinite(value.end)
           ) {
-            if (value.start < comp.start) {
+            if (value.start < comp.start - eps) {
               errors.push(`[层级 3 / element] HtmlComponent [${labelId}] elementIds["${key}"].start=${value.start} 早于所属 HtmlComponent 开始时间 ${comp.start}（HtmlComponent 范围 [${comp.start}, ${comp.end}]）。建议：将 elementIds start 改为 ${comp.start}。`);
             }
-            if (value.end > comp.end) {
+            if (value.end > comp.end + eps) {
               errors.push(`[层级 3 / element] HtmlComponent [${labelId}] elementIds["${key}"].end=${value.end} 超出所属 HtmlComponent 结束时间 ${comp.end}（HtmlComponent 范围 [${comp.start}, ${comp.end}]）。建议：将 elementIds end 改为 ${comp.end} 或更小。`);
             }
           }
@@ -406,7 +405,7 @@ function checkHtmlElementIds(components, allIds) {
  *   - component.start / end 可选；未设置时由前端根据所属 region 推算（start=region.startTime, end=下一region.startTime）
  *   - elementIds.start / end 可选；未设置时由前端根据所属 component 推算
  *   - 已设置时必须为有限数字，≥ 0，start ≤ end
- *   - region.startTime ≤ component.start 且 component.end ≤ region.endTime
+ *   - region.startTime ≤ component.start 且 component.end ≤ 下一region.startTime（无下一 region 时为 project.duration）
  *   - component.start ≤ elementIds.start 且 elementIds.end ≤ component.end
  */
 function checkTimeHierarchy(project) {
@@ -423,6 +422,33 @@ function checkTimeHierarchy(project) {
     errors.push(
       `[层级 1 / project] project.duration=${project.duration} 不合法，必须 > 0.1 秒。建议：调整为合理时长（如 9、15、30）。`
     );
+  } else {
+    // [层级 1.1] project.duration 小数位不超过 3 位（与 SRT 字幕时间保持一致，禁止四舍五入）
+    const durStr = String(project.duration);
+    const durDotIdx = durStr.indexOf('.');
+    if (durDotIdx !== -1 && durStr.length - durDotIdx - 1 > 3) {
+      errors.push(
+        `[层级 1.1 / project] project.duration=${project.duration} 超过 3 位小数（精度被四舍五入/累加污染），与 SRT 字幕时间不一致。建议：重新跑 merge-regions.js（已用 truncateTo3 截断，禁止 .toFixed(3) 四舍五入）。`
+      );
+    }
+  }
+
+  // [层级 1.2] regions[].{duration,startTime,endTime} 小数位不超过 3 位
+  if (Array.isArray(regions)) {
+    for (const region of regions) {
+      if (!region || !region.id) continue;
+      for (const field of ['duration', 'startTime', 'endTime']) {
+        const v = region[field];
+        if (typeof v !== 'number' || !Number.isFinite(v)) continue;
+        const vStr = String(v);
+        const vDotIdx = vStr.indexOf('.');
+        if (vDotIdx !== -1 && vStr.length - vDotIdx - 1 > 3) {
+          errors.push(
+            `[层级 1.2 / region] regions[${region.id}].${field}=${v} 超过 3 位小数（精度被四舍五入/累加污染），与 SRT 字幕时间不一致。建议：重新跑 merge-regions.js（已用 truncateTo3 截断）。`
+          );
+        }
+      }
+    }
   }
 
   // [层级 1.5] 累计 region 时长校验
@@ -442,6 +468,15 @@ function checkTimeHierarchy(project) {
       regionRanges.set(region.id, { startTime: region.startTime, endTime: region.endTime });
       if (region.endTime > lastEndTime) lastEndTime = region.endTime;
     }
+  }
+
+  // [口播模式] 计算每个 region 的 end 上界：下一个 region 的 startTime，无下一 region 用 project.duration
+  const regionEndUpperBound = new Map();
+  const sortedRegions = Array.isArray(regions) ? [...regions].sort((a, b) => (a.startTime || 0) - (b.startTime || 0)) : [];
+  for (let i = 0; i < sortedRegions.length; i++) {
+    const r = sortedRegions[i];
+    const upperBound = i + 1 < sortedRegions.length ? sortedRegions[i + 1].startTime : (typeof project.duration === 'number' ? project.duration : lastEndTime);
+    regionEndUpperBound.set(r.id, upperBound);
   }
 
   if (typeof project.duration === 'number' && Number.isFinite(project.duration)) {
@@ -483,9 +518,10 @@ function checkTimeHierarchy(project) {
         } else {
           if (comp.regionId && regionRanges.has(comp.regionId)) {
             const range = regionRanges.get(comp.regionId);
-            if (typeof comp.start === 'number' && Number.isFinite(comp.start) && comp.end > range.endTime + 0.001) {
+            const endUpper = regionEndUpperBound.has(comp.regionId) ? regionEndUpperBound.get(comp.regionId) : range.endTime;
+            if (typeof comp.start === 'number' && Number.isFinite(comp.start) && comp.end > endUpper + 0.001) {
               errors.push(
-                `[层级 2 / component]${compLabel} end=${comp.end} 超出所属 region "${comp.regionId}" 结束时间 ${range.endTime}（region 范围 [${range.startTime}, ${range.endTime}]）。建议：将 end 改为 ${range.endTime} 或更小，或删除 end 让系统按 region 自动推算。`
+                `[层级 2 / component]${compLabel} end=${comp.end} 超出所属 region "${comp.regionId}" 有效上界 ${endUpper}（region 范围 [${range.startTime}, ${range.endTime}]，下一 region 开始于 ${endUpper}）。建议：将 end 改为 ${endUpper} 或更小，或删除 end 让系统按所属 region 自动推算。`
               );
             }
           } else if (comp.regionId && !regionRanges.has(comp.regionId)) {
@@ -538,6 +574,14 @@ function selfcheck(project) {
 
   const components = project.components || [];
   const regions = project.regions || [];
+
+  // region 时序索引（供 element 时间 fallback 使用）
+  const regionRanges = new Map();
+  for (const r of regions) {
+    if (r && r.id && typeof r.startTime === 'number' && typeof r.endTime === 'number') {
+      regionRanges.set(r.id, { startTime: r.startTime, endTime: r.endTime });
+    }
+  }
 
   // [禁止设置] project.canvas 字段不允许手动设置
   // 画布尺寸由前后端按 viewport × 10 自动计算（前端 LayoutEngine.calculateCanvasAuto / 服务端兜底）
@@ -600,93 +644,6 @@ function selfcheck(project) {
   if (!hasAudio) errors.push('[口播模式] 必须配置配音音频（audio 字段）。');
   if (!hasSubtitles) errors.push('[口播模式] 必须提供字幕（subtitles 数组）。请先用 prepare-voice.js 生成 SRT 字幕。');
   if (isBgmUsage) errors.push('[口播模式] audio 不能使用 BGM 用法（loop/fadeIn/fadeOut），配音音频应直接写路径字符串或对象形式（无 loop/fadeIn/fadeOut）。');
-
-  // [口播模式] 每条字幕必须带 validateElementDesign 字段（30-200字，含 element id，且 id 必须在该字幕时间窗内显示）
-  // 目的：强制 AI 在设计画面时自我审视"字幕和画面是否匹配"，避免画完再说
-  // 语义：分析"该字幕时间窗内画面上正在显示的元素组合"是否构成完整合理画面，不是"为字幕设计什么新元素"
-  if (hasSubtitles) {
-    const ELEM_ID_PATTERN = /P\d+-\d{3}/g;
-    // 字幕序号 → {start, end} 索引（subtitles 数组的 idx 即字幕序号 1-based）
-    const subIndex = new Map();
-    project.subtitles.forEach((s, i) => {
-      if (!s || typeof s !== 'object') return;
-      if (typeof s.start === 'number' && Number.isFinite(s.start)
-        && typeof s.end === 'number' && Number.isFinite(s.end)) {
-        subIndex.set(i + 1, { start: s.start, end: s.end });
-      }
-    });
-    // 收集所有 HtmlComponent 的 element 时序，构建 id → {start, end, regionId} 索引
-    // 优先读 element.start/end；缺失时按 elementIds.subtitles 区间推算（与 merge-regions.js 同步逻辑）
-    const elemIndex = new Map();
-    function indexHtmlElements(comps) {
-      if (!Array.isArray(comps)) return;
-      comps.forEach((c) => {
-        if (!c || typeof c !== 'object') return;
-        if (c.type === 'HtmlComponent' && c.content && c.content.elementIds && typeof c.content.elementIds === 'object') {
-          Object.values(c.content.elementIds).forEach((el) => {
-            if (!el || !el.id) return;
-            let elStart = (typeof el.start === 'number' && Number.isFinite(el.start)) ? el.start : null;
-            let elEnd = (typeof el.end === 'number' && Number.isFinite(el.end)) ? el.end : null;
-            // fallback 1: elementIds.subtitles 区间
-            if ((elStart === null || elEnd === null) && Array.isArray(el.subtitles) && el.subtitles.length > 0) {
-              const nums = el.subtitles.filter((n) => Number.isInteger(n));
-              if (nums.length > 0) {
-                const minN = Math.min(...nums);
-                const maxN = Math.max(...nums);
-                const minSub = subIndex.get(minN);
-                const maxSub = subIndex.get(maxN);
-                if (elStart === null && minSub) elStart = minSub.start;
-                if (elEnd === null && maxSub) elEnd = maxSub.end;
-              }
-            }
-            // fallback 2: 所属 component 时间窗
-            if (elStart === null) elStart = (typeof c.start === 'number' && Number.isFinite(c.start)) ? c.start : 0;
-            if (elEnd === null) elEnd = (typeof c.end === 'number' && Number.isFinite(c.end)) ? elStart : elStart;
-            elemIndex.set(el.id, { start: elStart, end: elEnd, regionId: c.regionId });
-          });
-        }
-        if (Array.isArray(c.children) && c.children.length > 0) indexHtmlElements(c.children);
-      });
-    }
-    if (Array.isArray(project.components)) indexHtmlElements(project.components);
-
-    project.subtitles.forEach((sub, idx) => {
-      if (!sub || typeof sub !== 'object') return;
-      const v = sub.validateElementDesign;
-      if (!v || typeof v !== 'string' || v.trim().length === 0) {
-        errors.push(`[口播模式] subtitles[${idx}] 缺少 validateElementDesign 字段。AI 必填：分析"该字幕时间窗内画面上正在显示的元素组合"是否合理，30-200 字，必须含至少 1 个 element id（如 P1-002），且该 id 必须在 [${sub.start}, ${sub.end}] 字幕时间窗内显示。详见 rules/06-components.md §R10`);
-        return;
-      }
-      const len = v.trim().length;
-      if (len < 30) {
-        errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太短（${len} 字），至少 30 字。`);
-        return;
-      }
-      if (len > 200) {
-        errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 太长（${len} 字），建议控制在 200 字以内。`);
-      }
-      // 提取所有 P{n}-{nnn} id（去重）
-      const matches = v.match(ELEM_ID_PATTERN) || [];
-      const uniqueIds = [...new Set(matches)];
-      if (uniqueIds.length === 0) {
-        errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 必须含至少 1 个 element id（如 P1-002、P3-005）。当前未检测到。`);
-        return;
-      }
-      // cross 校验：每个 id 必须存在 + element 时间必须与字幕时间窗有重叠
-      const subStart = (typeof sub.start === 'number' && Number.isFinite(sub.start)) ? sub.start : 0;
-      const subEnd = (typeof sub.end === 'number' && Number.isFinite(sub.end)) ? sub.end : subStart;
-      uniqueIds.forEach((id) => {
-        if (!elemIndex.has(id)) {
-          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 引用了不存在的 element id "${id}"（不在 components 中）。请改为该字幕时间窗 [${subStart}, ${subEnd}] 内画面上正在显示的元素 id。`);
-          return;
-        }
-        const el = elemIndex.get(id);
-        if (el.end < subStart - 0.001 || el.start > subEnd + 0.001) {
-          errors.push(`[口播模式] subtitles[${idx}].validateElementDesign 引用的 element "${id}" 不在该字幕时间窗 [${subStart}, ${subEnd}] 内显示（该 element 实际显示区间 [${el.start}, ${el.end}]）。请改为该时间窗内正在显示的元素 id。`);
-        }
-      });
-    });
-  }
 
   // 检查 ID 格式
   const formatErrors = checkIdFormat(components);

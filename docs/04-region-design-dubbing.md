@@ -1,700 +1,243 @@
-﻿# 步骤4：区域设计与生成JSON（口播模式）
+# 区域设计（口播模式）
 
-> 前置步骤：[步骤3：生成骨架JSON](03-skeleton-build.md)
-> 下一步：[步骤5：合并](05-merge.md) 或继续下一个区域
-
----
-
-## 目标
-
-为骨架中的**单个区域**完成设计，并直接生成 `regions/P{n}.json`。
-
-> ⚠️ **硬规则**：
-> - 必须为骨架中的**每个区域**单独生成一份 `regions/P{n}.json`
-> - 严禁跳过任何区域
-> - 严禁将多个区域合并到一份JSON中
->
-> **核心原则**：字幕是系统自动显示的前提条件，画面是字幕的**视觉翻译**，不是重复。
+> **核心原则**：AI 不再手填时间数字，所有元素出现/消失/动画由 **CSS keyframes** 决定，时间由 `data-subtitle` 或 `data-global` 自动从 SRT 推算。
 
 ---
 
-## 前置检查
+## 与旧约定的区别
 
-执行本步骤前，必须确认：
-
-- [ ] `skeleton.json` 已存在
-- [ ] `skeleton.json` 中的 `regions` 数组不为空
-- [ ] 当前区域的 `regions/P{n}.json` **不存在**（如存在则跳过）
-
-**如果不满足**：回到 [步骤3：生成骨架JSON](03-skeleton-build.md)
+| 维度 | 旧约定 | 新约定 |
+|------|--------|--------|
+| 时间字段 | `elementIds["#X"].start/end` 手动数字 | `data-subtitle="3"` 字幕 ID 或 `data-global="true"` |
+| 出现/消失 | JS `display: none/block` 闪现 | CSS `animation` 自带过渡 |
+| AI 要学什么 | 嵌套对象 + 时间数学 | 写 HTML 标签 + CSS keyframes |
 
 ---
 
-## 输入
+## 元素出现时机
 
-| 字段 | 来源 | 说明 |
-|------|------|------|
-| 区域类型 | 骨架输出 | Hook/Point/Data/Story/Step/Quote/CTA/Contrast/List/Timeline/Q&A/Scene/Emotion/Summary |
-| 时间段 | 骨架输出 | 该区域的起止时间 |
-| 时长 | 骨架输出 | 3-8秒 |
-| 包含字幕 | 骨架输出 | 该区域包含的SRT字幕序号 |
-| 字幕内容 | SRT文件 | 该区域对应的字幕文本 |
-| 核心信息 | 骨架输出 | 一句话概括 |
-| 情绪强度 | 骨架输出 | 低/中/高 |
-| 区域位置 | 骨架输出 | 开头/前1/3/中段/后1/3/结尾 |
-| 前区域情绪 | 骨架输出 | 低/中/高/无（首区域） |
-| 全局背景 | 用户输入 | black/white |
-| 风格 | 用户输入 | warm/tech/business/art |
+### 四种写法
 
----
+```html
+<!-- 1. 区域全局（装饰/背景元素）：跟随 region 全生命周期，前端用 region 边界兜底 -->
+<div id='P1-016' class='corner-deco' data-global='true'></div>
 
-## 设计步骤
+<!-- 2. 单条字幕：出现=字幕3.start，消失=字幕3.end -->
+<div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
 
-### 步骤1：确认字幕内容
+<!-- 3. 范围字幕：出现=字幕3.start，消失=字幕5.end -->
+<div id='P1-001-title' class='title' data-subtitle='3-5'>标题</div>
 
-**该区域的字幕**：
-
-| 字幕序号 | 时间段 | 内容 |
-|---------|--------|------|
-| {n} | {start}-{end} | ... |
-| ... | ... | ... |
-
-> ⚠️ **字幕文本 100% 来自用户提供的 SRT，严禁 LLM 自行改写**。
-> 画面元素只是字幕的**视觉翻译**，不能与字幕语义冲突。
-
----
-
-### 步骤2：选择布局模式
-
-区域类型由骨架决策树确定，区域设计以骨架输出为准，不再重新选择类型。
-
-**基础布局**（只描述空间结构，不涉及具体元素）：
-
-| 布局 | 空间结构 | 适用场景 |
-|------|---------|---------|
-| 单点聚焦 | 单一元素居中 | 金句、观点、Hook、CTA |
-| 左右分栏 | 左40-50% + 右50-60% | 图文对照、对比 |
-| 上下分层 | 上40% + 下60% | 标题+内容、数据展示 |
-| 多列并排 | 2-3列等宽 | 列表、特征、对比 |
-| 对比式 | 左右各占50%，差异明显 | 正反对比、Before/After |
-| 时间轴 | 轴线+节点 | 流程、历史、步骤 |
-| 问答式 | 问题区+答案区 | 设问、互动 |
-| 极简过渡 | 极少元素，大量留白 | 过渡区域 |
-
-**扩展布局**（只描述空间结构）：
-
-| 布局 | 空间结构 | 适用场景 |
-|------|---------|---------|
-| 全屏沉浸 | 背景占满，文字叠加 | 氛围渲染、开场、结尾 |
-| 上下分屏 | 上50% + 下50% | 对比、场景切换 |
-| 中心环绕 | 中心区域+周围元素 | 核心数据、品牌展示 |
-| 卡片堆叠 | 2-3张卡片层叠 | 递进关系、优先级 |
-| 网格矩阵 | 2×2或3×3网格 | 多图展示、产品矩阵 |
-| 对角线构图 | 元素沿对角线分布 | 动感、冲突、不稳定 |
-| 留白聚焦 | 大量留白，元素极小 | 高级感、禅意、极简 |
-| 图文穿插 | 文字块和图片块交错 | 长文、叙述、杂志风 |
-| 瀑布流 | 从上到下依次排列 | 列表、时间线、步骤 |
-| 悬浮卡片 | 卡片悬浮在背景上 | 现代感、层次感 |
-
-**布局与区域类型匹配**：
-
-| 区域类型 | 推荐布局 |
-|---------|---------|
-| Hook | 单点聚焦、全屏沉浸 |
-| Point | 单点聚焦、左右分栏、留白聚焦 |
-| Data | 上下分层、多列并排、中心环绕、网格矩阵 |
-| Story | 左右分栏、全屏沉浸、图文穿插 |
-| Step | 时间轴、瀑布流、卡片堆叠 |
-| Quote | 单点聚焦、留白聚焦 |
-| CTA | 单点聚焦、全屏沉浸、悬浮卡片 |
-| Contrast | 对比式、上下分屏、对角线构图 |
-| List | 多列并排、网格矩阵、瀑布流 |
-| Timeline | 时间轴、瀑布流 |
-| Q&A | 问答式、极简过渡 |
-| Scene | 全屏沉浸、左右分栏 |
-| Emotion | 全屏沉浸、单点聚焦、对角线构图 |
-| Summary | 单点聚焦、极简过渡、留白聚焦 |
-
-**特殊规则**：
-- 过渡区域（Summary/Q&A作为章节间过渡时）：布局建议极简过渡，保持简洁
-- 首区域（Hook）：建议单点聚焦或全屏沉浸，制造冲击
-- 尾区域（CTA）：建议单点聚焦、全屏沉浸或悬浮卡片，简洁有力
-
----
-
-### 步骤2.5：确定 HtmlComponent
-
-**每个区域使用一个 HtmlComponent**：
-
-| 模式 | 推荐度 | 适用场景 |
-|------|--------|---------|
-| **HtmlComponent** | ✅ 唯一推荐 | 所有布局 |
-
-通过 `content.html` + `content.css` + `content.elementIds` 控制所有布局、样式和元素时间线。
-
-**约束**：
-- 必须配置 position（至少包含 w 和 h）
-- 每个区域配置 1 个 HtmlComponent 即可承载该区域所有视觉内容
-
-> 📖 详情查看 [rules/06-components.md](../rules/06-components.md)（HtmlComponent schema、elementIds 规则、API 调用规范）
-#### 组件 background 字段（与 content 平级）
-
-> **硬规则**：所有 HtmlComponent 都必须携带 ackground 字段（与 content 平级）。这是 HtmlComponent 的两个基本属性之一。
-
-字段结构与详细说明见 [rules/06-components.md](../rules/06-components.md) §R3。
-
-**校验**：selfcheck.js 校验所有 HtmlComponent 必须有 ackground.html + ackground.css，缺一报错；后端 projectValidator.collectErrors 在上传时也会强制校验，缺 background 直接 400 拒绝。
-
-> 💡 口播场景下的 background 写法建议：因为口播强调"画面是字幕的视觉翻译"，背景色调可以选用与字幕氛围呼应的低饱和度渐变，避免抢戏；具体配色方案见步骤6。
-
----
-
-### 步骤3：确定元素数量和出场节奏
-
-**3.1 情绪决定节奏**
-
-| 情绪 | 节奏档位 | 平均出场间隔 | 画面感受 |
-|-----|---------|------------|---------|
-| 低 | 留白 | ≤1.2秒 | 慢、平静、大量留白 |
-| 低 | 沉浸 | ≤0.8秒 | 稍快、有层次 |
-| 中 | 沉浸 | ≤0.8秒 | 中等速度、有层次 |
-| 中 | 标准 | ≤0.6秒 | 正常速度、信息清晰 |
-| 高 | 标准 | ≤0.6秒 | 较快、有冲击力 |
-| 高 | 快闪 | ≤0.3秒 | 很快、强烈冲击 |
-
-**选择依据**：
-- 信息少、需要留白 → 留白
-- 情感、氛围 → 沉浸
-- 数据、介绍 → 标准
-- 极强冲击、Hook → 快闪
-
-**3.2 计算元素数量**
-
-```
-元素数量 = ceil(时长 ÷ 平均出场间隔)
-
-出场间隔 = 元素2出场时间 - 元素1出场时间
+<!-- 4. 多选字幕（断续）：字幕3段显示，字幕4段隐藏，字幕5段再显示 -->
+<div id='P1-001-badge' class='badge' data-subtitle='3,5'>徽章</div>
 ```
 
-**查表**：
+### 解析规则
 
-| 时长 | 留白(1.2s) | 沉浸(0.8s) | 标准(0.6s) | 快闪(0.3s) |
-|------|-----------|-----------|-----------|-----------|
-| 3秒 | 3个 | 4个 | 5个 | 10个 |
-| 5秒 | 4个 | 6个 | 8个 | 17个 |
-| 8秒 | 7个 | 10个 | 13个 | 27个 |
+| 写法 | 含义 | elementIds 结果 |
+|------|------|----------------|
+| `data-global='true'` | 跟随 region 全生命周期 | 无 start/end（前端用 region 边界兜底） |
+| `data-subtitle='3'` | 出现=字幕3.start，消失=字幕3.end | 写 start/end；若字幕=region 首字幕，省略 start；若字幕=region 末字幕，省略 end |
+| `data-subtitle='3-5'` | 出现=字幕3.start，消失=字幕5.end | 同上规则 |
+| `data-subtitle='3,5'` | 元素在 字幕3 和 字幕5 段时间窗分别显示（断续） | 写 start/end |
 
-**说明**：
-- 平均出场间隔 = 新元素出现的平均时间间隔上限
-- 实际间隔可以浮动，但平均值不能超过上限
-- 画面不能静止超过平均间隔
-- 验证：平均出场间隔 = 时长 ÷ 元素数量，应 ≤ 档位对应值
+### 省略规则
 
----
+当元素的字幕首/末与 region 字幕首/末重合时，merge 脚本会自动省略 start/end：
 
-### 步骤4：确定视觉锚点并排列元素位置
-
-**4.1 确定视觉锚点**
-
-每个区域必须有且只有一个锚点：
-
-| 锚点类型 | 特征 | 适用布局 |
-|---------|------|---------|
-| 大字锚点 | 字号最大，居中 | 单点聚焦、全屏沉浸、留白聚焦 |
-| 图片锚点 | 占画面40%+ | 左右分栏、全屏沉浸、中心环绕 |
-| 数据锚点 | 数字放大，占30%+ | 上下分层、中心环绕、网格矩阵 |
-| 图标锚点 | 居中放大 | 多列并排、卡片堆叠、悬浮卡片 |
-
-**规则**：
-- 锚点必须0延迟出现
-- 过渡区域可以没有锚点，或锚点就是唯一的文字元素
-- 锚点出现后至少0.3秒再出下一个元素
-
-**4.2 在选定布局中排列元素位置**
-
-根据布局的空间结构，安排锚点和其他元素的位置：
-
-**单点聚焦**：
-- 锚点：画面中心偏上（避开底部字幕区）
-- 辅助：锚点下方
-- 装饰：背景层，透明度低
-
-**左右分栏**：
-- 图片：左侧40-50%
-- 文字：右侧50-60%
-- 垂直居中
-
-**上下分层**：
-- 标题/图片：上半40%
-- 内容/图表：下半60%
-
-**多列并排**：
-- 每列等宽，间距均匀（列间距=列宽15-20%）
-- 每列内部：图标上+标题中+正文下
-- 最多3列
-
-**对比式**：
-- 左右各占50%
-- 视觉差异明显（颜色/大小/样式）
-
-**时间轴**：
-- 轴线水平或垂直居中
-- 节点均匀分布
-- 内容在轴线两侧交替
-
-**问答式**：
-- 问题：画面上半部分，字号大
-- 答案：画面下半部分，字号小
-- 问题与答案间距明显
-
-**极简过渡**：
-- 单个文字或单个图标
-- 画面中心或偏下
-- 大量留白
-
-**全屏沉浸**：
-- 背景图/视频：占满画面
-- 文字：叠加在图片上，通常在下1/3处
-- 文字需加阴影或半透明底，确保可读
-
-**上下分屏**：
-- 上50%：一个主题
-- 下50%：另一个主题
-- 中间可用细线或渐变分隔
-
-**中心环绕**：
-- 中心元素：占画面30-40%
-- 周围元素：2-4个，均匀环绕
-- 周围元素大小一致
-
-**卡片堆叠**：
-- 主卡片：画面中心，最大
-- 次卡片：主卡片后方，略小，偏移
-- 逐张出现，制造层次
-
-**网格矩阵**：
-- 2×2或3×3等分
-- 每个格子一个元素
-- 格子间距均匀
-
-**对角线构图**：
-- 主元素：左上到右下（或反向）
-- 辅助元素：沿对角线分布
-- 制造动感和不稳定感
-
-**留白聚焦**：
-- 元素占画面<30%
-- 大量留白
-- 元素通常偏中心或黄金分割点
-
-**图文穿插**：
-- 文字块和图片块交替
-- 文字在左/右，图片在右/左
-- 像杂志排版
-
-**瀑布流**：
-- 元素从上到下依次排列
-- 每个元素有间距
-- 逐条出现
-
-**悬浮卡片**：
-- 背景图：占满画面
-- 卡片：悬浮在背景上，有阴影
-- 卡片可1-3张，有层次
+- 元素首字幕 == region 首字幕 → **省略** start
+- 元素末字幕 == region 末字幕 → **省略** end
+- 两者都成立 → 只写 id，无 start/end（等同于 data-global 效果）
 
 ---
 
-### 步骤5：分配元素出场顺序和间隔
+## 两步校验（merge 脚本自动执行）
 
-**5.1 出场顺序**
+merge 脚本 6.3 节会自动校验 html：
 
-按优先级排序：
+**第一步：有 class 必有 id**
+- 有 `class` 属性的元素必须也有 `id`（SVG 内部图形原子 `circle/path/line/rect/polygon/polyline/ellipse/g/text/tspan/use/image/defs/linearGradient/radialGradient/stop/animate/animateTransform/animateMotion` 豁免）
 
-| 优先级 | 元素类型 | 说明 |
-|--------|---------|------|
-| 1 | 锚点 | 核心元素，0延迟出现 |
-| 2 | 核心内容 | 标题、主要信息 |
-| 3 | 辅助内容 | 正文、解释 |
-| 4 | 装饰元素 | 图标、标签 |
+**第二步：有 id 必有归属属性**
+- 有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
 
-**5.2 字幕绑定**（核心约定）
+```html
+<!-- 错：class 无 id -->
+<div class='clock-num'>12</div>
 
-> ⚠️ **AI 不填 start/end，填"对应字幕范围"（subtitles 字段）**
->
-> merge-regions.js 会自动从 SRT 查时间填回去，保证 100% 精准对齐字幕。
->
-> 同理，`component.start / end` 和 `elementIds[].start / end` 全部由 merge 自动从所属 region 推算，**AI 不必手填**。如果 AI 填了就以填的为准（用于精确控制场景）。
+<!-- 错：id 无归属属性 -->
+<div id='P1-002'>元素</div>
 
-**绑定规则**：
+<!-- 对：专属元素绑定字幕 -->
+<div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
 
-| 绑定形式 | 含义 | 示例 |
-|---------|------|------|
-| 单条字幕 | 一个元素对应一条字幕 | `subtitles: [14]` |
-| 多条字幕 | 一个元素覆盖多条字幕（N:M） | `subtitles: [11, 14]` |
-| 单条字幕组 | 多元素共绑同一条字幕 | elemA `subtitles: [14]`，elemB `subtitles: [14]` |
-| 跨元素 | 多个元素绑不同字幕同时出现 | elemA `subtitles: [11, 12]`，elemB `subtitles: [13, 14]` |
-
-**merge 自动算时间**：
-- `element.start` = 绑定字幕列表第一字幕的 `start`（未填 = component.start）
-- `element.end` = 绑定字幕列表最后字幕的 `end`（未填 = component.end）
-- `component.start` = region.startTime（未填）/ `subtitles` 范围起（填了）
-- `component.end` = 下一 region.startTime（未填，最后 region = project.duration）/ `subtitles` 范围止（填了）
-
-**统一规则**：未设置 start/end 时，**默认展示整个父级时间窗口**（与背景切换规则保持一致）
-- component 未设置 → 展示整个 region
-- element 未设置 → 展示整个所属 HtmlComponent
-
-**5.3 元素绑定时长建议**
-
-| 元素类型 | 绑定字幕建议 |
-|---------|------------|
-| 锚点（关键信息）| 覆盖关键字幕 ≥ 2s（找长字幕段）|
-| 核心内容 | 覆盖核心字幕 ≥ 1.5s |
-| 辅助内容 | 覆盖对应字幕 ≥ 1s |
-| 装饰元素 | 绑定 1-2 条字幕即可 |
-| 末元素 | 绑定到最后一条字幕（不要越界）|
-
-**5.4 稳定期**
-
-所有元素出场后，留稳定期：
-
-| 档位 | 最短稳定期 |
-|-----|-----------|
-| 快闪 | 0.3-0.5秒 |
-| 标准 | 0.5-0.8秒 |
-| 沉浸 | 0.8-1.2秒 |
-| 留白 | 1.0-1.5秒 |
-
-区域结束前0.5秒开始淡出。
-
-**说明**：
-- 所有 HtmlComponent 必须通过 `content.html` + `content.css` + `content.elementIds` 描述画面内容
-- `content.elementIds` 是 HtmlComponent 的**必填字段**，用于注册内部元素的 ID 和时间线
-
-**重要硬规则**：
-- ✅ 每个区域使用一个 HtmlComponent
-- ✅ 所有顶层 HtmlComponent 必须配置 position（至少包含 w 和 h）
-- ✅ 每个 elementIds 子项必须填 `subtitles`（绑字幕），AI 不写 start/end
-
-**元素时间轴节奏（口播模式）**：
-
-| 项 | 规则 |
-|----|------|
-| 字幕同步 | 元素 subtitles 绑的字幕必须等于该元素负责显示的字幕，画面是字幕的视觉翻译 |
-| 嵌套关系 | merge 后 element ⊂ component = region（脚本自动校验）|
-
-**时间分配示例**（区域含字幕 11-14）：
-
-| 元素 | 字幕绑定 | 说明 |
-|------|---------|------|
-| 锚点（CSS 胶囊，金句风格）| `subtitles: [11, 14]` | 跨 4 条字幕，关键信息 |
-| 辅助文字 | `subtitles: [12, 13]` | 辅助内容 |
-| 核心图片 | `subtitles: [11, 14]` | 全程显示 |
-| 装饰角标 | `subtitles: [12]` | 短装饰 |
-
-**严禁**：
-- ❌ 元素绑定字幕范围超出所属 region 的字幕范围
-- ❌ elementIds 不填 `subtitles`（必须填，merge 自动算时间）
-- ❌ 画面内容与字幕语义不一致
+<!-- 对：装饰/背景元素用全局 -->
+<div id='P1-016' class='corner-deco' data-global='true'></div>
+```
 
 ---
 
-### 步骤6：配色方案
+## CSS 动画写法
 
-**6.1 选择配色方案**
+### 关键帧定义
 
-先确定背景主题和风格，再从对应方案中选择：
+```css
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-| 背景主题 | 风格 | 方案A | 方案B | 方案C |
-|---------|------|-------|-------|-------|
-| 黑底 | warm | A-热情 | B-温柔 | C-沉稳 |
-| 黑底 | tech | A-冷峻 | B-荧光 | C-深蓝 |
-| 黑底 | business | A-经典 | B-现代 | C-高级 |
-| 黑底 | art | A-大胆 | B-清新 | C-复古 |
-| 白底 | warm | A-热情 | B-温柔 | C-沉稳 |
-| 白底 | tech | A-冷峻 | B-荧光 | C-深蓝 |
-| 白底 | business | A-经典 | B-现代 | C-高级 |
-| 白底 | art | A-大胆 | B-清新 | C-复古 |
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 
-**6.2 黑底配色详情**
+@keyframes scale-pop {
+  from { opacity: 0; transform: scale(0.8); }
+  50% { transform: scale(1.05); }
+  to { opacity: 1; transform: scale(1); }
+}
+```
 
-| 风格 | 方案 | 强调色1 | 强调色2 | 强调色3 | 辅色 | 主色 | 氛围 |
-|------|------|---------|---------|---------|------|------|------|
-| warm | A-热情 | #ff6b6b | #f9ca24 | #ee5a24 | #a0a0b0 | #f0f0f5 | 热烈醒目 |
-| warm | B-温柔 | #f8a5c2 | #f9ca24 | #e66767 | #b0b0c0 | #f0f0f5 | 柔和浪漫 |
-| warm | C-沉稳 | #c0392b | #d35400 | #f39c12 | #9090a0 | #f0f0f5 | 厚重经典 |
-| tech | A-冷峻 | #00d4ff | #2ec4b6 | #1e3799 | #a0a0b0 | #e8e8f0 | 冷静未来 |
-| tech | B-荧光 | #00ff88 | #00d4ff | #ff00ff | #a0a0b0 | #e8e8f0 | 赛博前卫 |
-| tech | C-深蓝 | #2980b9 | #3498db | #1abc9c | #9090a0 | #e8e8f0 | 专业可信 |
-| business | A-经典 | #1e3799 | #6ab04c | #2c3e50 | #a0a0b0 | #f0f0f5 | 稳重权威 |
-| business | B-现代 | #e74c3c | #3498db | #2ecc71 | #9090a0 | #f0f0f5 | 活力创新 |
-| business | C-高级 | #f39c12 | #8e44ad | #2c3e50 | #b0b0c0 | #f0f0f5 | 奢华独特 |
-| art | A-大胆 | #ff9f43 | #ee5a24 | #8e44ad | #a0a0b0 | #f0f0f5 | 浓烈冲击 |
-| art | B-清新 | #1dd1a1 | #54a0ff | #5f27cd | #b0b0c0 | #f0f0f5 | 明快现代 |
-| art | C-复古 | #d35400 | #c0392b | #8e44ad | #9090a0 | #f0f0f5 | 怀旧文艺 |
+### 应用动画
 
-**6.3 白底配色详情**
+```css
+.title {
+  animation: fade-in 0.5s ease-out forwards;
+}
 
-| 风格 | 方案 | 强调色1 | 强调色2 | 强调色3 | 辅色 | 主色 | 氛围 |
-|------|------|---------|---------|---------|------|------|------|
-| warm | A-热情 | #e55039 | #f39c12 | #d35400 | #6b6b7b | #1a1a2e | 明亮活泼 |
-| warm | B-温柔 | #e66767 | #f9ca24 | #f8a5c2 | #8b8b9b | #2d2d3a | 清新温暖 |
-| warm | C-沉稳 | #c0392b | #a04000 | #b9770e | #7b7b8b | #1a1a2e | 厚重内敛 |
-| tech | A-冷峻 | #2980b9 | #1abc9c | #1e3799 | #6b6b7b | #1a1a2e | 冷静专业 |
-| tech | B-荧光 | #00b894 | #0984e3 | #6c5ce7 | #7b7b8b | #2d2d3a | 现代前卫 |
-| tech | C-深蓝 | #2471a3 | #2e86c1 | #17a589 | #6b6b7b | #1a1a2e | 稳重科技 |
-| business | A-经典 | #1e3799 | #27ae60 | #2c3e50 | #6b6b7b | #1a1a2e | 权威可信 |
-| business | B-现代 | #c0392b | #2980b9 | #2ecc71 | #7b7b8b | #2d2d3a | 创新突破 |
-| business | C-高级 | #d4ac0d | #7d3c98 | #2c3e50 | #8b8b9b | #1a1a2e | 奢华品味 |
-| art | A-大胆 | #e67e22 | #d35400 | #7d3c98 | #6b6b7b | #1a1a2e | 浓烈先锋 |
-| art | B-清新 | #1abc9c | #3498db | #9b59b6 | #7b7b8b | #2d2d3a | 明快艺术 |
-| art | C-复古 | #a04000 | #922b21 | #76448a | #8b8b9b | #1a1a2e | 怀旧沉淀 |
+.badge {
+  animation: scale-pop 0.4s ease-out forwards;
+}
+```
 
-**6.4 配色规则**
+**关键点**：
 
-- 每区域最多4色（背景+主色+辅色+强调色）
-- 强调色每区域只用1次
-- 相邻区域强调色可以不同，但要从同一方案的3个强调色中选
-- 文字对比度>4.5:1
-- 黑底主色用微暖白#f0f0f5或微蓝白#e8e8f0，不用纯白
-- 白底主色用深蓝黑#1a1a2e或深灰黑#2d2d3a，不用纯黑
+1. **必须用 `forwards`** — 动画跑完元素停在最终态，否则会回到初始态（opacity: 0）不可见
+2. **delay 不需要写** — merge 脚本会自动根据 `data-subtitle` 注入 `animation-delay`
+3. **duration 写元素本身** — 0.3s~0.8s 是常见值
+
+### 进阶：自定义 transition
+
+```css
+/* 多段动画 */
+.badge {
+  animation: fade-in 0.5s ease-out forwards, bounce 0.3s ease-out 0.5s;
+}
+
+/* 弹性缓动 */
+.elastic {
+  animation: scale-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+```
 
 ---
 
-### 步骤7：图片策略
+## 完整示例
 
-| 图片类型 | 位置 | 大小 | 样式 |
-|---------|------|------|------|
-| 氛围图 | 背景层 | 60-80% | 透明度20-40%，模糊 |
-| 主体图 | 中心或一侧 | 30-50% | 圆形或圆角矩形裁切 |
-| 图标 | 标题旁或顶部 | 40-80px | 原色或强调色 |
-| 数据图 | 下半部分 | 50-70% | 简洁，无多余装饰 |
-| 全屏背景 | 占满画面 | 100% | 暗化/模糊处理，确保文字可读 |
-| 悬浮背景 | 占满画面 | 100% | 正常显示，卡片遮挡部分 |
-
-**规则**：
-- 图片风格要和全局风格一致（warm用暖调真实图，tech用冷调抽象图）
-- 过渡区域尽量不用图，或用极简图标
-- 全屏沉浸布局的图片必须暗化或加蒙版，确保文字可读
-- 图片出现时间可以和锚点同步，或延迟0.3秒
-
----
-
-### 步骤8：生成区域JSON
-
-> ⚠️ **注意**：此步骤由大模型自行编写代码/逻辑生成 JSON，没有自动化脚本。
-
-**输入**：
-- 骨架配置：`skeleton.json`（获取 viewport、theme）
-- 字幕来源：用户提供的 SRT 文件（该区域的字幕片段）
-- 引用规则：`rules/06-components.md`
-
-#### 第 1 步：查询 HtmlComponent 规范（建议）
-
-> ℹ️ **说明**：推荐调用 `queryComponentSpecBatch` 接口获取最新 HtmlComponent 字段规范（避免记忆偏差）。详见 `rules/06-components.md` §R1。
->
-> ```js
-> typeVariants = [
->   { type: 'HtmlComponent', variant: 'default' }
-> ]
-> ```
->
-> **降级策略**：如果 API 不可用（网络失败 / 5xx），可使用以下参考 schema（与当前 API 一致）：
->
-> ```js
-> {
->   id: 'P1-001',           // 格式: P{区域号}-{三位数字}
->   type: 'HtmlComponent',
->   regionId: 'P1',
->   start: 0, end: 5,
->   position: { x: 0, y: 0, w: 780, h: 585 },
->   background: { html, css },  // 必填
->   content: { html, css, elementIds }
-> }
-> ```
-
-#### 第 2 步：生成 HtmlComponent
-
-根据前面步骤中的设计，结合 API 返回的 HtmlComponent 规范，生成 HtmlComponent JSON。
-
-**基础字段**：
-
-| 字段 | 来源 | 示例 |
-|------|------|------|
-| `id` | 元素清单 | "P1-001" （格式：P{区域号}-{三位数字}，如 P1-001、P3-005） |
-| `type` | 固定值 | `"HtmlComponent"` |
-| `content` | 元素清单 | `{ "html": "...", "css": "...", "elementIds": {...} }` |
-| `position` | 元素清单 | `{ "x": 0, "y": 0, "w": 780, "h": 585 }` |
-| `start` | 时间轴 | 0 |
-| `end` | 时间轴 | 5 |
-
-**HtmlComponent 核心规则**
-
-- 必须配置 position（至少包含 w 和 h）
-- 不需要 customStyle，通过 content.css 控制样式
-
-**HtmlComponent 示例**：
 ```json
 {
   "id": "P1-001",
-  "regionId": "P1",
   "type": "HtmlComponent",
-  "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
-  "content": {
-    "html": "<div id='P1-002' class='card'>\n  <h2 class='title'>标题</h2>\n  <span class='badge'>徽章</span>\n</div>",
-    "css": ".card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #FFFFFF; } .badge { background: #00B894; color: #FFFFFF; padding: 12px 24px; border-radius: 999px; font-size: 20px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,184,148,0.3); }",
-    "elementIds": {
-      "#P1-002": { "id": "P1-002", "start": 0, "end": 3 }
-    }
-  },
-  "start": 0,
-  "end": 3
-}
-```
-
-**position 坐标计算**
-
-`position` 是 HtmlComponent**在所属区域内的相对坐标**：
-
-```
-position: { x: <区域内左上x>, y: <区域内左上y>, w: <宽度>, h: <高度> }
-```
-
-约束：
-- `w` ≤ `viewport.width - 40`
-- 区域内 HtmlComponent `h` 总和 + 间距 ≤ `viewport.height - 20`
-- 强调类元素（CSS 金句胶囊 / 角标 / CTA 样式）单独出现时应在区域内**水平居中**
-- `position.w` / `position.h` 必须**显式填写**
-
-#### 第 3 步：生成字幕（必填，来自 SRT）
-
-字幕是口播模式必填字段，**100% 来自用户提供的 SRT，严禁 LLM 自行生成或改写**。
-
-```json
-[
-  {
-    "start": 3.5,
-    "end": 6.0,
-    "text": "P1001 一般是主键",
-    "validateElementDesign": "此时画面上正在显示 P1-002（表格容器，淡灰底 760x400 居中）、P1-003（表头行，4 列表头加粗）、P1-004（数据行 3 条，第一列'ID'为金色高亮表示主键）。这些元素组合成'带主键高亮的示例数据表'画面，完整呈现了字幕'P1001 一般是主键'的含义，整体合理。"
-  }
-]
-```
-
-**字幕与画面同步硬规则**：
-- 字幕 start/end 必须在所属区域 [start, end] 范围内
-- 画面元素的 start/end 必须覆盖对应字幕的时间段
-- 画面内容与字幕语义必须一致（不允许"说东画西"）
-
-**`validateElementDesign` 必填规则**（强制 AI 自检）：
-- **本字段的语义是"分析该字幕时间窗内画面上正在显示的元素组合"，不是"为字幕设计新元素"**
-- **第一步**：先找出 `element.start/end` 与 `subtitle.start/end` 有重叠的元素（**只列正在显示的**），不要列组件 id
-- **第二步**：分析这些元素组合成的画面是否完整 / 是否合理 / 是否与字幕语义匹配
-- **第三步**：给整体评价（合理 / 不合理 + 原因）
-
-| 项 | 规则 |
-|----|------|
-| 长度 | 30-200 字 |
-| 必含 element id | 至少 1 个 `P{n}-{nnn}` 格式（如 `P1-002`），**且该 id 的 element.start/end 必须与字幕时间窗有重叠** |
-| 必含内容 | (1) 字幕时间窗内正在显示的元素清单（id + 视觉功能/位置/层级）；(2) 元素组合画面是否完整合理；(3) 整体评价 |
-
-- **反例（会被 fail-fast）**：
-  - ❌ `"合理"` —— 太短，无 element id
-  - ❌ `"P1-001 元素布局合理，3 个元素组成"` —— P1-001 是组件不是元素；未指明哪些元素在该时间窗
-  - ❌ `"画面有 P1-002、P1-005，布局合理"` —— P1-005 的 element 时间可能不在该字幕时间窗内
-  - ❌ `""` —— 空
-- **正例**：见上方示例
-
-> 校验在 `selfcheck.js`（Skill 端）和 `projectValidator.js`（Server 端）双端执行，做 3 项检查：① 缺失/过短/无 element id → 拒；② 引用了不存在的 element id → 拒；③ 引用了但 element 时间不在字幕时间窗内 → 拒。详见 `rules/06-components.md` §R10。
-
-#### 第 4 步：保存区域 JSON
-
-将提取的信息保存为区域 JSON 文件：
-
-**文件路径**：`{workdir}/{skillProjectId}/regions/{regionId}.json`
-
-**JSON 结构**：
-
-```json
-{
   "regionId": "P1",
-  "subtitles": [
-    { "start": 0, "end": 2.5, "text": "原 SRT 字幕文本" }
-  ],
-  "components": [
-    {
-      "id": "P1-001",
-      "regionId": "P1",
-      "type": "HtmlComponent",
-      "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
-      "content": {
-        "html": "...",
-        "css": "...",
-        "elementIds": { "#P1-002": { "id": "P1-002", "start": 0, "end": 3 } }
-      },
-      "start": 0,
-      "end": 3
-    }
-  ]
+  "content": {
+    "html": "<div id='P1-016' class='corner-deco' data-global='true'></div><div id='P1-001-frame' class='frame' data-subtitle='3-5'><div class='frame-title'>核心观点</div></div><div id='P1-001-title' class='title' data-subtitle='3'>Skill 是什么</div><div id='P1-001-desc' class='desc' data-subtitle='4'>它的核心定义与作用</div><div id='P1-001-badge' class='badge' data-subtitle='5'>重要</div>",
+    "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes slide-in { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } } @keyframes scale-pop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } } .corner-deco { animation: fade-in 0.5s ease-out forwards; } .frame { animation: fade-in 0.5s ease-out forwards; } .title { animation: fade-in 0.5s ease-out forwards; } .desc { animation: slide-in 0.4s ease-out forwards; } .badge { animation: scale-pop 0.4s ease-out forwards; }"
+  }
 }
 ```
 
-#### 第 5 步：验证区域时间范围
+---
 
-运行区域时间验证脚本：
+## AI 不需要做的事
 
-```bash
-node scripts/validate-region.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} {regionId}
+- ❌ 写 `start` / `end` 数字
+- ❌ 算 `animation-delay` 时间
+- ❌ 写 `elementIds` 字段（merge 脚本会从 HTML 自动生成）
+- ❌ 维护时间数学
+
+## AI 需要做的事
+
+- ✅ 给元素写 `id`（格式：`P{区域编号}-{三位数字}`，如 `P1-001`）
+- ✅ 给元素写 `data-subtitle` 或 `data-global="true"`（二选一）
+- ✅ 写 CSS keyframes（标准 CSS 动画）
+- ✅ 给元素 class，用 class 应用 animation
+- ✅ 两步校验：有 class 必有 id，有 id 必有归属
+
+---
+
+## 常见错误
+
+### 1. 忘记 `forwards`
+
+```css
+/* 错：动画跑完元素回到 opacity: 0 */
+.title { animation: fade-in 0.5s ease-out; }
+
+/* 对 */
+.title { animation: fade-in 0.5s ease-out forwards; }
 ```
 
-脚本会自动检查：
-1. 元素时间是否在区域时间范围内
-2. 元素时间是否有重叠
-3. 字幕时间是否在区域时间范围内
+### 2. 元素 id 重复
+
+```html
+<!-- 错 -->
+<div id='P1-002'>标题</div>
+<div id='P1-002'>描述</div>
+
+<!-- 对：必须用 P{区域编号}-{三位数字} 格式 -->
+<div id='P1-002'>标题</div>
+<div id='P1-003'>描述</div>
+```
+
+### 3. data-subtitle 字幕 ID 越界
+
+```html
+<!-- 错：SRT 只有 20 条字幕 -->
+<div data-subtitle='25'>元素</div>
+
+<!-- 对 -->
+<div data-subtitle='15'>元素</div>
+```
+
+### 4. CSS 用 id 选择器（影响 @scope）
+
+```css
+/* 错：受 @scope 影响，可能失效 */
+#P1-001-title { animation: ...; }
+
+/* 对：用 class 选择器 */
+.title { animation: ...; }
+```
+
+### 5. 有 id 但无归属属性
+
+```html
+<!-- 错：id 既没有 data-subtitle 也没有 data-global -->
+<div id='P1-005'>元素</div>
+
+<!-- 对 -->
+<div id='P1-005' class='card' data-subtitle='5'>元素</div>
+```
+
+### 6. 同时写了 data-subtitle 和 data-global
+
+```html
+<!-- 错：互斥，不能同时存在 -->
+<div id='P1-005' class='card' data-subtitle='5' data-global='true'>元素</div>
+
+<!-- 对 -->
+<div id='P1-005' class='card' data-subtitle='5'>元素</div>
+```
 
 ---
 
-## 产出
+## 校验规则
 
-| 文件 | 路径 | 说明 |
-|------|------|------|
-| regions/P{n}.json | `{workdir}/{skillProjectId}/regions/P{n}.json` | 区域配置（含 subtitles + components） |
+selfcheck 会校验：
 
----
-
-## 自检
-
-> [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
-
-**脚本自动校验**（运行 `scripts/validate-region.js` 时检查）：
-
-- elementIds 子项必须填 `subtitles`（AI 不写 start/end）
-- subtitles 绑定范围必须在所属 region 字幕范围内
-- merge 后元素 ⊂ 组件 = 区域（嵌套关系校验）
-- HtmlComponent 含 `background` 字段
-- 字幕（来自 SRT）必须在所属 region 范围内
-
-**AI 写完后自查**：
-
-- [E] 字幕文本 100% 来自 SRT，未改写
-- [E] 每个元素有完整的字段（id, content, position, subtitles）
-- [E] `id` 格式正确（如 `P1-001`：`P{区域号}-{三位数字}`）
-- [E] 元素 subtitles 绑定覆盖该元素负责显示的字幕
-- [E] 画面内容与字幕语义一致
-- [W] 有唯一视觉锚点（过渡区域除外）
-- [W] 文字对比度符合 WCAG AA（≥ 4.5:1）
-- [W] `content.css` 已填写
-- [I] 出场顺序由主到次
-- [I] 相邻元素间隔平均值 ≤ 档位上限
-- [I] 有稳定期
-- [I] 配色不超过4色
-- [I] 图片有裁切/透明度处理
-- [I] 图片风格与全局风格一致
-- [I] 元素总数符合档位表
-
----
-
-## 下一步
-
-- 还有区域？→ 返回 [步骤4：区域设计与生成JSON（口播模式）](04-region-design-dubbing.md)
-- 全部完成？→ 进入 [步骤5：合并](05-merge.md)
+1. 每个有 `id` 的元素必须格式 `P{数字}-{三位数字}`
+2. `data-subtitle` 引用的字幕 ID 必须存在
+3. `data-subtitle` 多选/范围必须合法
+4. CSS 中引用的 keyframes 必须有 `@keyframes` 定义
+5. `animation` 简写建议带 `forwards`

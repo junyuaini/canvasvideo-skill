@@ -2,42 +2,24 @@
   "id": "P1",
   "name": "开头引入",
   "subtitles": [
-    {
-      "start": 0.000,  "end": 3.200, "text": "今天我们来聊聊 AI 时代的核心竞争力",
-      "validateElementDesign": "P1 区域此时画面上正在显示 P1-002 主标题'AI 时代'（56px 黑色加粗居中，铺满上半屏，0-6.4s 持续），是开场唯一的视觉锚点。字幕提出'AI 时代+核心竞争力'两个概念，但画面只承载了'AI 时代'，设计意图是先锁主题再展开。画面虽单点但锚点明确，整体合理。"
-    },
-    {
-      "start": 3.200,  "end": 6.400, "text": "很多人以为是技术本身",
-      "validateElementDesign": "P1 区域此时画面上仍显示 P1-002 主标题'AI 时代'（持续 0-6.4s）。字幕'很多人以为是技术本身'与主标题'AI 时代'形成隐性对比——观众看到主标题就会意识到'AI 时代 ≠ 技术本身'，为下一句转折做铺垫。画面静止但语义衔接合理。"
-    },
-    {
-      "start": 6.400,  "end": 9.800, "text": "但真正让 AI 改变世界的",
-      "validateElementDesign": "P1 区域此时画面上 P1-002 主标题淡出，P1-003 胶囊'核心竞争力'（200x40 蓝紫渐变，居中突出，3.2-9.8s）入场。字幕进入转折下半场'但真正让 AI 改变世界的'，胶囊锁定观众注意力到关键概念。元素切换与字幕转折对齐，整体合理。"
-    },
-    {
-      "start": 9.800,  "end": 13.000, "text": "是学习的能力",
-      "validateElementDesign": "P1 区域此时画面上 P1-003 胶囊淡出，P1-004 lead 文案'不是技术本身 / 而是学习的能力'（36px 加粗，'学习的能力' 42px 蓝色高亮 + 阴影，居中，6.4-13s）入场。字幕揭晓答案'是学习的能力'，与画面 lead 末行高亮词完美对应，元素聚焦单一金句强表达，整体合理。"
-    }
+    { "start": 0.100,  "end": 2.312, "text": "欢迎来到AI学习指南" },
+    { "start": 2.887,  "end": 4.900,  "text": "今天我们从认知开始" },
+    { "start": 5.475,  "end": 6.062,  "text": "第一步" }
   ],
   "components": [
     {
       "id": "P1-001",
       "regionId": "P1",
       "type": "HtmlComponent",
-      "position": {"x": 0, "y": 0, "w": 780, "h": 585},
-      "subtitles": [1, 4],
+      "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
+      "subtitles": [1, 3],
       "background": {
-        "html": "<div class='region-bg region-bg--bright'></div>",
-        "css": ".region-bg { position: absolute; inset: 0; } .region-bg--bright { background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.25) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.22) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
+        "html": "<div id='P1-010' class='region-bg' data-global='true'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.2) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.18) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
       },
       "content": {
-        "html": "<h1 id='P1-002' class='title'>AI 时代</h1><span id='P1-003' class='badge'>核心竞争力</span><p id='P1-004' class='lead'>不是技术本身<br/>而是<span class='hl'>学习的能力</span></p>",
-        "css": ".title { position: absolute; left: 20px; top: 90px; width: 740px; height: 80px; margin: 0; font-size: 56px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .badge { position: absolute; left: 290px; top: 190px; width: 200px; height: 40px; padding: 8px 22px; border-radius: 999px; font-size: 18px; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); box-shadow: 0 4px 16px rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; } .lead { position: absolute; left: 40px; top: 280px; width: 700px; height: 200px; margin: 0; font-size: 36px; font-weight: 700; color: #1F2937; line-height: 1.4; text-align: center; letter-spacing: 1px; } .lead .hl { font-size: 42px; font-weight: 900; color: #3B82F6; text-shadow: 0 2px 12px rgba(59,130,246,0.3); }",
-        "elementIds": {
-          "#P1-002": {"id": "P1-002", "subtitles": [1, 2]},
-          "#P1-003": {"id": "P1-003", "subtitles": [2, 3]},
-          "#P1-004": {"id": "P1-004", "subtitles": [3, 4]}
-        }
+        "html": "<div id='P1-011' class='corner-tag' data-global='true'>认知篇</div><h1 id='P1-012' class='title' data-subtitle='1'>欢迎来到 AI 学习指南</h1><p id='P1-013' class='lead' data-subtitle='2'>今天我们从认知开始</p><p id='P1-014' class='step-hint' data-subtitle='3'>第一步 →</p>",
+        "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes pop-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } } @keyframes slide-up { from { opacity: 0; transform: translateY(35px); } to { opacity: 1; transform: translateY(0); } } .corner-tag { position: absolute; right: 24px; top: 24px; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: #3B82F6; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); letter-spacing: 1px; animation: fade-in 0.4s ease-out forwards; } .title { position: absolute; left: 40px; right: 40px; top: 140px; margin: 0; font-size: 52px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; animation: fade-in 0.6s ease-out forwards; } .lead { position: absolute; left: 40px; right: 40px; top: 260px; margin: 0; font-size: 34px; font-weight: 700; color: #374151; line-height: 1.3; text-align: center; animation: slide-up 0.7s ease-out forwards; } .step-hint { position: absolute; left: 40px; right: 40px; top: 380px; margin: 0; font-size: 28px; font-weight: 800; color: #3B82F6; text-align: center; letter-spacing: 2px; animation: pop-in 0.4s ease-out forwards; }"
       }
     }
   ]

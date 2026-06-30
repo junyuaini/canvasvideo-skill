@@ -219,9 +219,21 @@ async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
   return { audio: audioBuffer, entries, audioDurationMs };
 }
 
+// 检测文本是否为 SRT 格式（避免把序号+时间戳当语音文本传给 Azure TTS）
+const SRT_TIMECODE_RE = /\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}/;
+function assertNotSrt(text) {
+  if (typeof text === 'string' && SRT_TIMECODE_RE.test(text)) {
+    throw new Error(
+      '检测到输入文本含 SRT 时间戳（如 "00:00:00,000 --> 00:00:08,500"），TTS 不应朗读 SRT 原始格式。' +
+      '请传纯文本 .txt 文件（每行一段字幕，段末以中英文句号结尾），不要传 .srt。'
+    );
+  }
+}
+
 async function synthesizeLongText({
   text, voice, rate, volume, pitch, chunkSize, shortSubtitle,
 }) {
+  assertNotSrt(text);
   const chunks = splitTextIntoChunks(text, chunkSize);
   logInfo(`文本分块: ${chunks.length} 块 | chunkSize=${chunkSize} | 总字数=${text.length}`);
 

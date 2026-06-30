@@ -21,7 +21,8 @@ CanvasVideo Skill 有一套严格的 9 步视频制作流程。AI 必须按顺�
 |------|------|
 | 设计文档仅在本地 | 不上传服务器 |
 | 设计确认后才上传 | 由 AI 流程自行保证（不通过脚本硬拦） |
-| 视频生成后不回设计 | 所有迭代直接改 project.json |
+| 视频生成后修改需要重新走流程 | 迭代时先改骨架/区域JSON，再跑 merge → package → upload，禁止直接改 project.json |
+| 需要 AI 直接生成的只有 3 项 | 口播文案（用户未提供时）、骨架设计文档、区域 JSON。其余一切必须走脚本，禁止手写 JSON 或跳过流程 |
 | 固定 skillProjectId | 同一项目多次上传使用相同 ID |
 | 首次注册无感 | 由 `getOrCreateUser` 自动完成 |
 | skillProjectId 必须走脚本 | 严禁 LLM 自编 ID（详见 R6） |

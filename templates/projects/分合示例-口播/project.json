@@ -1,0 +1,282 @@
+{
+  "name": "口播模式示例",
+  "description": "口播短视频样例：演示 data-subtitle / data-global / CSS animation 新约定",
+  "mode": "dubbing",
+  "theme": "white",
+  "duration": 9.487,
+  "viewport": {
+    "width": 780,
+    "height": 585
+  },
+  "settings": {
+    "autoPlay": false,
+    "loop": false,
+    "minScale": 0.01,
+    "maxScale": 5,
+    "ease": 0.08,
+    "contentZoomRatio": 1,
+    "preFullViewDuration": 0.4,
+    "postFullViewDuration": 0.4
+  },
+  "audio": {
+    "path": "./assets/voice/voice.mp3"
+  },
+  "regions": [
+    {
+      "id": "P1",
+      "name": "开头引入",
+      "duration": 5.475,
+      "startTime": 0.1,
+      "endTime": 6.062
+    },
+    {
+      "id": "P2",
+      "name": "四步方法",
+      "duration": 4.012,
+      "startTime": 6.325,
+      "endTime": 9.487
+    }
+  ],
+  "components": [
+    {
+      "id": "P1-001",
+      "regionId": "P1",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "subtitles": [
+        1,
+        3
+      ],
+      "background": {
+        "html": "<div id='P1-010' class='region-bg' data-global='true'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.2) 0%, transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.18) 0%, transparent 65%), linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%); }"
+      },
+      "content": {
+        "html": "<div id='P1-011' class='corner-tag' data-global='true'>认知篇</div><h1 id='P1-012' class='title'>欢迎来到 AI 学习指南</h1><p id='P1-013' class='lead'>今天我们从认知开始</p><p id='P1-014' class='step-hint'>第一步 →</p>",
+        "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes pop-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } } @keyframes slide-up { from { opacity: 0; transform: translateY(35px); } to { opacity: 1; transform: translateY(0); } } .corner-tag { position: absolute; right: 24px; top: 24px; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: #3B82F6; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); letter-spacing: 1px; } .title { position: absolute; left: 40px; right: 40px; top: 140px; margin: 0; font-size: 52px; font-weight: 900; color: #111827; line-height: 1.1; text-align: center; } .lead { position: absolute; left: 40px; right: 40px; top: 260px; margin: 0; font-size: 34px; font-weight: 700; color: #374151; line-height: 1.3; text-align: center; } .step-hint { position: absolute; left: 40px; right: 40px; top: 380px; margin: 0; font-size: 28px; font-weight: 800; color: #3B82F6; text-align: center; letter-spacing: 2px; }",
+        "animations": {
+          "fade-in": {
+            "duration": 400,
+            "timingFunction": "ease-out",
+            "iterationCount": 1,
+            "fill": "forwards",
+            "keyframes": [
+              {
+                "offset": 0,
+                "opacity": "0",
+                "transform": "translateY(20px)"
+              },
+              {
+                "offset": 1,
+                "opacity": "1",
+                "transform": "translateY(0)"
+              }
+            ]
+          },
+          "slide-up": {
+            "duration": 700,
+            "timingFunction": "ease-out",
+            "iterationCount": 1,
+            "fill": "forwards",
+            "keyframes": [
+              {
+                "offset": 0,
+                "opacity": "0",
+                "transform": "translateY(35px)"
+              },
+              {
+                "offset": 1,
+                "opacity": "1",
+                "transform": "translateY(0)"
+              }
+            ]
+          },
+          "pop-in": {
+            "duration": 400,
+            "timingFunction": "ease-out",
+            "iterationCount": 1,
+            "fill": "forwards",
+            "keyframes": [
+              {
+                "offset": 0,
+                "opacity": "0",
+                "transform": "scale(0.85)"
+              },
+              {
+                "offset": 1,
+                "opacity": "1",
+                "transform": "scale(1)"
+              }
+            ]
+          }
+        },
+        "elementIds": {
+          "#P1-011": {
+            "id": "P1-011",
+            "animations": [
+              "fade-in"
+            ],
+            "animIn": "fade-in"
+          },
+          "#P1-012": {
+            "id": "P1-012",
+            "end": 2.312,
+            "animations": [
+              "fade-in"
+            ],
+            "animIn": "fade-in"
+          },
+          "#P1-013": {
+            "id": "P1-013",
+            "start": 2.887,
+            "end": 4.9,
+            "animations": [
+              "slide-up"
+            ],
+            "animIn": "slide-up"
+          },
+          "#P1-014": {
+            "id": "P1-014",
+            "start": 5.475,
+            "animations": [
+              "pop-in"
+            ],
+            "animIn": "pop-in"
+          }
+        }
+      }
+    },
+    {
+      "id": "P2-001",
+      "regionId": "P2",
+      "type": "HtmlComponent",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 780,
+        "h": 585
+      },
+      "subtitles": [
+        4,
+        6
+      ],
+      "background": {
+        "html": "<div id='P2-010' class='region-bg' data-global='true'></div>",
+        "css": ".region-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(245,158,11,0.25) 0%, transparent 60%), radial-gradient(circle at 75% 80%, rgba(239,68,68,0.18) 0%, transparent 65%), linear-gradient(135deg, #fff7ed 0%, #fef3c7 60%, #fffbeb 100%); }"
+      },
+      "content": {
+        "html": "<div id='P2-011' class='corner-tag' data-global='true'>方法篇</div><div id='P2-012' class='step-card step1'><span>1</span><span>明确目标</span></div><div id='P2-013' class='step-card step2'><span>2</span><span>持续实践</span></div>",
+        "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes pop-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } } @keyframes slide-up { from { opacity: 0; transform: translateY(35px); } to { opacity: 1; transform: translateY(0); } } .corner-tag { position: absolute; right: 24px; top: 24px; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: #F59E0B; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); letter-spacing: 1px; } .step-card { position: absolute; left: 60px; right: 60px; display: flex; align-items: center; gap: 24px; padding: 28px 36px; border-radius: 16px; background: rgba(255,255,255,0.75); border: 1px solid rgba(245,158,11,0.25); box-shadow: 0 4px 16px rgba(245,158,11,0.1); } .step1 { top: 120px; } .step2 { top: 250px; } .step-card > span:first-child { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); color: #FFFFFF; font-size: 28px; font-weight: 900; flex-shrink: 0; } .step-card > span:last-child { font-size: 30px; font-weight: 900; color: #111827; letter-spacing: 2px; }",
+        "animations": {
+          "fade-in": {
+            "duration": 400,
+            "timingFunction": "ease-out",
+            "iterationCount": 1,
+            "fill": "forwards",
+            "keyframes": [
+              {
+                "offset": 0,
+                "opacity": "0",
+                "transform": "translateY(20px)"
+              },
+              {
+                "offset": 1,
+                "opacity": "1",
+                "transform": "translateY(0)"
+              }
+            ]
+          },
+          "slide-up": {
+            "duration": 600,
+            "timingFunction": "ease-out",
+            "iterationCount": 1,
+            "fill": "forwards",
+            "keyframes": [
+              {
+                "offset": 0,
+                "opacity": "0",
+                "transform": "translateY(35px)"
+              },
+              {
+                "offset": 1,
+                "opacity": "1",
+                "transform": "translateY(0)"
+              }
+            ]
+          }
+        },
+        "elementIds": {
+          "#P2-011": {
+            "id": "P2-011",
+            "animations": [
+              "fade-in"
+            ],
+            "animIn": "fade-in"
+          },
+          "#P2-012": {
+            "id": "P2-012",
+            "end": 7.162,
+            "animations": [
+              "slide-up"
+            ],
+            "animIn": "slide-up"
+          },
+          "#P2-013": {
+            "id": "P2-013",
+            "start": 7.737,
+            "animations": [
+              "slide-up"
+            ],
+            "animIn": "slide-up"
+          }
+        }
+      }
+    }
+  ],
+  "subtitles": [
+    {
+      "start": 0.1,
+      "end": 2.312,
+      "text": "欢迎来到AI学习指南"
+    },
+    {
+      "start": 2.887,
+      "end": 4.9,
+      "text": "今天我们从认知开始"
+    },
+    {
+      "start": 5.475,
+      "end": 6.062,
+      "text": "第一步"
+    },
+    {
+      "start": 6.325,
+      "end": 7.162,
+      "text": "明确目标"
+    },
+    {
+      "start": 7.737,
+      "end": 8.35,
+      "text": "第二步"
+    },
+    {
+      "start": 8.575,
+      "end": 9.487,
+      "text": "持续实践"
+    }
+  ],
+  "source_design_doc": "design-skeleton-dubbing.md",
+  "subtitle": {
+    "color": "#1a1a1a",
+    "fontSize": "32px",
+    "position": "bottom-center",
+    "weight": 700,
+    "background": "rgba(255,255,255,0.75)",
+    "textShadow": "0 1px 2px rgba(255,255,255,0.6)"
+  }
+}
