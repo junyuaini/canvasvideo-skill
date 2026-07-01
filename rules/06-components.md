@@ -3,7 +3,7 @@
 > 项目级（project.json）字段、HtmlComponent 写法、字幕/主题/图片等公共资源使用规范。
 > 改组件写法、看不懂字段、不知道该用谁，**先看本文件**。
 > 
-> 📌 **新约定 R11（CSS keyframes + data-subtitle）**：元素动画推荐用 §R11 的写法（详见末尾章节）。R11 下 `elementIds` 字段可选，由 HTML id 自动生成。
+> 📌 **新约定 R12（data-cv-anim 动画模板）**：元素动画用 `data-cv-anim` 属性选择前端内置动画模板，**不要写 @keyframes / animation CSS**。R11 旧约定已废弃。
 
 ---
 
@@ -131,7 +131,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 ## R3 HtmlComponent 必须 background（硬规则）
 
 **所有 HtmlComponent 必须携带 background 字段**（与 content 平级），作为组件底色/氛围背景：
-- background.html 必填、字符串、非空（一般是单个根 <div>，可嵌套 SVG/渐变/装饰）
+- background.html 必填、字符串、非空（一般是单个根 `<div>`，可嵌套 SVG/渐变/装饰）
 - background.css 必填、字符串、非空（建议 position: absolute; inset: 0; 让背景填满 video-frame）
 - background 必填
 - **校验**：selfcheck.js 在本地会拦、projectValidator.collectErrors 在上传时会 400 拒绝
@@ -161,7 +161,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 - `element.start` = subtitles 第一字幕 start
 - `element.end` = subtitles 最后字幕 end
 
-> 💡 **R11 新约定下推荐省略 elementIds 字段**：详见 [§R11](06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)。
+> 💡 **R12 新约定下推荐省略 elementIds 字段**：详见 [§R12](06-components.md#r12-动画模板)。
 
 **优先级**：subtitles > 旧 start/end（兼容）> fallback to parent
 
@@ -320,123 +320,151 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ---
 
-## R11 元素动画新约定（CSS keyframes + data-subtitle / data-global）
+## R12 动画模板（必须）
 
-> **新约定（强制）**：AI 不再手填 `elementIds`，改用 CSS keyframes + `data-subtitle` / `data-global` 控制元素出现时机和动画效果。`content.elementIds` 固定写 `{}`，merge 时由 `transformHtmlComponent` 自动从 HTML 的 `id` 属性生成。
+> **强制规则（2026-07）**——动画用 `data-cv-anim` 属性选择前端内置模板，**不要写 @keyframes / animation CSS**。前端强制禁掉所有 CSS animation。
 
-### R11.1 核心原则
+### R12.1 两种维度完全独立
 
-| 维度 | 旧约定（R4） | 新约定（R11） |
-|------|-------------|---------------|
-| 时间字段 | `elementIds["#X"].start/end` 数字 | `data-subtitle="3"` 字幕 ID 或 `data-global="true"` |
-| 出现/消失 | JS `display: none/block` 闪现 | CSS `animation` 自带过渡 |
-| AI 要学什么 | 嵌套对象 + 时间数学 | 写 HTML 标签 + CSS keyframes |
+| 维度 | 控制什么 | AI 怎么配 | 谁决定 |
+|---|---|---|---|
+| **时间维度** | 元素**何时显示** | `data-subtitle="3"` | 字幕时间轴 |
+| **动画维度** | 显示时**怎么进** | `data-cv-anim="fade-in-up"` | 前端模板 |
 
-### R11.2 HTML 写法（四种）
+两者独立，AI 同时配两个属性即可。
 
-```html
-<!-- 1. 区域全局（装饰/背景）：跟随 region 全生命周期，前端用 region 边界兜底 -->
-<div id='P1-016' class='corner-deco' data-global='true'></div>
+### R12.2 动画模板列表（10 种）
 
-<!-- 2. 单条字幕：出现=字幕3.start，消失=字幕3.end -->
-<div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
+| 模板名 | 效果 | 适合场景 |
+|---|---|---|
+| `fade-in` | 透明度 0→1 | 文字/图标淡入 |
+| `fade-in-up` | 上移 40px + 渐入 | 主流入场动画 |
+| `fade-in-down` | 下移 40px + 渐入 | 底部弹入 |
+| `scale-pop` | scale 0.5→1（弹性回弹） | 数字/徽章 |
+| `slide-in-left` | 左移 40px + 渐入 | 对话框 |
+| `slide-in-right` | 右移 40px + 渐入 | 强调元素 |
+| `glow-pulse` | box-shadow 循环发光 | 边框/装饰 |
+| `bounce` | translateY 上下弹循环 | 箭头/图标 |
+| `float` | translateY 漂浮循环 | 装饰元素 |
+| `spin` | rotate 旋转循环 | 加载/图标 |
 
-<!-- 3. 范围字幕：出现=字幕3.start，消失=字幕5.end -->
-<div id='P1-001-title' class='title' data-subtitle='3-5'>标题</div>
-
-<!-- 4. 多选字幕（断续）：字幕3段显示，字幕4段隐藏，字幕5段再显示 -->
-<div id='P1-001-badge' class='badge' data-subtitle='3,5'>徽章</div>
-```
-
-### R11.3 省略规则（merge 脚本自动生效）
-
-| 条件 | 结果 |
-|------|------|
-| 元素首字幕 == region 首字幕 | 自动**省略** start |
-| 元素末字幕 == region 末字幕 | 自动**省略** end |
-| 两者都成立 | 只写 id，无 start/end（等同于 data-global 效果） |
-
-### R11.4 两步校验（merge 脚本 6.3 节自动执行）
-
-**第一步：有 class 必有 id**
-- 有 `class` 属性的元素必须也有 `id`
-- SVG 内部图形原子豁免：`circle/path/line/rect/polygon/polyline/ellipse/g/text/tspan/use/image/defs/linearGradient/radialGradient/stop/animate/animateTransform/animateMotion`
-- **`background.html` 中的元素也适用此规则**：即使背景元素不需要动画，也必须写 `id` 和归属属性
-
-**第二步：有 id 必有归属属性**
-- 有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
-- **背景元素统一用 `data-global="true"`**：背景层跟随 region 全生命周期
+### R12.3 HTML 写法
 
 ```html
-<!-- 错：class 无 id -->
-<div class='clock-num'>12</div>
+<!-- 标准写法：时间 + 动画 -->
+<div id='P1-003' class='title' data-subtitle='3' data-cv-anim='fade-in-up' data-cv-anim-duration='0.5s'>A股上半年收官</div>
 
-<!-- 错：id 无归属属性 -->
-<div id='P1-002'>元素</div>
+<!-- 仅显示，不动画 -->
+<div id='P1-004' class='badge' data-subtitle='3'>重要</div>
 
-<!-- 错：同时写了两个归属属性（互斥） -->
-<div id='P1-002' class='card' data-subtitle='5' data-global='true'>元素</div>
+<!-- 全局元素（跟随 region 全生命周期） -->
+<div id='P1-005' class='deco' data-global='true' data-cv-anim='float'>装饰</div>
 ```
 
-### R11.5 CSS 动画写法
+### R12.4 元素属性说明
+
+| 属性 | 必填 | 默认值 | 说明 |
+|------|------|------|------|
+| `data-cv-anim` | ✅ | — | 动画模板名，从上表选一个 |
+| `data-cv-anim-duration` | 否 | 0.3s | 动画时长（单次动画） |
+| `data-cv-anim-delay` | 否 | 0s | 动画延迟（单次动画） |
+
+### R12.5 CSS 写法（仅样式，无动画）
 
 ```css
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* 标准 CSS 居中（必须） */
+.title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);  /* 标准 W3C 居中写法 */
+  font-size: 42px;
+  color: white;
 }
 
-.title {
-  animation: fade-in 0.5s ease-out forwards;
+/* 动画用 data-cv-anim，CSS 不写 animation: */
+.badge {
+  position: absolute;
+  bottom: 30px;
+  right: 60px;
+  font-size: 24px;
+  color: gold;
 }
 ```
 
-**关键约束**：
-- ✅ 必须用 `forwards` — 否则动画跑完元素回到初始态（opacity: 0）不可见
-- ✅ delay 不需要写 — merge 脚本自动根据 `data-subtitle` 注入 `animation-delay`
-- ✅ duration 写元素本身 — 0.3s~0.8s 是常见值
-- ❌ CSS 用 id 选择器 — 受 @scope 影响会失效，用 class
+### R12.6 禁止写法
 
-### R11.6 elementIds 字段
+- ❌ **不要写 `@keyframes`** —— 前端不解析，直接被禁掉
+- ❌ **不要写 `animation: xxx`** —— 前端强制 `animation: none !important`，写了也白写
+- ❌ **不要在 keyframe 里写 transform** —— 不解析
 
-- **禁止手写 elementIds**：固定写 `"elementIds": {}`，merge 时由 `transformHtmlComponent` 自动从 HTML 的 `id` 属性生成
-- 旧 elementIds（带 start/end 数字）**仍兼容**，前端自动降级到 `_legacyUpdateElementVisibility`
+### R12.7 标准 CSS 居中（W3C 规范）
 
-### R11.7 与旧约定的兼容
+> **参考**：https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+> https://css-tricks.com/centering-css-complete-guide/
 
-| 旧项目状态 | 前端行为 |
-|-----------|---------|
-| elementIds 缺失 + HTML 有 id + data-subtitle | 新约定：CSS animation 播放，时间由 data-subtitle 驱动 |
-| elementIds 缺失 + HTML 有 id + data-global | 新约定：CSS animation 播放，时间跟随 region 全生命周期 |
-| elementIds 缺失 + HTML 无 id | 全部元素都显示，无动画 |
-| elementIds 有 start/end + HTML 有 id | 优先 CSS animation（新） |
-| elementIds 有 start/end + HTML 无 id | 旧约定：JS display 控制 |
+`top: 50%; left: 50%` 只把"元素左上角"放在 50%，不是"元素中心"在 50%。
 
-### R11.8 完整示例
+```css
+/* ❌ 错误：缺 transform，居中失效 */
+.box { position: absolute; top: 50%; left: 50%; }
+
+/* ✅ 正确：加 translate(-50%, -50%) */
+.box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+```
+
+### R12.8 动画时间与字幕的关系
+
+- `data-subtitle="3"` → 字幕 3 的时间区间 [t3_start, t3_end]
+- `data-cv-anim` 动画在 `t3_start` 时刻触发（在元素从隐藏→显示的那一刻启动）
+- 单次动画在 `data-cv-anim-duration` 结束时保持结束状态
+- 循环动画在元素可见期间持续循环
+
+### R12.9 完整示例
 
 ```json
 {
   "id": "P1-001",
-  "regionId": "P1",
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "background": {
-    "html": "<div class='region-bg'></div>",
-    "css": ".region-bg { position: absolute; inset: 0; background: #0a0a0f; }"
+    "html": "<div id='P1-bg' class='bg' data-global='true'></div>",
+    "css": ".bg { position: absolute; inset: 0; background: #0a0a1a; }"
   },
   "content": {
-    "html": "<div id='P1-002' class='frame' data-subtitle='3-5'><div class='frame-title'>核心观点</div></div><div id='P1-003' class='title' data-subtitle='3'>Skill 是什么</div><div id='P1-004' class='desc' data-subtitle='4'>它的核心定义与作用</div><div id='P1-005' class='badge' data-subtitle='5'>重要</div>",
-    "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes slide-in { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } } @keyframes scale-pop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } } .region-bg { animation: fade-in 0.5s ease-out forwards; } .frame { animation: fade-in 0.5s ease-out forwards; } .title { animation: fade-in 0.5s ease-out forwards; } .desc { animation: slide-in 0.4s ease-out forwards; } .badge { animation: scale-pop 0.4s ease-out forwards; }"
+    "html": "<div id='P1-002' class='date-badge' data-subtitle='2' data-cv-anim='fade-in' data-cv-anim-duration='0.4s'>06·30</div><div id='P1-003' class='main-title' data-subtitle='2-3' data-cv-anim='fade-in-up' data-cv-anim-duration='0.5s' data-cv-anim-delay='0.1s'>A股上半年收官</div><div id='P1-004' class='title-glow' data-subtitle='2-3' data-cv-anim='glow-pulse'>光晕</div>",
+    "css": ".date-badge { position: absolute; top: 8%; left: 50%; transform: translate(-50%, -50%); font-size: 72px; color: gold; } .main-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; color: white; } .title-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 80px; border: 2px solid gold; border-radius: 40px; }"
   }
 }
 ```
 
-### R11.9 校验规则
+---
 
-selfcheck 会校验：
-1. 每个有 `id` 的元素必须格式 `P{数字}-{三位数字}`
-2. `data-subtitle` 引用的字幕 ID 必须存在
-3. `data-subtitle` 多选/范围必须合法
-4. CSS 中引用的 keyframes 必须有 `@keyframes` 定义
-5. `animation` 简写建议带 `forwards`
-6. 两步校验：有 class 必有 id；有 id 必有 data-subtitle 或 data-global（merge 脚本自动执行）
+## R13 校验规则
+
+### 校验内容
+
+| 校验项 | 错误时行为 | 说明 |
+|---|---|---|
+| HTML 结构合法 | 报错 | 标签闭合、id 唯一 |
+| `data-subtitle` 引用字幕存在 | 报错 | 字幕 ID 必须在 subtitles 数组里 |
+| `data-cv-anim` 值在白名单内 | 警告（静默忽略） | 不在白名单 = 无动画，不报错 |
+| `data-cv-anim-duration` 格式合法 | 警告 | 格式：`0.3s` / `300ms` |
+
+### AI 学习成本（仅 4 条）
+
+1. ✅ `transform: translate(-50%, -50%)` 居中（标准 CSS）
+2. ✅ 动画用 `data-cv-anim="模板名"`
+3. ✅ 时间用 `data-subtitle="字幕ID"`
+4. ❌ 不写 `@keyframes`
+5. ❌ 不写 `animation:`
+
+---
+
+## R11 旧约定（已废弃）
+
+> ⚠️ **R11 CSS keyframes 写法已废弃**——请改用 R12 的 `data-cv-anim` 动画模板。
+
+旧约定（R11）的 `@keyframes` + `animation:` 写法前端不再支持。旧 project.json 中的 `@keyframes` 全部失效，`animation:` 全部被强制禁掉。
+
+旧项目迁移：把 `animation: xxx` 删掉，在对应元素上加 `data-cv-anim="模板名"`。

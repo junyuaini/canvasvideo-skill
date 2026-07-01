@@ -156,11 +156,19 @@ function extractElementsWithDataSubtitle(html) {
     const animInMatch = allAttrs.match(/\s+data-anim-in=(["'])([^"']+)\1/);
     const dataAnimIn = animInMatch ? animInMatch[2] : null;
 
+    // 提取 data-cv-anim（前端动画模板名）
+    const cvAnimMatch = allAttrs.match(/\s+data-cv-anim=(["'])([^"']+)\1/);
+    const dataCvAnim = cvAnimMatch ? cvAnimMatch[2] : null;
+    const cvAnimDurMatch = allAttrs.match(/\s+data-cv-anim-duration=(["'])([^"']+)\1/);
+    const dataCvAnimDuration = cvAnimDurMatch ? cvAnimDurMatch[2] : null;
+    const cvAnimDelayMatch = allAttrs.match(/\s+data-cv-anim-delay=(["'])([^"']+)\1/);
+    const dataCvAnimDelay = cvAnimDelayMatch ? cvAnimDelayMatch[2] : null;
+
     // 提取 class
     const classMatch = allAttrs.match(/\s+class=(["'])([^"']+)\1/);
     const classes = classMatch ? classMatch[2].split(/\s+/).filter(Boolean) : [];
 
-    results.push({ id, tag, dataSubtitle, dataGlobal, dataAnimIn, classes, rawMatch: m[0] });
+    results.push({ id, tag, dataSubtitle, dataGlobal, dataAnimIn, dataCvAnim, dataCvAnimDuration, dataCvAnimDelay, classes, rawMatch: m[0] });
   }
   return results;
 }
@@ -416,19 +424,355 @@ function parseAnimationShorthand(shorthand, className) {
 }
 
 // ============================================================
+// validateCentering：校验 standard CSS absolute 居中
+// ------------------------------------------------------------
+// 校验依据：W3C CSS Position Module Level 3 + MDN transform 文档
+//   公开标准：absolute 居中必须配 transform: translate(-50%, -50%)
+//   原因：top: 50%; left: 50% 只把"元素的 top-left 角"放在 50%，
+//         不是把"元素的中心"放在 50%。要居中必须用 transform 抵消自身尺寸。
+//   参考：https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+//         https://css-tricks.com/centering-css-complete-guide/
+//
+// 触发条件（class 内同时满足才报错）：
+//   1. 含 animation 声明
+//   2. 含 position: absolute|fixed
+//   3. 至少一个方向有 50%（top/bottom/left/right）
+//   4. 缺少 transform: translate(-50%, -50%) 居中修正
+// ============================================================
+
+function classBodyHasAnimation(body) {
+  return /(^|;|\s)animation\s*:/i.test(body);
+}
+
+function classBodyHasAbsolutePositioning(body) {
+  return /(^|;|\s)position\s*:\s*(absolute|fixed)\b/i.test(body);
+}
+
+function classBodyHasCenteringIntent(body) {
+  const positionMatch = body.match(/(^|;|\s)(top|left|right|bottom)\s*:\s*([^;]+)/gi);
+  if (positionMatch) {
+    for (const m of positionMatch) {
+      if (/\b50\s*%/.test(m)) return true;
+    }
+  }
+  const transformMatch = body.match(/(^|;|\s)transform\s*:\s*([^;]+)/i);
+  if (transformMatch && /-50%/.test(transformMatch[2])) return true;
+  return false;
+}
+
+function classBodyHasCenteringFix(body) {
+  const transformMatch = body.match(/(^|;|\s)transform\s*:\s*([^;]+)/i);
+  if (!transformMatch) return false;
+  const value = transformMatch[2];
+  // 居中修正 = 含 -50% 平移即可（方向、组合方式不限）
+  if (!/-50%/.test(value)) return false;
+  // 任意以下居中变换都算"已修正"
+  if (/translate\s*\(\s*-50%\s*,\s*-50%\s*\)/i.test(value)) return true;
+  if (/translateX\s*\(\s*-50%\s*\)/i.test(value)) return true;
+  if (/translateY\s*\(\s*-50%\s*\)/i.test(value)) return true;
+  if (/translate\s*\(\s*0\s*,\s*-50%\s*\)/i.test(value)) return true;
+  if (/translate\s*\(\s*-50%\s*,\s*0\s*\)/i.test(value)) return true;
+  return false;
+}
+
+function validateCentering(compId, css) {
+  const errors = [];
+  const re = /\.([\w-]+)\s*\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(css)) !== null) {
+    const cls = m[1];
+    const body = m[2];
+    if (!classBodyHasAnimation(body)) continue;
+    if (!classBodyHasAbsolutePositioning(body)) continue;
+    if (!classBodyHasCenteringIntent(body)) continue;
+    if (classBodyHasCenteringFix(body)) continue;
+    errors.push(
+      `[CssError in ${compId} .${cls}]\n` +
+      `检测到 absolute 居中（top/left/right/bottom 含 50%）但缺少 transform: translate(-50%, -50%) 居中修正。\n` +
+      `原因：top: 50%; left: 50% 只把元素"左上角"放在 50%，不是"中心"在 50%。要真正居中必须用 transform 抵消自身尺寸。\n\n` +
+      `正确写法：\n` +
+      `  .${cls} {\n` +
+      `    position: absolute;\n` +
+      `    top: 50%;\n` +
+      `    left: 50%;\n` +
+      `    transform: translate(-50%, -50%);  /* 必须加这一行 */\n` +
+      `  }\n\n` +
+      `参考：https://developer.mozilla.org/en-US/docs/Web/CSS/transform`
+    );
+  }
+  return errors;
+}
+
+// ============================================================
+// validateKeyframeProps：校验 @keyframes 内只允许白名单属性
+// ------------------------------------------------------------
+// 校验依据：CSS Animations Level 1 规范
+//   公开标准：https://www.w3.org/TR/css-animations-1/
+//   规范 § 2.1 列出所有 animate-able 属性
+//   已被白名单包含的：opacity, transform, box-shadow, text-shadow,
+//                     color, background-color, border-color, filter,
+//                     stroke-dashoffset, stroke-dasharray, clip-path
+//   不在白名单的：width, height, font-size, top, left, right, bottom,
+//                margin, padding 等
+//   原因：CSS 规范不支持这些属性的插值动画；前端 JS 动画系统也
+//        无法实现（需 discrete step）。
+//   替代方案：width 动画 → transform: scaleX()；
+//             font-size → transform: scale()；
+//             位置 → transform: translate()。
+// ============================================================
+
+function validateKeyframeProps(compId, allKeyframes) {
+  const errors = [];
+  for (const [kfName, kf] of Object.entries(allKeyframes)) {
+    for (const frame of kf.frames || []) {
+      for (const prop of Object.keys(frame)) {
+        if (prop === 'offset' || prop === 'easing') continue;
+        if (SUPPORTED_KEYFRAME_PROPS.has(prop)) continue;
+        errors.push(
+          `[CssError in ${compId} @keyframes ${kfName}]\n` +
+          `检测到 keyframe 使用了不支持的属性 "${prop}"。\n` +
+          `原因：CSS Animations Level 1 规范不支持该属性的插值动画。\n\n` +
+          `替代方案：\n` +
+          `  width 动画     → transform: scaleX()\n` +
+          `  height 动画    → transform: scaleY()\n` +
+          `  font-size 动画 → transform: scale()\n` +
+          `  top/left 等位置 → transform: translate()\n\n` +
+          `允许的属性：${Array.from(SUPPORTED_KEYFRAME_PROPS).join(', ')}\n\n` +
+          `参考：https://www.w3.org/TR/css-animations-1/`
+        );
+      }
+    }
+  }
+  return errors;
+}
+
+// ============================================================
+// autoSplitCentering：解决"居中 transform + animation"冲突
+// ------------------------------------------------------------
+// 背景：JS 动画系统在动画进行时会用 keyframe 中的 transform
+//       覆盖 el.style.transform，导致 AI 写的
+//       `transform: translate(-50%, -50%)` 居中失效。
+//
+// 解决：检测"含 animation + 绝对定位"的 class：
+//       - 把 position / top / left / right / bottom 搬到 wrapper 上
+//       - wrapper 自动加 transform: translate(-50%, -50%) 居中
+//       - 原 class 保留 animation 和其他非定位属性
+//       - HTML 改造：原元素外包 wrapper
+//       解决"AI 写 absolute 居中 + animation"的标准场景
+// ============================================================
+
+function hasAnimationDecl(body) {
+  return /(^|;|\s)animation\s*:/i.test(body);
+}
+
+function hasAbsolutePositioning(body) {
+  return /(^|;|\s)position\s*:\s*(absolute|fixed)\b/i.test(body);
+}
+
+const POSITION_KEYS = ['position', 'top', 'left', 'right', 'bottom'];
+const POSITION_OFFSET_KEYS = ['top', 'left', 'right', 'bottom'];
+
+function extractPositionAndTransform(body) {
+  const lines = body.split(';');
+  const keep = [];
+  const positionProps = {};
+  let transform = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/^(position|top|left|right|bottom)\s*:\s*(.+)$/i);
+    if (m) {
+      const key = m[1].toLowerCase();
+      positionProps[key] = m[2].trim();
+      continue;
+    }
+    const tm = line.match(/^transform\s*:\s*(.+)$/i);
+    if (tm && /-50%/.test(tm[1])) {
+      transform = tm[1].trim();
+      continue;
+    }
+    keep.push(line);
+  }
+  const newBody = keep.length > 0 ? keep.join('; ') + ';' : '';
+  return { newBody, positionProps, transform };
+}
+
+function hasCenteringIntent(positionProps, transform) {
+  if (transform && /-50%/.test(transform)) return true;
+  for (const key of POSITION_OFFSET_KEYS) {
+    const v = positionProps[key];
+    if (v != null && /\b50\s*%/.test(v)) return true;
+  }
+  return false;
+}
+
+function findCenteringConflicts(css) {
+  const conflicts = [];
+  const re = /\.([\w-]+)\s*\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(css)) !== null) {
+    const cls = m[1];
+    const body = m[2];
+    if (!hasAnimationDecl(body)) continue;
+    if (!hasAbsolutePositioning(body)) continue;
+    const { newBody, positionProps, transform } = extractPositionAndTransform(body);
+    const hasOffset = POSITION_OFFSET_KEYS.some(k => positionProps[k] != null);
+    if (!hasOffset) continue;
+    if (!hasCenteringIntent(positionProps, transform)) continue;
+    conflicts.push({ className: cls, originalBody: body, newBody, positionProps, transform });
+  }
+  return conflicts;
+}
+
+function makeWrapperClassName(className, idx) {
+  return `cv-c-${idx}-${className}`;
+}
+
+function buildWrapperDeclarations(positionProps, transform) {
+  const decls = [];
+  for (const key of POSITION_KEYS) {
+    if (positionProps[key] != null) {
+      decls.push(`${key}: ${positionProps[key]}`);
+    }
+  }
+  if (transform) {
+    decls.push(`transform: ${transform}`);
+  } else {
+    decls.push('transform: translate(-50%, -50%)');
+  }
+  return decls.join('; ');
+}
+
+function patchCssWithWrappers(css, conflicts) {
+  const classMap = {};
+  const wrapperRules = [];
+  conflicts.forEach((c, idx) => {
+    const wrapperClass = makeWrapperClassName(c.className, idx);
+    classMap[c.className] = wrapperClass;
+    const decls = buildWrapperDeclarations(c.positionProps, c.transform);
+    wrapperRules.push(`.${wrapperClass} { ${decls} }`);
+    const re = new RegExp(
+      `(\\.${escapeRegExp(c.className)}\\s*\\{)([^}]*)(\\})`,
+      'g'
+    );
+    css = css.replace(re, (_, p, b, s) => p + c.newBody + s);
+  });
+  if (wrapperRules.length > 0) {
+    css = css.trimEnd() + '\n\n/* === auto-generated centering wrappers === */\n' + wrapperRules.join('\n') + '\n';
+  }
+  return { css, wrappers: wrapperRules, classMap };
+}
+
+function findMatchingCloseTag(html, tagName, startPos) {
+  const openRe = new RegExp(`<${tagName}(?:\\s|>)`, 'gi');
+  const closeRe = new RegExp(`</${tagName}\\s*>`, 'gi');
+  let depth = 1;
+  let pos = startPos;
+  while (pos < html.length && depth > 0) {
+    openRe.lastIndex = pos;
+    closeRe.lastIndex = pos;
+    const openMatch = openRe.exec(html);
+    const closeMatch = closeRe.exec(html);
+    if (!closeMatch) return -1;
+    if (openMatch && openMatch.index < closeMatch.index) {
+      depth++;
+      pos = openMatch.index + openMatch[0].length;
+    } else {
+      depth--;
+      pos = closeMatch.index + closeMatch[0].length;
+      if (depth === 0) return closeMatch.index;
+    }
+  }
+  return -1;
+}
+
+function findElementSpan(html, attrStartIdx) {
+  const ltIdx = html.lastIndexOf('<', attrStartIdx);
+  if (ltIdx === -1) return null;
+  if (html[ltIdx + 1] === '/' || html[ltIdx + 1] === '!') return null;
+  const gtIdx = html.indexOf('>', ltIdx);
+  if (gtIdx === -1) return null;
+  if (html[gtIdx - 1] === '/') return null;
+  const tagMatch = html.slice(ltIdx, gtIdx).match(/^<(\w+)/);
+  if (!tagMatch) return null;
+  const tagName = tagMatch[1];
+  const endIdx = findMatchingCloseTag(html, tagName, gtIdx + 1);
+  if (endIdx === -1) return null;
+  return { openStart: ltIdx, openEnd: gtIdx + 1, closeStart: endIdx, closeEnd: endIdx + (`</${tagName}>`).length };
+}
+
+function wrapHtmlElements(html, classMap) {
+  const conflictClassNames = Object.keys(classMap);
+  if (conflictClassNames.length === 0) return html;
+
+  for (const className of conflictClassNames) {
+    const wrapperClass = classMap[className];
+    const classAttrRe = new RegExp(
+      `class\\s*=\\s*(["'])([^"']*?\\b${escapeRegExp(className)}\\b[^"']*?)\\1`,
+      'g'
+    );
+
+    const spans = [];
+    let m;
+    while ((m = classAttrRe.exec(html)) !== null) {
+      const span = findElementSpan(html, m.index);
+      if (span) spans.push(span);
+    }
+
+    spans.sort((a, b) => b.openStart - a.openStart);
+    for (const span of spans) {
+      html =
+        html.slice(0, span.openStart) +
+        `<div class="${wrapperClass}">` +
+        html.slice(span.openStart, span.closeEnd) +
+        `</div>` +
+        html.slice(span.closeEnd);
+    }
+  }
+
+  return html;
+}
+
+function autoSplitCentering(html, css) {
+  const conflicts = findCenteringConflicts(css);
+  if (conflicts.length === 0) {
+    return { html, css, splits: [] };
+  }
+  const { css: patchedCss, classMap } = patchCssWithWrappers(css, conflicts);
+  const patchedHtml = wrapHtmlElements(html, classMap);
+  return {
+    html: patchedHtml,
+    css: patchedCss,
+    splits: conflicts.map((c, i) => ({
+      className: c.className,
+      wrapperClass: classMap[c.className],
+      positionProps: c.positionProps,
+      transform: c.transform
+    }))
+  };
+}
+
+// ============================================================
 // 主转换函数
 // ============================================================
 
 /**
- * 转换 HtmlComponent
+ * 转换 HtmlComponent（新版本）
  * @param {Object} comp - { id, content: { html, css, ... } }
  * @param {Array} srtList - parseSrt 返回的字幕数组
  * @returns {{
  *   elementIds: Object,
- *   animations: Object,
+ *   animations: Object,   // 空，动画由前端 data-cv-anim 接管
  *   cleanedHtml: string,
  *   cleanedCss: string
  * }}
+ *
+ * 职责说明：
+ *   - 校验 HTML 结构
+ *   - 解析 data-subtitle（时间可见性）
+ *   - 解析 data-cv-anim（动画名，透传到前端）
+ *   - 不解析 @keyframes / animation CSS 属性（前端强制禁掉）
+ *   - cleanedHtml / cleanedCss 等于原值，不修改
  */
 function transformHtmlComponent(comp, srtList) {
   if (!comp.content || !comp.content.html) {
@@ -443,101 +787,37 @@ function transformHtmlComponent(comp, srtList) {
 
   const elements = extractElementsWithDataSubtitle(html);
 
-  // 2. 解析 @keyframes，收集 keyframe 属性错误
-  const { result: allKeyframes, errors: kfErrors } = parseKeyframes(css);
-  errors.push(...kfErrors);
-
-  // 3. CSS 全局扫描：animation-delay 校验
-  const delayRe = /\.([\w-]+)\s*\{[^}]*animation(?:-name)?\s*:[^;]*animation-delay\s*:/g;
-  let dm;
-  while ((dm = delayRe.exec(css)) !== null) {
-    errors.push(`类 .${dm[1]} 使用了 animation-delay，前端不支持，请删除或用元素 start/end 时间错开`);
-  }
-
-  // 4. 为每个元素建立 elementIds，收集 animation 错误
   const elementIds = {};
-  const animMeta = {};
 
   for (const el of elements) {
+    let entry = { id: el.id };
+
     if (el.dataGlobal) {
-      elementIds[`#${el.id}`] = { id: el.id };
+      // 全局元素：无时间控制
     } else if (el.dataSubtitle) {
       const indices = parseSubtitleIndexExpr(el.dataSubtitle);
       const range = resolveSubtitleRange(indices, srtList);
       if (range) {
-        elementIds[`#${el.id}`] = { id: el.id, start: range.start, end: range.end };
-      } else {
-        elementIds[`#${el.id}`] = { id: el.id };
+        entry.start = range.start;
+        entry.end = range.end;
       }
     }
 
-    if (el.dataAnimIn) {
-      const { result: parsed, errors: animErrors } = parseAnimationShorthand(el.dataAnimIn, el.id);
-      errors.push(...animErrors);
-      if (parsed) {
-        const elemEntry = elementIds[`#${el.id}`];
-        if (elemEntry) {
-          if (!Array.isArray(elemEntry.animations)) elemEntry.animations = [];
-          if (!elemEntry.animations.includes(parsed.name)) elemEntry.animations.push(parsed.name);
-          animMeta[parsed.name] = parsed;
-        }
-      }
+    // 解析 data-cv-anim（前端动画模板名）
+    if (el.dataCvAnim) {
+      entry.animName = el.dataCvAnim;
+      entry.animDuration = el.dataCvAnimDuration || null;
+      entry.animDelay = el.dataCvAnimDelay || null;
     }
 
-    for (const cls of el.classes) {
-      const classAnims = parseClassAnimations(css, [cls]);
-      for (const [animName, animDef] of Object.entries(classAnims)) {
-        const elemEntry = elementIds[`#${el.id}`];
-        if (elemEntry) {
-          if (!Array.isArray(elemEntry.animations)) elemEntry.animations = [];
-          if (!elemEntry.animations.includes(animName)) elemEntry.animations.push(animName);
-          if (animDef.iterationCount === 'infinite') {
-            elemEntry.animLoop = animName;
-          } else {
-            elemEntry.animIn = animName;
-          }
-          if (!animMeta[animName]) animMeta[animName] = animDef;
-        }
-      }
-    }
+    elementIds[`#${el.id}`] = entry;
   }
 
-  // 5. 校验 keyframe 定义
-  const usedAnimNames = new Set();
-  Object.values(elementIds).forEach(e => {
-    if (Array.isArray(e.animations)) e.animations.forEach(n => usedAnimNames.add(n));
-    if (e.animIn) usedAnimNames.add(e.animIn);
-    if (e.animLoop) usedAnimNames.add(e.animLoop);
-    if (e.animOut) usedAnimNames.add(e.animOut);
-  });
-
-  for (const name of usedAnimNames) {
-    if (!allKeyframes[name]) {
-      errors.push(`引用了动画 "${name}"，但 CSS 里没有 @keyframes ${name} 定义`);
-    }
-  }
-
-  // 6. 构建 animations manifest
-  const animations = {};
-  for (const name of usedAnimNames) {
-    if (!allKeyframes[name]) continue;
-    const kfData = allKeyframes[name];
-    const meta = animMeta[name] || { duration: 1000, timingFunction: 'ease', iterationCount: 1, fill: 'none' };
-    animations[name] = {
-      duration: meta.duration,
-      timingFunction: meta.timingFunction,
-      iterationCount: meta.iterationCount,
-      fill: meta.fill,
-      keyframes: kfData.keyframes
-    };
-  }
-
-  // 7. 一次报错全部列出
   buildUnsupportedReport(comp.id, errors);
 
   return {
     elementIds,
-    animations,
+    animations: {},   // 前端不再用此字段，动画由 data-cv-anim 接管
     cleanedHtml: html,
     cleanedCss: css
   };
