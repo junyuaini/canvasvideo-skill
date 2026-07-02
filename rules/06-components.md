@@ -320,83 +320,57 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ---
 
-## R12 动画模板（必须）
+## R12 元素动效（当前方案：禁用）
 
-> **强制规则（2026-07）**——动画用 `data-cv-anim` 属性选择前端内置模板，**不要写 @keyframes / animation CSS**。前端强制禁掉所有 CSS animation。
+> **2026-07 临时方案**——**所有动效已禁用**。HEAD 前端只通过 `opacity` 控制显隐时机，不写 transform，不解析 keyframes，不放行 CSS 原生 `animation`。
+>
+> 原因：HEAD 写 `el.style.transform` 会覆盖 CSS class 的 `transform: translate(-50%, -50%)` 居中；CSS 原生 `animation` 也会覆盖居中。两层冲突导致布局错乱。
+>
+> **样式和布局 100% 保留**——CSS class 自身的 transform 居中、color、font-size、box-shadow 等都正常工作。
+>
+> **视觉效果**——元素按时出现/消失（硬切，无过渡）。没有飞入、淡入、闪烁、发光、弹跳、旋转、缩放等任何动画。
 
-### R12.1 两种维度完全独立
+### R12.1 元素必须配合的属性
 
-| 维度 | 控制什么 | AI 怎么配 | 谁决定 |
-|---|---|---|---|
-| **时间维度** | 元素**何时显示** | `data-subtitle="3"` | 字幕时间轴 |
-| **动画维度** | 显示时**怎么进** | `data-cv-anim="fade-in-up"` | 前端模板 |
-
-两者独立，AI 同时配两个属性即可。
-
-### R12.2 动画模板列表（10 种）
-
-| 模板名 | 效果 | 适合场景 |
+| 属性 | 必填 | 说明 |
 |---|---|---|
-| `fade-in` | 透明度 0→1 | 文字/图标淡入 |
-| `fade-in-up` | 上移 40px + 渐入 | 主流入场动画 |
-| `fade-in-down` | 下移 40px + 渐入 | 底部弹入 |
-| `scale-pop` | scale 0.5→1（弹性回弹） | 数字/徽章 |
-| `slide-in-left` | 左移 40px + 渐入 | 对话框 |
-| `slide-in-right` | 右移 40px + 渐入 | 强调元素 |
-| `glow-pulse` | box-shadow 循环发光 | 边框/装饰 |
-| `bounce` | translateY 上下弹循环 | 箭头/图标 |
-| `float` | translateY 漂浮循环 | 装饰元素 |
-| `spin` | rotate 旋转循环 | 加载/图标 |
+| `id` | ✅ | 元素唯一标识（`P{区域}-{编号}` 格式），HEAD 通过 id 找到 DOM |
+| `data-subtitle` | ✅ | 引用字幕序号（`"3"` 或 `"1-3"`），决定元素显示的字幕时间窗 |
+| `data-global` | ❌ | 设为 `"true"` 表示跟随 region 全生命周期（不绑字幕） |
 
-### R12.3 HTML 写法
-
-```html
-<!-- 标准写法：时间 + 动画 -->
-<div id='P1-003' class='title' data-subtitle='3' data-cv-anim='fade-in-up' data-cv-anim-duration='0.5s'>A股上半年收官</div>
-
-<!-- 仅显示，不动画 -->
-<div id='P1-004' class='badge' data-subtitle='3'>重要</div>
-
-<!-- 全局元素（跟随 region 全生命周期） -->
-<div id='P1-005' class='deco' data-global='true' data-cv-anim='float'>装饰</div>
-```
-
-### R12.4 元素属性说明
-
-| 属性 | 必填 | 默认值 | 说明 |
-|------|------|------|------|
-| `data-cv-anim` | ✅ | — | 动画模板名，从上表选一个 |
-| `data-cv-anim-duration` | 否 | 0.3s | 动画时长（单次动画） |
-| `data-cv-anim-delay` | 否 | 0s | 动画延迟（单次动画） |
-
-### R12.5 CSS 写法（仅样式，无动画）
+**居中靠 CSS class 自身**（必须）：
 
 ```css
-/* 标准 CSS 居中（必须） */
-.title {
+.main-title {
   position: absolute;
-  top: 50%;
+  top: 58%;
   left: 50%;
-  transform: translate(-50%, -50%);  /* 标准 W3C 居中写法 */
+  transform: translate(-50%, -50%);  /* 必须：HEAD 不动 transform */
   font-size: 42px;
   color: white;
 }
-
-/* 动画用 data-cv-anim，CSS 不写 animation: */
-.badge {
-  position: absolute;
-  bottom: 30px;
-  right: 60px;
-  font-size: 24px;
-  color: gold;
-}
 ```
 
-### R12.6 禁止写法
+### R12.2 HTML 写法
 
-- ❌ **不要写 `@keyframes`** —— 前端不解析，直接被禁掉
-- ❌ **不要写 `animation: xxx`** —— 前端强制 `animation: none !important`，写了也白写
-- ❌ **不要在 keyframe 里写 transform** —— 不解析
+```html
+<!-- 时间维度：显示在第 2 句字幕期间 -->
+<div id='P1-005' class='main-title' data-subtitle='2'>A股上半年收官</div>
+
+<!-- 时间维度：显示在第 1-2 句字幕期间 -->
+<div id='P1-004' class='date-badge' data-subtitle='1-2'>2024-06-30</div>
+
+<!-- 全局元素：跟随 region 全生命周期 -->
+<div id='P1-007' class='corner-tl' data-global='true'></div>
+```
+
+### R12.3 禁止写法（必须遵守）
+
+- ❌ **不要写 `@keyframes`** —— 前端强制 `animation: none !important`，无效
+- ❌ **不要写 `animation: fade-in ...` / `transition: opacity ...`** —— 全部被禁掉
+- ❌ **不要写 `data-cv-anim="fade-in-up"` 等旧动画属性** —— HEAD 不解析（接口已移除）
+- ❌ **不要在 elementIds.animations 的 keyframes 里写 transform** —— HEAD 不写 transform，写了也不生效
+- ✅ **可以写**静态视觉样式：`color`、`font-size`、`box-shadow`（静态值）、`background`、`border` 等
 
 ### R12.7 标准 CSS 居中（W3C 规范）
 
@@ -413,12 +387,13 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 .box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 ```
 
-### R12.8 动画时间与字幕的关系
+### R12.8 显隐时间与字幕的关系
 
 - `data-subtitle="3"` → 字幕 3 的时间区间 [t3_start, t3_end]
-- `data-cv-anim` 动画在 `t3_start` 时刻触发（在元素从隐藏→显示的那一刻启动）
-- 单次动画在 `data-cv-anim-duration` 结束时保持结束状态
-- 循环动画在元素可见期间持续循环
+- 元素在 `t3_start` 时刻 opacity 0→1 出现
+- 元素在 `t3_end` 时刻 opacity 1→0 消失
+- 切换是**硬切**（无过渡），靠 HEAD 每帧根据 currentTime 重算
+- `data-global="true"` → 跟随 region 全生命周期（region 开始→结束都显示）
 
 ### R12.9 完整示例
 
@@ -432,7 +407,7 @@ https://picsum.photos/seed/{seed}/{width}/{height}
     "css": ".bg { position: absolute; inset: 0; background: #0a0a1a; }"
   },
   "content": {
-    "html": "<div id='P1-002' class='date-badge' data-subtitle='2' data-cv-anim='fade-in' data-cv-anim-duration='0.4s'>06·30</div><div id='P1-003' class='main-title' data-subtitle='2-3' data-cv-anim='fade-in-up' data-cv-anim-duration='0.5s' data-cv-anim-delay='0.1s'>A股上半年收官</div><div id='P1-004' class='title-glow' data-subtitle='2-3' data-cv-anim='glow-pulse'>光晕</div>",
+    "html": "<div id='P1-002' class='date-badge' data-subtitle='2'>06·30</div><div id='P1-003' class='main-title' data-subtitle='2-3'>A股上半年收官</div><div id='P1-004' class='title-glow' data-subtitle='2-3'>光晕</div>",
     "css": ".date-badge { position: absolute; top: 8%; left: 50%; transform: translate(-50%, -50%); font-size: 72px; color: gold; } .main-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; color: white; } .title-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 80px; border: 2px solid gold; border-radius: 40px; }"
   }
 }

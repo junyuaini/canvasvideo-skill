@@ -803,11 +803,13 @@ function transformHtmlComponent(comp, srtList) {
       }
     }
 
-    // 解析 data-cv-anim（前端动画模板名）
+    // 解析 data-cv-anim（已废弃 - 2026-07 动画禁用）
+    // HEAD 不再支持该接口，写了也不生效；保留解析仅为向后兼容
     if (el.dataCvAnim) {
       entry.animName = el.dataCvAnim;
       entry.animDuration = el.dataCvAnimDuration || null;
       entry.animDelay = el.dataCvAnimDelay || null;
+      errors.push(`#${el.id} 用了已废弃的 data-cv-anim="${el.dataCvAnim}"（2026-07 起前端已禁用，建议删除该属性）`);
     }
 
     elementIds[`#${el.id}`] = entry;
