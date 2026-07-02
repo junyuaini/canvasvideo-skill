@@ -370,7 +370,18 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 - ❌ **不要写 `animation: fade-in ...` / `transition: opacity ...`** —— 全部被禁掉
 - ❌ **不要写 `data-cv-anim="fade-in-up"` 等旧动画属性** —— HEAD 不解析（接口已移除）
 - ❌ **不要在 elementIds.animations 的 keyframes 里写 transform** —— HEAD 不写 transform，写了也不生效
+- ❌ **不要给 background.html 里的元素配 id** —— 背景元素由 CSS class 控制，HEAD 不会管它；带 id 会被强制禁动画（CSS 选择器 `[id]` 误伤）。selfcheck.js 会报错。
 - ✅ **可以写**静态视觉样式：`color`、`font-size`、`box-shadow`（静态值）、`background`、`border` 等
+
+### R12.4 背景 vs 内容 区分规则
+
+| 维度 | background.html | content.html |
+|------|-----------------|--------------|
+| 元素加 `id` | ❌ **禁止**（会被禁动画） | ✅ **必须**（HEAD 管控） |
+| 元素配 `data-subtitle` | ❌ 无意义（HEAD 不扫描） | ✅ 必须/可选 |
+| 元素配 `data-global` | ❌ 无意义 | ✅ 可选 |
+| CSS animation / @keyframes | ✅ **正常生效**（无 id 自动豁免） | ❌ 被禁（带 id） |
+| 受 HEAD 时间线控制 | ❌ 否 | ✅ 是 |
 
 ### R12.7 标准 CSS 居中（W3C 规范）
 
@@ -403,7 +414,7 @@ https://picsum.photos/seed/{seed}/{width}/{height}
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "background": {
-    "html": "<div id='P1-bg' class='bg' data-global='true'></div>",
+    "html": "<div class='bg'></div>",
     "css": ".bg { position: absolute; inset: 0; background: #0a0a1a; }"
   },
   "content": {

@@ -98,6 +98,16 @@ function checkHtmlComponentBackground(components) {
             errors.push(
               `${pathStr} HtmlComponent ${compLabel} background.html 必填且为非空字符串。建议：写一个根 div，例如 "<div class='region-bg'></div>"，内部可嵌套 SVG/渐变/几何装饰。`
             );
+          } else {
+            // 校验 background.html 里的元素不能带 id
+            // 原因：HEAD 禁动画的 CSS 选择器是 [id]，背景元素带 id 会被误禁，CSS 动画失效
+            const idMatches = bg.html.matchAll(/\sid=([\"'])([^\"']+)\1/g);
+            const bgIds = Array.from(idMatches, m => m[2]);
+            if (bgIds.length > 0) {
+              errors.push(
+                `${pathStr} HtmlComponent ${compLabel} background.html 里的元素不允许配 id（发现 ${bgIds.map(id => '#' + id).join('、')}）。背景元素由 CSS class 控制，HEAD 不会管它；带 id 会被强制禁动画。请删除这些 id 属性。`
+              );
+            }
           }
           if (!bg.css || typeof bg.css !== 'string' || bg.css.trim() === '') {
             errors.push(

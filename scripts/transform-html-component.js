@@ -128,6 +128,21 @@ function resolveSubtitleRange(indices, srtList) {
 // ============================================================
 
 /**
+ * 扫描 HTML，提取所有带 id 的元素 ID 列表（轻量版）
+ * @param {string} html
+ * @returns {string[]} id 列表
+ */
+function scanElementIds(html) {
+  const ids = [];
+  const re = /<(\w+)([^>]*?)\s+id=(["'])([^"']+)\3([^>]*?)>/g;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    ids.push(m[4]);
+  }
+  return ids;
+}
+
+/**
  * 扫描 HTML，提取所有带 id 的元素及其属性
  * @returns {Array<{id, tag, dataSubtitle, dataGlobal, dataAnimIn, classes, rawMatch}>}
  */
@@ -784,6 +799,19 @@ function transformHtmlComponent(comp, srtList) {
   const errors = [];
 
   validateHtml(html, comp.id);
+
+  // 校验 background.html 里的元素不能带 id
+  // 原因：HEAD 禁动画的 CSS 选择器是 [id]，背景元素带 id 会被误禁，CSS 动画失效
+  if (comp.background && comp.background.html) {
+    const bgIds = scanElementIds(comp.background.html);
+    if (bgIds.length > 0) {
+      errors.push(
+        `background.html 里的元素不允许配 id（发现 ${bgIds.map(id => '#' + id).join(', ')}）。` +
+        `背景元素由 CSS class 控制，HEAD 不会管它；带 id 会被强制禁动画。` +
+        `请删除 id 属性。`
+      );
+    }
+  }
 
   const elements = extractElementsWithDataSubtitle(html);
 
