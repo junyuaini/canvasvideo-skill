@@ -200,6 +200,9 @@ async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
     volume,
     pitch,
     timeout: 60000,
+    // 在被代理的环境里（比如设置了 HTTPS_PROXY），必须显式传给 EdgeTTS，
+    // 它内部用 https-proxy-agent 包裹 WebSocket 连接
+    proxy: process.env.HTTPS_PROXY || process.env.https_proxy || undefined,
   });
   await tts.ttsPromise(text, tmpAudio);
 
