@@ -1,0 +1,6 @@
+{
+  "audioPath": "./voice.mp3",
+  "subtitlePath": "./subtitle.srt",
+  "theme": "white",
+  "aspect": "4:3"
+}

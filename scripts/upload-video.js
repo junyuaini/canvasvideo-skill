@@ -48,44 +48,53 @@ function sleep(ms) {
 
 /**
  * 底层 HTTP 请求：内置 30s 超时
+ * 优先使用全局 fetch（Node 18+，可被 undici EnvHttpProxyAgent 代理穿透），
+ * 在被代理的环境（如设置了 HTTPS_PROXY）下也能正常联通外网。
  * @param {object} options - http.request options
  * @param {Buffer} body - 请求体
  * @returns {Promise<{status: number, raw: string}>}
  */
-function httpRequestOnce(options, body) {
-  return new Promise((resolve, reject) => {
-    const isHttps = options.protocol === 'https:';
-    const lib = isHttps ? https : http;
-    let settled = false;
+async function httpRequestOnce(options, body) {
+  // 把内部 options 还原为完整 URL
+  const proto = options.protocol === 'https:' ? 'https:' : 'http:';
+  const hostHeader = (options.headers && options.headers.Host) || options.hostname;
+  const portPart = (options.port && options.port !== 443 && options.port !== 80) ? `:${options.port}` : '';
+  const url = `${proto}//${hostHeader}${portPart}${options.path}`;
 
-    const req = lib.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => (data += chunk));
-      res.on('end', () => {
-        if (settled) return;
-        settled = true;
-        resolve({ status: res.statusCode || 0, raw: data });
-      });
+  // 过滤掉 _base 等内部字段，保留 Host/Content-Type 等真实请求头
+  const headers = Object.assign({}, options.headers || {});
+  delete headers.Host;
+  delete headers['Content-Length']; // fetch 会自己算
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const fetchFn = (typeof fetch === 'function')
+      ? fetch
+      : (typeof globalThis.fetch === 'function' ? globalThis.fetch : null);
+    if (!fetchFn) {
+      throw new Error('当前 Node 版本不支持 fetch（需要 18+）');
+    }
+    const res = await fetchFn(url, {
+      method: options.method || 'GET',
+      headers,
+      body: body && body.length ? body : undefined,
+      signal: controller.signal,
     });
-
-    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      if (settled) return;
-      settled = true;
-      req.destroy();
+    const raw = await res.text();
+    return { status: res.status, raw };
+  } catch (e) {
+    // AbortError → 转成 ETIMEDOUT 语义，保持原错误信息一致
+    if (e && (e.name === 'AbortError' || e.code === 'ABORT_ERR')) {
       const err = new Error(`请求超时（${REQUEST_TIMEOUT_MS}ms 无响应）`);
       err.code = 'ETIMEDOUT';
-      reject(err);
-    });
-
-    req.on('error', (e) => {
-      if (settled) return;
-      settled = true;
-      reject(e);
-    });
-
-    if (body) req.write(body);
-    req.end();
-  });
+      throw err;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
