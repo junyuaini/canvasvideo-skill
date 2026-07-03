@@ -3,7 +3,7 @@
 > 项目级（project.json）字段、HtmlComponent 写法、字幕/主题/图片等公共资源使用规范。
 > 改组件写法、看不懂字段、不知道该用谁，**先看本文件**。
 > 
-> 📌 **新约定 R12（data-cv-anim 动画模板）**：元素动画用 `data-cv-anim` 属性选择前端内置动画模板，**不要写 @keyframes / animation CSS**。R11 旧约定已废弃。
+> 📌 **新约定 R12（2026-07-更新）**：AI 写标准 CSS（`@keyframes` + `animation`），merge 严格校验（属性白名单、居中修正），前端**只通过 `opacity` 控制显隐时机**（不解析 CSS animation）。R11 旧约定已废弃，R12 旧"禁用动效"版已更新。
 
 ---
 
@@ -68,7 +68,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ```json
 {
-  "id": "P1-001",
+  "id": "P1-099",
   "regionId": "P1",
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
@@ -77,11 +77,8 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
     "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a1530 0%, #1a1a40 50%, #0f0f2a 100%); }"
   },
   "content": {
-    "html": "<div id='P1-002' class='stage'>...</div>",
-    "css": ".stage { position: absolute; inset: 0; ... }",
-    "elementIds": {
-      "#P1-002": { "id": "P1-002", "start": 0, "end": 5 }
-    }
+    "html": "<div class='stage' data-subtitle='1-5'>...</div>",
+    "css": ".stage { position: absolute; inset: 0; ... }"
   },
   "start": 0,
   "end": 5
@@ -90,41 +87,48 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| id | string | ✅ | HtmlComponent 唯一标识，格式 `P{区域号}-{三位数字}`（如 `P1-001`） |
+| id | string | ✅ | HtmlComponent 唯一标识，格式 `P{区域号}-{三位数字}`（如 `P1-001` ~ `P1-099` 留给组件本身） |
 | regionId | string | ✅ | 所属区域 ID，必须存在于 `regions[]` 中 |
 | type | string | ✅ | 固定为 `"HtmlComponent"` |
 | position | object | ✅ | { x, y, w, h }，区域内相对坐标 |
-| content | object | ✅ | { html, css, elementIds } |
-| content.html | string | ✅ | HTML 字符串，可包含任意 HTML/CSS 语法 |
+| content | object | ✅ | { html, css }（elementIds 由 merge 自动生成） |
+| content.html | string | ✅ | HTML 字符串，**不带 id**，merge 自动给 class 元素分配 |
 | content.css | string | ✅ | CSS 字符串，自动限定在 HtmlComponent 作用域 |
-| background | object | ✅ | HtmlComponent 的两个基本属性之一（另一个是 content）。{ html, css }：背景 HTML/CSS，建议 position:absolute + inset:0 填满 video-frame |
+| background | object | ✅ | HtmlComponent 的两个基本属性之一（另一个是 content）。{ html, css }：背景 HTML/CSS，**元素不许带 id**，建议 position:absolute + inset:0 填满 video-frame |
 | background.html | string | ✅ | 背景 HTML 片段。一般是单个根 div |
 | background.css | string | ✅ | 背景 CSS 样式 |
-| content.elementIds | object | ✅ | 内部元素时间线。**禁止手写**，固定写 `{}`，merge 时自动从 HTML 的 `id` 属性生成完整对象 |
 | start | number | ✅ | 出现时间（秒） |
 | end | number | ✅ | 消失时间（秒） |
+
+> 💡 **AI 不写 `content.elementIds`**：merge 会从 HTML 的 `class` 元素自动分配 id（从 `P{区}-100` 起），并生成 `elementIds` 字段。AI 写 class + `data-subtitle` / `data-global` 即可。
 
 ### R2.2 完整示例
 
 ```json
 {
-  "id": "P1-001",
+  "id": "P1-099",
   "regionId": "P1",
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "background": {
-    "html": "<div id='P1-bg' class='region-bg' data-global='true'></div>",
+    "html": "<div class='region-bg'></div>",
     "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a1530 0%, #1a1a40 50%, #0f0f2a 100%); }"
   },
   "content": {
-    "html": "<div id='P1-002' class='stage'><div id='P1-003' class='title' data-subtitle='1-5'>标题</div><div id='P1-004' class='subtitle' data-subtitle='1-5'>副标题</div></div>",
-    "css": ".stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #fff; } .subtitle { font-size: 20px; color: #ccc; }",
-    "elementIds": {}
+    "html": "<div class='stage' data-subtitle='1-5'><div class='title'>标题</div><div class='subtitle'>副标题</div></div>",
+    "css": ".stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #fff; } .subtitle { font-size: 20px; color: #ccc; }"
   },
   "start": 0,
   "end": 5
 }
 ```
+
+> 上面示例中，merge 会自动分配：
+> - `stage` → `P1-100`（data-subtitle 1-5，start/end 从 SRT 取）
+> - `title` → `P1-101`（嵌套豁免？不，title 在 stage 内，按"嵌套父是 data-subtitle → 子继承时间"规则，title 不分配 id）
+> - 等等，title 在 stage（data-subtitle）内，按规则 title 嵌套豁免不分配 id
+>
+> 修正：上面的写法下，最终 elementIds 只有 `{"#P1-100": { id: "P1-100", start: ..., end: ... }}`（title 和 subtitle 继承 stage 的时间控制）
 
 ---
 
@@ -142,47 +146,58 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 ## R4 HtmlComponent elementIds 规则
 
-`content.elementIds` 为对象，**key 必须是 `#ID` 形式**（`#` 后跟元素 ID），value 是 `{ id, subtitles }` 对象：
+> ⚠️ **2026-07 新约定**：AI **不写** `content.elementIds` 字段，全部由 merge 自动从 HTML 的 `class` 元素生成。
+>
+> **自动 id 分配规则**：
+> - 起始编号：`P{区域}-100`（避开顶级组件 `P{区域}-001` ~ `P{区域}-099`）
+> - 分配顺序：按 HTML 中 class 元素出现顺序
+> - 同 class 多个元素：每个分配不同 id（如 `P1-100, P1-101, P1-102...`）
+> - 嵌套子元素豁免：父元素已声明 `data-subtitle` / `data-global` 时，子元素继承时间控制，不分配 id
+> - background 元素：不参与分配（background 元素本来就不许带 id）
+>
+> **AI 写法**：直接写 class + `data-subtitle` / `data-global`，不写 id、不写 elementIds：
+>
+> ```html
+> <div class='title' data-subtitle='1-5'>标题</div>
+> ```
+>
+> merge 之后会注入 id 并生成：
+>
+> ```json
+> "elementIds": {
+>   "#P1-100": { "id": "P1-100", "start": <srt 1 start>, "end": <srt 5 end> }
+> }
+> ```
 
-```json
-"elementIds": {
-  "#P1-002": { "id": "P1-002", "subtitles": [11, 14] },
-  "#P1-003": { "id": "P1-003", "subtitles": [11] }
-}
-```
+### R4.1 elementIds 自动生成字段
 
-| 字段 | 类型 | 必填 | 说明 |
+| 字段 | 类型 | 来源 | 说明 |
 |------|------|------|------|
-| key | string | ✅ | 必须是 `#ID` 形式（如 `#P1-002`） |
-| id | string | ✅ | 元素唯一标识，必须等于 `key.slice(1)`；格式 `P{区域编号}-{三位数字}`，与顶层 HtmlComponent ID 同池且全局唯一 |
-| subtitles | Array<number> | 推荐 | 绑字幕范围（merge 查 SRT 自动算 start/end）。不填 = 展示整个所属 HtmlComponent |
+| key | string | 自动 | `#ID` 形式，与 HTML 注入的 id 一致 |
+| id | string | 自动 | 元素 id（与 key 去掉 `#` 一致） |
+| start | number | 自动 | 元素起始时间（从 `data-subtitle` 解析 SRT 推算） |
+| end | number | 自动 | 元素结束时间（从 `data-subtitle` 解析 SRT 推算） |
 
-**merge 自动填充**（输出到 project.json 时）：
-- `element.start` = subtitles 第一字幕 start
-- `element.end` = subtitles 最后字幕 end
+`data-global="true"` 元素：无 start/end（前端用 region 边界兜底）。
 
-> 💡 **R12 新约定下推荐省略 elementIds 字段**：详见 [§R12](06-components.md#r12-动画模板)。
+### R4.2 校验规则
 
-**优先级**：subtitles > 旧 start/end（兼容）> fallback to parent
+- ❌ AI 写 `id` 属性 → 报错
+- ❌ AI 写 `content.elementIds` 字段 → 静默忽略（merge 会用自动生成结果覆盖）
+- ❌ 顶级 class 元素无 `data-subtitle` 也无 `data-global` → 报错
+- ✅ AI 写 class + `data-subtitle` / `data-global` → merge 自动分配 id
 
-> 未填时一律 fallback 到父级时间窗口（与背景切换规则保持一致），不报错。
+### R4.3 缺省行为
 
-**缺省行为**（与背景切换规则保持一致）：
-- `component.start` 未填 = `region.startTime`
-- `component.end` 未填 = 下一 `region.startTime`（最后 region = `project.duration`）
-- `element.start` 未填 = `component.start`
-- `element.end` 未填 = `component.end`
+- 元素 `start` / `end` 由 `data-subtitle` 决定
+- 元素时间窗 = SRT 字幕时间窗（绝对时间，前端按 SRT 同步）
+- `data-global="true"` 元素 = 跟随 region 全生命周期
 
-**关键约束**：
-- ✅ HTML 字符串里必须有对应的 `id` 属性（如 `<div id="P1-002">`），否则时间线不生效
-- ✅ 元素时间范围（已设置时）必须落在所属 HtmlComponent 时间范围内（`component.start ≤ element.start && element.end ≤ component.end`）
-- ✅ `0 ≤ element.start ≤ element.end`（已设置时）
-- ✅ subtitles 范围必须在所属 region 字幕范围内
-- ❌ `component.start / end` 和 `element.start / end` **可不填**，不填时由前端/merge 自动从父级时间窗口推算（与背景切换规则保持一致）
+### R4.4 层级约束
 
-**作用**：
-1. 按 ↑ 键显示元素 ID 标签，方便定位和修改
-2. 每个 HTML 子元素可独立控制出现/消失时间
+- ✅ 元素时间 ⊂ 组件时间 ⊂ region 时间
+- ✅ 所有 id（组件 + 元素）全局唯一，格式 `P{区域}-{三位数字}`
+- ✅ merge 自动分配后保证唯一性
 
 ---
 
@@ -261,10 +276,10 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ### R7.3 校验清单
 
-- [E] `<img>` 必须有 `id` 属性
 - [E] Picsum URL 必须含 `seed` 参数
 - [E] 占位图必须有水印（CSS 水印）
 - [W] `<img>` 的尺寸与 `position` 协调
+- ℹ️ `<img>` 不需要 `id` 属性，merge 自动给有 class 的 `<img>` 分配；无 class 的 `<img>` 是装饰元素，merge 不动
 
 ---
 
@@ -320,32 +335,29 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ---
 
-## R12 元素动效（当前方案：禁用）
+## R12 元素动效（AI 写 CSS，merge 严格校验）
 
-> **2026-07 临时方案**——**所有动效已禁用**。HEAD 前端只通过 `opacity` 控制显隐时机，不写 transform，不解析 keyframes，不放行 CSS 原生 `animation`。
+> **2026-07 更新**：AI 写标准 CSS（`@keyframes` + `animation`），merge 严格校验（属性白名单、居中修正等）。前端**只通过 `opacity` 控制显隐时机**（不解析 CSS animation，不写 transform），所以 CSS animation **实际不生效**，但写出来 CSS 独立可预览、merge 校验通过。
 >
-> 原因：HEAD 写 `el.style.transform` 会覆盖 CSS class 的 `transform: translate(-50%, -50%)` 居中；CSS 原生 `animation` 也会覆盖居中。两层冲突导致布局错乱。
->
-> **样式和布局 100% 保留**——CSS class 自身的 transform 居中、color、font-size、box-shadow 等都正常工作。
->
-> **视觉效果**——元素按时出现/消失（硬切，无过渡）。没有飞入、淡入、闪烁、发光、弹跳、旋转、缩放等任何动画。
+> 旧 R12"禁用动效"版已更新。R11 旧约定已废弃。
 
-### R12.1 元素必须配合的属性
+### R12.1 元素必填属性
 
 | 属性 | 必填 | 说明 |
 |---|---|---|
-| `id` | ✅ | 元素唯一标识（`P{区域}-{编号}` 格式），HEAD 通过 id 找到 DOM |
-| `data-subtitle` | ✅ | 引用字幕序号（`"3"` 或 `"1-3"`），决定元素显示的字幕时间窗 |
-| `data-global` | ❌ | 设为 `"true"` 表示跟随 region 全生命周期（不绑字幕） |
+| `class` | ✅ | CSS 选择器，HEAD 通过 class 找 DOM |
+| `data-subtitle` | ✅ | 引用字幕序号（`"3"` / `"1-3"` / `"1,3,5"`），决定元素显示的字幕时间窗 |
+| `data-global` | ❌ | 设为 `"true"` 表示跟随 region 全生命周期（不绑字幕），与 `data-subtitle` 互斥 |
+| `id` | ❌ | **AI 不写**，merge 自动分配（`P{区}-100` 起按 HTML 出现顺序） |
 
-**居中靠 CSS class 自身**（必须）：
+**居中靠 CSS class 自身**（必须，否则 merge 报错）：
 
 ```css
 .main-title {
   position: absolute;
   top: 58%;
   left: 50%;
-  transform: translate(-50%, -50%);  /* 必须：HEAD 不动 transform */
+  transform: translate(-50%, -50%);  /* 必须：HEAD 不写 transform */
   font-size: 42px;
   color: white;
 }
@@ -355,50 +367,50 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ```html
 <!-- 时间维度：显示在第 2 句字幕期间 -->
-<div id='P1-005' class='main-title' data-subtitle='2'>A股上半年收官</div>
+<div class='main-title' data-subtitle='2'>A股上半年收官</div>
 
 <!-- 时间维度：显示在第 1-2 句字幕期间 -->
-<div id='P1-004' class='date-badge' data-subtitle='1-2'>2024-06-30</div>
+<div class='date-badge' data-subtitle='1-2'>2024-06-30</div>
 
 <!-- 全局元素：跟随 region 全生命周期 -->
-<div id='P1-007' class='corner-tl' data-global='true'></div>
+<div class='corner-tl' data-global='true'></div>
 ```
 
-### R12.3 禁止写法（必须遵守）
+merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 
-- ❌ **不要写 `@keyframes`** —— 前端强制 `animation: none !important`，无效
-- ❌ **不要写 `animation: fade-in ...` / `transition: opacity ...`** —— 全部被禁掉
-- ❌ **不要写 `data-cv-anim="fade-in-up"` 等旧动画属性** —— HEAD 不解析（接口已移除）
-- ❌ **不要在 elementIds.animations 的 keyframes 里写 transform** —— HEAD 不写 transform，写了也不生效
-- ❌ **不要给 background.html 里的元素配 id** —— 背景元素由 CSS class 控制，HEAD 不会管它；带 id 会被强制禁动画（CSS 选择器 `[id]` 误伤）。selfcheck.js 会报错。
-- ✅ **可以写**静态视觉样式：`color`、`font-size`、`box-shadow`（静态值）、`background`、`border` 等
+```html
+<div id='P1-100' class='main-title' data-subtitle='2'>A股上半年收官</div>
+<div id='P1-101' class='date-badge' data-subtitle='1-2'>2024-06-30</div>
+<div id='P1-102' class='corner-tl' data-global='true'></div>
+```
 
-### R12.4 背景 vs 内容 区分规则
+### R12.3 CSS 写法
 
-| 维度 | background.html | content.html |
-|------|-----------------|--------------|
-| 元素加 `id` | ❌ **禁止**（会被禁动画） | ✅ **必须**（HEAD 管控） |
-| 元素配 `data-subtitle` | ❌ 无意义（HEAD 不扫描） | ✅ 必须/可选 |
-| 元素配 `data-global` | ❌ 无意义 | ✅ 可选 |
-| CSS animation / @keyframes | ✅ **正常生效**（无 id 自动豁免） | ❌ 被禁（带 id） |
-| 受 HEAD 时间线控制 | ❌ 否 | ✅ 是 |
-
-### R12.7 标准 CSS 居中（W3C 规范）
-
-> **参考**：https://developer.mozilla.org/en-US/docs/Web/CSS/transform
-> https://css-tricks.com/centering-css-complete-guide/
-
-`top: 50%; left: 50%` 只把"元素左上角"放在 50%，不是"元素中心"在 50%。
+**AI 可以写**（merge 校验通过，前端会忽略但 CSS 独立可预览）：
 
 ```css
-/* ❌ 错误：缺 transform，居中失效 */
-.box { position: absolute; top: 50%; left: 50%; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-/* ✅ 正确：加 translate(-50%, -50%) */
-.box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.main-title {
+  animation: fade-in 0.5s ease-out forwards;
+}
 ```
 
-### R12.8 显隐时间与字幕的关系
+**merge 校验严格化**（auto-fix → fail-fast）：
+
+| 校验项 | 错误时行为 |
+|---|---|
+| `@keyframes` 用了非白名单属性（`width` / `height` / `font-size` 等） | 报错 |
+| 居中元素（`position: absolute` + 50%）缺 `transform: translate(-50%, -50%)` | 报错 |
+| `animation-delay` + `opacity: 0` 共用 | 报错 |
+| timing function 不在白名单 | 报错 |
+
+> ❌ **不要写 `data-cv-anim="fade-in-up"` 等旧动画属性** —— 已废弃（2026-07），HEAD 不解析。
+
+### R12.4 显隐时间与字幕的关系
 
 - `data-subtitle="3"` → 字幕 3 的时间区间 [t3_start, t3_end]
 - 元素在 `t3_start` 时刻 opacity 0→1 出现
@@ -406,11 +418,36 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 - 切换是**硬切**（无过渡），靠 HEAD 每帧根据 currentTime 重算
 - `data-global="true"` → 跟随 region 全生命周期（region 开始→结束都显示）
 
-### R12.9 完整示例
+### R12.5 背景 vs 内容 区分规则
+
+| 维度 | background.html | content.html |
+|------|-----------------|--------------|
+| 元素加 `id` | ❌ **禁止**（merge 校验会报错） | ⚠️ **AI 不写**，merge 自动注入 |
+| 元素配 `data-subtitle` | ❌ 无意义（merge 不扫描 background） | ✅ 推荐 |
+| 元素配 `data-global` | ❌ 无意义 | ✅ 可选 |
+| CSS animation / @keyframes | ✅ **正常生效**（无 id 元素前端不禁） | ⚠️ merge 校验通过但前端不解析（硬切） |
+| 受 HEAD 时间线控制 | ❌ 否 | ✅ 是（通过 elementIds 同步） |
+
+### R12.6 居中（W3C 规范）
+
+> **参考**：https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+> https://css-tricks.com/centering-css-complete-guide/
+
+`top: 50%; left: 50%` 只把"元素左上角"放在 50%，不是"元素中心"在 50%。
+
+```css
+/* ❌ 错误：缺 transform，居中失效（merge 报错） */
+.box { position: absolute; top: 50%; left: 50%; }
+
+/* ✅ 正确：加 translate(-50%, -50%) */
+.box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+```
+
+### R12.7 完整示例
 
 ```json
 {
-  "id": "P1-001",
+  "id": "P1-099",
   "type": "HtmlComponent",
   "position": { "x": 0, "y": 0, "w": 780, "h": 585 },
   "background": {
@@ -418,11 +455,13 @@ https://picsum.photos/seed/{seed}/{width}/{height}
     "css": ".bg { position: absolute; inset: 0; background: #0a0a1a; }"
   },
   "content": {
-    "html": "<div id='P1-002' class='date-badge' data-subtitle='2'>06·30</div><div id='P1-003' class='main-title' data-subtitle='2-3'>A股上半年收官</div><div id='P1-004' class='title-glow' data-subtitle='2-3'>光晕</div>",
-    "css": ".date-badge { position: absolute; top: 8%; left: 50%; transform: translate(-50%, -50%); font-size: 72px; color: gold; } .main-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; color: white; } .title-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 80px; border: 2px solid gold; border-radius: 40px; }"
+    "html": "<div class='date-badge' data-subtitle='2'>06·30</div><div class='main-title' data-subtitle='2-3'>A股上半年收官</div><div class='title-glow' data-subtitle='2-3'>光晕</div>",
+    "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .date-badge { position: absolute; top: 8%; left: 50%; transform: translate(-50%, -50%); font-size: 72px; color: gold; animation: fade-in 0.5s ease-out forwards; } .main-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; color: white; animation: fade-in 0.5s ease-out forwards; } .title-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 80px; border: 2px solid gold; border-radius: 40px; }"
   }
 }
 ```
+
+> merge 后会自动给 3 个 class 元素分配 id：`date-badge` → `P1-100`，`main-title` → `P1-101`，`title-glow` → `P1-102`。
 
 ---
 
@@ -432,25 +471,28 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 | 校验项 | 错误时行为 | 说明 |
 |---|---|---|
-| HTML 结构合法 | 报错 | 标签闭合、id 唯一 |
+| HTML 结构合法 | 报错 | 标签闭合 |
 | `data-subtitle` 引用字幕存在 | 报错 | 字幕 ID 必须在 subtitles 数组里 |
-| `data-cv-anim` 值在白名单内 | 警告（静默忽略） | 不在白名单 = 无动画，不报错 |
-| `data-cv-anim-duration` 格式合法 | 警告 | 格式：`0.3s` / `300ms` |
+| AI 写了 `id` 属性 | 报错 | merge 自动分配 |
+| 顶级 class 元素无 `data-subtitle` 也无 `data-global` | 报错 | 必须显式声明时间控制 |
+| background 元素带 `id` | 报错 | background 元素不许带 id |
+| `@keyframes` 用了非白名单属性 | 报错 | 11 个支持属性（opacity/transform/box-shadow 等） |
+| 居中元素缺 `transform: translate(-50%, -50%)` | 报错 | standard CSS 居中规范 |
+| `animation-delay` + `opacity: 0` 共用 | 报错 | 期间元素会闪 |
 
 ### AI 学习成本（仅 4 条）
 
 1. ✅ `transform: translate(-50%, -50%)` 居中（标准 CSS）
-2. ✅ 动画用 `data-cv-anim="模板名"`
-3. ✅ 时间用 `data-subtitle="字幕ID"`
-4. ❌ 不写 `@keyframes`
-5. ❌ 不写 `animation:`
+2. ✅ 元素加 class + `data-subtitle="字幕ID"` / `data-global="true"`
+3. ✅ 嵌套子元素可省略（继承父元素时间）
+4. ❌ 不写 `id` 属性（merge 自动分配）
+5. ❌ background 元素不带 id
+6. ❌ 居中元素必须配 `transform: translate(-50%, -50%)`
 
 ---
 
 ## R11 旧约定（已废弃）
 
-> ⚠️ **R11 CSS keyframes 写法已废弃**——请改用 R12 的 `data-cv-anim` 动画模板。
+> ⚠️ **R11 CSS keyframes 写法已废弃**——请改用 R12 新版（AI 写标准 CSS + merge 严格校验）。
 
-旧约定（R11）的 `@keyframes` + `animation:` 写法前端不再支持。旧 project.json 中的 `@keyframes` 全部失效，`animation:` 全部被强制禁掉。
-
-旧项目迁移：把 `animation: xxx` 删掉，在对应元素上加 `data-cv-anim="模板名"`。
+旧 R12"data-cv-anim 模板"已废弃：HEAD 不再支持 `data-cv-anim` 接口，写了也不生效。改用标准 `@keyframes` + `animation` 写法。

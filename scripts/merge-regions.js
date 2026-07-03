@@ -708,28 +708,20 @@ function mergeRegions(workdir, workdirRoot) {
         // 6.1.7 校验 elementIds 格式（与 selfcheck.js checkHtmlElementIds 对齐）
         validateHtmlElementIds(comp, project);
 
-        // 6.1.6 新约定：调用 transformHtmlComponent，把 AI 写的"标准 H5+CSS"自动转成
-        //   - elementIds: { "#X": { id, start, end, animations } }（start/end 查 SRT 推算）
-        //   - animations: { "name": { duration, keyframes, ... } }（给前端 JS 插值用）
-        //   - cleanedHtml/cleanedCss：去掉 data-subtitle / class 上的 animation 简写
-        // 不影响原有 elementIds（如果 AI 已经写了 elementIds/animations），6.2 会继续处理
+        // 6.1.6 新约定（2026-07）：调用 transformHtmlComponent
+        //   - elementIds: { "#X": { id, start?, end? } }（start/end 查 SRT 推算；data-global 无时间）
+        //   - cleanedHtml: 注入 id 后的 HTML（AI 写的 id 会被报错；merge 自动分配并写回标签）
+        //   - cleanedCss: 原样透传（merge 不再做任何样式/动画 auto-fix）
+        // AI 不再写 elementIds、id、subtitles、animations 等任何前端协议字段
         if (comp.type === 'HtmlComponent' && comp.content && typeof comp.content.html === 'string') {
           try {
             const transformed = transformHtmlComponent(comp, srtList);
-            // 1) cleanedHtml/Css 替换（去掉 data-subtitle 和 class 上的 animation 简写，避免与前端 JS 冲突）
+            // 1) cleanedHtml 覆盖：含注入的 id 属性
             if (transformed.cleanedHtml) {
               comp.content.html = transformed.cleanedHtml;
             }
-            if (typeof transformed.cleanedCss === 'string') {
-              comp.content.css = transformed.cleanedCss;
-            }
-            // 2) 写入 animations manifest（前端 JS 插值用）
-            if (transformed.animations && Object.keys(transformed.animations).length > 0) {
-              comp.content.animations = transformed.animations;
-            }
-            // 3) 合并 elementIds：transformHtmlComponent 产出的 start/end 已经是绝对时间
-            //    若 AI 区域已写 elementIds（带 subtitles 或 start/end），保留；否则用转换结果
-            if (!comp.content.elementIds && transformed.elementIds && Object.keys(transformed.elementIds).length > 0) {
+            // 2) elementIds 用转换结果（AI 不写，全权由 transformHtmlComponent 生成）
+            if (transformed.elementIds && Object.keys(transformed.elementIds).length > 0) {
               comp.content.elementIds = transformed.elementIds;
             }
           } catch (err) {
@@ -738,65 +730,25 @@ function mergeRegions(workdir, workdirRoot) {
           }
         }
 
-        // 6.2 处理 elementIds：自动转换 subtitles → start/end
+        // 6.2 元素 ⊂ 组件 层级校验（仅做安全网，start/end 不再二次转换）
         if (comp.content && comp.content.elementIds) {
-          const resolvedElementIds = {};
           for (const [key, value] of Object.entries(comp.content.elementIds)) {
             if (!value || typeof value !== 'object') continue;
-            let elemTime = null;
-            if (value.subtitles != null && srtList.length > 0) {
-              elemTime = resolveSubtitles(value.subtitles, srtList);
-            } else if (typeof value.start === 'number' && typeof value.end === 'number') {
-              elemTime = { start: value.start, end: value.end };
-            }
-            if (elemTime) {
-              // 元素时间采用绝对时间（与 component.start/end 保持一致），并用于层级校验
-              const localElemTime = {
-                start: truncateTo3(elemTime.start),
-                end: truncateTo3(elemTime.end)
-              };
-
-              // 先判断 element start/end 是否为默认（不需要写入）
-              // 1) 优先用 value.subtitles 算 bound；2) 缺失时由 [start,end] 反推字幕 ID 范围
-              let elemBoundSubRange = getSubtitleRangeBound(value.subtitles);
-              if (!elemBoundSubRange && typeof value.start === 'number' && typeof value.end === 'number') {
-                elemBoundSubRange = inferSubtitleBoundFromTimeRange(value.start, value.end, srtList);
-              }
-              const { startIsDefault: elemStartIsDefault, endIsDefault: elemEndIsDefault } = checkStartEndDefault({
-                actualStart: elemTime.start,
-                actualEnd: elemTime.end,
-                regionStartTime: regionEntry.startTime,
-                regionEndTime: regionEntry.endTime,
-                regionSubRange,
-                boundSubRange: elemBoundSubRange
-              });
-
-              checkHierarchy(localElemTime, comp, regionBounds, key, nextRegionStartTime, {
+            if (typeof value.start !== 'number' || typeof value.end !== 'number') continue;
+            checkHierarchy(
+              { start: truncateTo3(value.start), end: truncateTo3(value.end) },
+              comp,
+              regionBounds,
+              key,
+              nextRegionStartTime,
+              {
                 compStartIsDefault,
                 compEndIsDefault,
-                elemStartIsDefault,
-                elemEndIsDefault
-              });
-
-              const elemEntry = { id: value.id || key.slice(1) };
-              if (!elemStartIsDefault) elemEntry.start = localElemTime.start;
-              if (!elemEndIsDefault) elemEntry.end = localElemTime.end;
-              // 透传 transformHtmlComponent 产出的 animations 数组（多 animation 引用）
-              if (Array.isArray(value.animations) && value.animations.length > 0) {
-                elemEntry.animations = value.animations;
+                elemStartIsDefault: false,  // elementIds 显式写了 start/end
+                elemEndIsDefault: false
               }
-              // 兼容：单数字段
-              if (value.animIn) elemEntry.animIn = value.animIn;
-              if (value.animLoop) elemEntry.animLoop = value.animLoop;
-              if (value.animOut) elemEntry.animOut = value.animOut;
-              resolvedElementIds[key] = elemEntry;
-            } else {
-              // 既无 subtitles 也无 start/end —— 静默保留原样（data-global 装饰元素属正常状态；
-              // 旧 project.json 的存量字段也不需要校验，统一以最新规则为准）
-              resolvedElementIds[key] = value;
-            }
+            );
           }
-          comp.content.elementIds = resolvedElementIds;
         }
 
         // component 不写 start/end（前端按 region 边界自动推算）

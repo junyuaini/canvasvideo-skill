@@ -251,7 +251,7 @@ async function prepareFromGenerate(workdir, args) {
       rate: args.rate || '+0%',
       volume: args.volume || '+0%',
       pitch: args.pitch || '+0Hz',
-      chunkSize: 200,
+      chunkSize: 120,
       shortSubtitle: true,
     });
   } catch (e) {

@@ -326,6 +326,7 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   else if (projectState.voice.subtitleCount) {
     skeleton.subtitle_count = projectState.voice.subtitleCount;
   }
+  if (config.subtitle) skeleton.subtitle = config.subtitle;
 
   // 项目级字幕样式（可选）
   if (config.subtitle && typeof config.subtitle === 'object') {
@@ -335,9 +336,16 @@ function generateSkeleton(workdirRoot, skillProjectId) {
   // 项目模式（固定 dubbing）
   skeleton.mode = 'dubbing';
 
-  // 6. 保存 skeleton.json
+  // 6. 保存 skeleton.json（顶层 region 节点剥离 _srtSubs 临时字段和 subtitles）
+  const skeletonForSave = {
+    ...skeleton,
+    regions: skeleton.regions.map(r => {
+      const { subtitles, _srtSubs, ...rest } = r;
+      return rest;
+    })
+  };
   const skeletonPath = path.join(workdir, 'skeleton.json');
-  fs.writeFileSync(skeletonPath, JSON.stringify(skeleton, null, 2));
+  fs.writeFileSync(skeletonPath, JSON.stringify(skeletonForSave, null, 2));
   console.log(`[✓] skeleton.json 已生成: ${skeletonPath}`);
   console.log(`  名称: ${skeleton.name}`);
   console.log(`  时长: ${skeleton.duration}秒`);
@@ -361,7 +369,7 @@ function generateSkeleton(workdirRoot, skillProjectId) {
       startTime: region.startTime,
       endTime: region.endTime,
       duration: region.duration,
-      subtitles: region.subtitles,
+      subtitles: region._srtSubs || region.subtitles || [],
       components: [
         {
           id: `${region.id}-001`,

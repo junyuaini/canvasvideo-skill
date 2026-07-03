@@ -24,6 +24,12 @@ const { resolveAgentWorkdir } = require('./scaffold');
  * @returns {number} 区域开始时间（秒）
  */
 function calculateRegionStart(skeleton, regionIndex) {
+  // 优先使用 region.startTime（dubbing 模式由 SRT 重算，更精确）
+  // 累加 duration 是 legacy 模式
+  const region = skeleton.regions[regionIndex];
+  if (region && typeof region.startTime === 'number') {
+    return region.startTime;
+  }
   let start = 0;
   for (let i = 0; i < regionIndex; i++) {
     const regionDuration = skeleton.regions[i]?.duration || 4;
@@ -53,7 +59,8 @@ function validateRegion(skeleton, regionData, regionName) {
   const errors = [];
   const warnings = [];
   
-  const regionIndex = skeleton.regions.findIndex(r => r.name === regionName);
+  // 区域匹配：兼容 id（P1）或 name（中文）
+  const regionIndex = skeleton.regions.findIndex(r => r.id === regionName || r.name === regionName);
   if (regionIndex === -1) {
     errors.push(`[E] 区域 ${regionName} 在 skeleton.json 中不存在`);
     return { valid: false, errors, warnings };
@@ -130,7 +137,16 @@ if (require.main === module) {
 
   const workdir = path.join(workdirRoot, skillProjectId);
   const skeletonPath = path.join(workdir, 'skeleton.json');
-  const regionPath = path.join(workdir, 'regions', `${regionName}.json`);
+  // 区域文件查找：先按 P*.json 规则（id 命名），再按 name 命名（兼容）
+  const paddedId = regionName.startsWith('P') && /^P\d+$/.test(regionName) ? regionName : null;
+  const possiblePaths = paddedId
+    ? [path.join(workdir, 'regions', `${paddedId}.json`), path.join(workdir, 'regions', `${regionName}.json`)]
+    : [path.join(workdir, 'regions', `${regionName}.json`)];
+  const regionPath = possiblePaths.find(p => fs.existsSync(p));
+  if (!regionPath) {
+    console.error(`错误: 区域文件不存在: ${possiblePaths[0]}`);
+    process.exit(1);
+  }
   
   if (!fs.existsSync(skeletonPath)) {
     console.error(`错误: skeleton.json 不存在: ${skeletonPath}`);

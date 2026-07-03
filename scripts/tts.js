@@ -29,7 +29,9 @@ const DEFAULT_VOICE = 'zh-CN-XiaoxiaoNeural';
 const DEFAULT_RATE = '+0%';
 const DEFAULT_VOLUME = '+0%';
 const DEFAULT_PITCH = '+0Hz';
-const DEFAULT_CHUNK_SIZE = 200;
+const DEFAULT_CHUNK_SIZE = 120;
+const DEFAULT_TTS_MAX_RETRIES = 8;
+const DEFAULT_TTS_RETRY_BASE_MS = 3000;
 
 // ===== 日志工具 =====
 function ts() {
@@ -199,7 +201,7 @@ async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
     rate,
     volume,
     pitch,
-    timeout: 60000,
+    timeout: 120000,
   });
   await tts.ttsPromise(text, tmpAudio);
 
@@ -217,6 +219,37 @@ async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
   const audioDurationMs = getMp3DurationMsFromBuffer(audioBuffer);
 
   return { audio: audioBuffer, entries, audioDurationMs };
+}
+
+// 重试包装：Azure edge WebSocket 偶发 ECONNRESET / 429 / socket hang up
+// 最多重试 5 次，指数退避 500ms / 1s / 2s / 4s
+async function synthesizeOneChunkWithRetry(text, voice, rate, volume, pitch, tmpDir) {
+  const maxRetries = DEFAULT_TTS_MAX_RETRIES;
+  const baseMs = DEFAULT_TTS_RETRY_BASE_MS;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir);
+      if (attempt > 1) {
+        logInfo(`第 ${attempt} 次重试合成成功`);
+      }
+      return result;
+    } catch (err) {
+      lastErr = err;
+      const msg = (err && err.message) || String(err);
+      const retriable = /ECONNRESET|ETIMEDOUT|socket hang up|429|503|ENOTFOUND|EAI_AGAIN/i.test(msg);
+      if (!retriable || attempt === maxRetries) {
+        if (attempt > 1) {
+          logError(`合成失败（已重试 ${attempt - 1} 次）：${msg}`);
+        }
+        throw err;
+      }
+      const delay = baseMs * attempt;
+      logWarn(`合成失败（第 ${attempt}/${maxRetries} 次）：${msg}，${delay}ms 后重试`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
 }
 
 // 检测文本是否为 SRT 格式（避免把序号+时间戳当语音文本传给 Azure TTS）
@@ -246,7 +279,7 @@ async function synthesizeLongText({
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       logInfo(`合成第 ${i + 1}/${chunks.length} 块（${chunk.length} 字）`);
-      const { audio, entries, audioDurationMs } = await synthesizeOneChunk(chunk, voice, rate, volume, pitch, tmpDir);
+      const { audio, entries, audioDurationMs } = await synthesizeOneChunkWithRetry(chunk, voice, rate, volume, pitch, tmpDir);
       allAudio.push(audio);
       const baseEntries = groupEntriesByPunctuation(entries);
       for (const [start, end, txt] of baseEntries) {

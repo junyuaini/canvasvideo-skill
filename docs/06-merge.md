@@ -94,11 +94,11 @@ node scripts/validate.js --cwd=<Agent工作目录的绝对路径> {skillProjectI
 
 > [E] Error — 不符合将阻断（脚本自动校验） | [W] Warning — 不符合可能影响质量 | [I] Info — 建议，非强制
 
-**脚本自动校验**：
+**脚本会自动校验**：
 
 - `merge-regions.js` 检查所有 region JSON 是否齐全（缺失即报错）
 - `merge-regions.js` 检查骨架设计文档存在性
-- `merge-regions.js` 两步校验（仅 content.html）：有 class 必有 id；有 id 必有 data-subtitle 或 data-global
+- `merge-regions.js` 严格校验（仅 content.html）：AI 写了 id 报错；顶级 class 元素无 data-subtitle/data-global 报错；background 元素带 id 报错
 - `selfcheck.js` 检查所有全局字段齐全（name, theme, duration, viewport, canvas, regions, settings, audio, components, source_design_doc）
 - `selfcheck.js` 检查所有 HtmlComponent ID 唯一
 - `merge-regions.js` 自动按 start 排序 HtmlComponent 和字幕
@@ -111,21 +111,14 @@ node scripts/validate.js --cwd=<Agent工作目录的绝对路径> {skillProjectI
 |------|------|------|
 | `region.startTime / endTime` | 从 SRT 字幕范围取 | merge 自动写入 |
 | `component.start / end` | subtitles（查 SRT）/ 旧 start/end / 缺省=region 起止 | merge 自动写入 |
-| `elementIds[].start / end` | subtitles（查 SRT）→ start/end；无 subtitles 有 start/end → 反推字幕 ID 再走 default 检测；既无 subtitles 也无 start/end → 静默保留（data-global 元素属正常） | merge 自动写入 |
-| `animation-delay` | 扫描 HTML `data-subtitle` → 查 SRT → 注入到 CSS | merge 自动注入 |
-
-**优先级**：subtitles > 旧 start/end > fallback to region
-
-**省略规则**（自动生效，不需要手动指定）：
-- 元素首字幕 == region 首字幕 → 自动省略 start
-- 元素末字幕 == region 末字幕 → 自动省略 end
-- 两者都成立 → 只写 id，无 start/end（等同于 data-global 效果）
+| `elementIds[].start / end` | data-subtitle 查 SRT 推算；data-global 不写（前端用 region 边界兜底） | merge 自动写入 |
+| HTML 元素 `id` 属性 | **AI 不写**，merge 自动给 class 元素分配（`P{区}-100` 起按 HTML 出现顺序） | merge 唯一允许的 HTML 改动 |
 
 **elementIds 字段**：
 - AI 在区域 JSON 里**不需要写** `content.elementIds`
-- merge 脚本会从 HTML `id` 自动生成 elementIds
+- merge 脚本会从 HTML 的 `class` 元素**自动分配 id** 并生成 elementIds
 - 元素出现/消失时间由 HTML `data-subtitle` 或 `data-global` 属性 + CSS `animation` 控制
-- merge 脚本自动注入 `animation-delay` 到 CSS，让元素出现时机精准对齐字幕
+- AI 不写 `id` 属性（merge 报错），不写 `start`/`end`（merge 从 SRT 推算）
 
 **缺省规则**：所有时间字段都可省略不填
 - 组件 start/end 未填 → 展示整个 region
@@ -135,7 +128,7 @@ node scripts/validate.js --cwd=<Agent工作目录的绝对路径> {skillProjectI
 **AI 写完后自查**：
 
 - [W] 素材清单实现率 = 100%（指所有素材都被挂到 HtmlComponent 上）
-- [W] 两步校验（仅 content.html）：有 class 必有 id，有 id 必有归属（data-subtitle 或 data-global）
+- [E] AI 不写 id、不写 elementIds、不写 start/end（merge 自动处理）
 
 ---
 

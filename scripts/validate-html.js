@@ -1,10 +1,13 @@
 /**
  * HTML 内容校验（content.html / background.html）
  *
- * 三步校验：
- *   第一步：有 class 必有 id
- *   第二步：id 格式正确（P{n}-{三位数字}）
- *   第三步：有 id 必有归属（data-subtitle 或 data-global）
+ * 2026-07 新约定：AI 不写 id（merge 自动分配），所以"有 class 必有 id"已废弃。
+ * 保留兜底校验：
+ *   1. id 格式正确（P{n}-{三位数字}，merge 注入的 id 必须符合）
+ *   2. data-subtitle / data-global 互斥（一个元素不能同时声明）
+ *   3. data-global 取值合法
+ *
+ * 完整校验（AI 写 id 报错 / class 元素无 data-subtitle 报错等）由 transformHtmlComponent 处理。
  *
  * @param {string} html - HTML 字符串
  * @param {string} label - 错误标识（如 "P1-001 content"）
@@ -20,74 +23,48 @@ function validateHtml(html, label = '') {
     'animate','animateTransform','animateMotion'
   ]);
 
-  // 第一步：有 class 必有 id
-  const classRegex = /<(\w+)([^>]*)class\s*=\s*(["'])([^"']*)\3([^>]*)>/g;
-  const classNoId = [];
-  let m;
-  while ((m = classRegex.exec(html)) !== null) {
-    const tag = m[1];
-    if (SVG_ATOM_TAGS.has(tag)) continue;
-    if (/\sid\s*=/.test(m[2] + m[5])) continue;
-    classNoId.push(m[0].slice(0, 80));
-  }
-  if (classNoId.length > 0) {
-    throw new Error(
-      `${prefix}[第一步] 有 class 但没 id 的元素（${classNoId.length} 个，svg 内部已豁免）：\n  ` +
-      classNoId.join('\n  ') +
-      '\n修复：给这些元素加 id="..."'
-    );
-  }
-
-  // 第二步：id 格式正确
+  // 1. id 格式正确
   const idRegex = /<(\w+)([^>]*?)\s+id\s*=\s*(["'])([^"']+)\3([^>]*?)>/g;
   const idFormatErrors = [];
-  const idPattern = /^P\d+-\d{3}$/;
+  const idConflict = [];
+  const globalValueErrors = [];
+  let m;
   while ((m = idRegex.exec(html)) !== null) {
     const tag = m[1];
     if (SVG_ATOM_TAGS.has(tag)) continue;
     const id = m[4];
-    if (!idPattern.test(id)) {
+    const attrs = m[2] + m[5];
+    if (!/^P\d+-\d{3}$/.test(id)) {
       idFormatErrors.push(id);
+    }
+    const hasSub = /\sdata-subtitle\s*=/.test(attrs);
+    const globalMatch = attrs.match(/\s+data-global\s*=\s*(["'])([^"']+)\1/);
+    const hasGlobal = globalMatch ? (globalMatch[2] === 'true' || globalMatch[2] === '1') : false;
+    if (hasSub && hasGlobal) {
+      idConflict.push(id);
+    }
+    if (globalMatch && !['true', 'false', '1', '0'].includes(globalMatch[2])) {
+      globalValueErrors.push(`${id}(data-global="${globalMatch[2]}")`);
     }
   }
   if (idFormatErrors.length > 0) {
     throw new Error(
-      `${prefix}[第二步] id 格式错误（必须为 P{数字}-{三位数字}，如 P1-002）：\n  ` +
+      `${prefix}[id 格式] id 格式错误（必须为 P{数字}-{三位数字}，如 P1-002）：\n  ` +
       idFormatErrors.join(', ') +
       '\n修复：把 id 改为 P{区域编号}-{三位数字} 格式'
     );
   }
-
-  // 第三步：有 id 必有归属
-  const idRe2 = /<(\w+)([^>]*?)\s+id\s*=\s*(["'])([^"']+)\3([^>]*?)>/g;
-  const idNoBind = [];
-  const idConflict = [];
-  while ((m = idRe2.exec(html)) !== null) {
-    const tag = m[1];
-    if (SVG_ATOM_TAGS.has(tag)) continue;
-    const attrs = m[2] + m[5];
-    const hasSub = /\sdata-subtitle\s*=/.test(attrs);
-    const globalMatch = attrs.match(/\s+data-global\s*=\s*(["'])([^"']+)\1/);
-    const hasGlobal = globalMatch ? (globalMatch[2] === 'true' || globalMatch[2] === '1') : false;
-
-    if (hasSub && hasGlobal) {
-      idConflict.push(m[4]);
-    } else if (!hasSub && !hasGlobal) {
-      idNoBind.push(m[4]);
-    }
-  }
   if (idConflict.length > 0) {
     throw new Error(
-      `${prefix}[第三步] data-subtitle 和 data-global 同时存在（互斥，${idConflict.length} 个）：\n  ` +
+      `${prefix}[互斥] data-subtitle 和 data-global 同时存在（互斥，${idConflict.length} 个）：\n  ` +
       idConflict.join(', ') +
       '\n修复：二选一，全局元素只写 data-global="true"，专属元素只写 data-subtitle="..."'
     );
   }
-  if (idNoBind.length > 0) {
+  if (globalValueErrors.length > 0) {
     throw new Error(
-      `${prefix}[第三步] 有 id 但没归属的元素（${idNoBind.length} 个）：\n  ` +
-      idNoBind.join(', ') +
-      '\n修复：给这些元素加 data-subtitle="N"（专属）或 data-global="true"（全局）'
+      `${prefix}[data-global 取值] data-global 取值只能是 "true" / "false" / "1" / "0"：\n  ` +
+      globalValueErrors.join(', ')
     );
   }
 }

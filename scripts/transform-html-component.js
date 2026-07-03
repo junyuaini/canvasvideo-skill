@@ -1,75 +1,35 @@
 /**
  * HtmlComponent 内容转换器
  *
- * 把 AI 写的"标准 H5+CSS"形式：
- *   <div id="P1-002" class="moon" data-subtitle="1-8">...</div>
- *   .moon { animation: moon-glow 1.5s ease-in-out infinite; }
- *   @keyframes moon-glow { 0%, 100% { box-shadow: 0 0 60px gold; } 50% { ... } }
+ * 新设计（2026-07）：
+ *   - AI 不再手写 id，全部由 merge 阶段自动分配
+ *   - AI 写标准 H5+CSS：class + data-subtitle / data-global
+ *   - merge 自动给 class 元素分配 id（P{区}-100 起，按 HTML 出现顺序）
+ *   - 嵌套在父元素（带 data-subtitle/data-global）内的子元素豁免校验
+ *   - 校验严格化：AI 写 id 报错、class 元素无时间控制声明报错
+ *   - merge 不再做任何样式/动画的 auto-fix
  *
- * 转换成"前端可控"形式：
- *   elementIds: { "#P1-002": { id, start, end, animIn, animLoop, animOut } }
- *   animations: { "moon-glow": { duration, iterationCount, timingFunction, keyframes } }
- *
- * 设计原则：
- *   - AI 写的是标准 Web 语法，零学习成本
- *   - 所有不支持的内容一次报错全部列出，失败时抛错阻断打包
+ * 转换流程：
+ *   1. 扫描 HTML 里所有带 class 的元素，建立嵌套关系
+ *   2. 校验：AI 写了 id → 报错
+ *   3. 校验：class 元素既无 data-subtitle/data-global 又非嵌套子元素 → 报错
+ *   4. 自动分配 id：P{区}-100 起，按 HTML 出现顺序
+ *   5. 把 id 写回 HTML 标签
+ *   6. 从 data-subtitle 解析 start/end，写入 elementIds
  */
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const { validateHtml } = require('./validate-html');
 
 // ============================================================
-// 支持列表（前端 JS 动画系统实际能处理的）
-// ============================================================
-
-const SUPPORTED_TIMING_FUNCTIONS = new Set([
-  'linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out',
-  'step-start', 'step-end',
-  'cubic-bezier(0.34, 1.56, 0.64, 1)',   // 弹性回弹
-  'cubic-bezier(0.68, -0.55, 0.27, 1.55)' // 弹性入场
-]);
-
-const SUPPORTED_KEYFRAME_PROPS = new Set([
-  'opacity', 'transform',
-  'box-shadow', 'text-shadow',
-  'color', 'background-color', 'border-color',
-  'filter',
-  'stroke-dashoffset', 'stroke-dasharray',
-  'clip-path'
-]);
-
-// ============================================================
-// 不支持列表（一次报错全部列出）
-// ============================================================
-
-function buildUnsupportedReport(compId, errors) {
-  if (errors.length === 0) return;
-  const lines = [
-    `[${compId}] 发现 ${errors.length} 个不支持的写法，一次性列出：`
-  ];
-  for (const e of errors) {
-    lines.push(`  - ${e}`);
-  }
-  lines.push('');
-  lines.push('【支持的 keyframe 属性】opacity, transform, box-shadow, text-shadow, color, background-color, border-color, filter, stroke-dashoffset, stroke-dasharray, clip-path');
-  lines.push('【支持的 timing function】linear, ease, ease-in, ease-out, ease-in-out, step-start, step-end, cubic-bezier(0.34, 1.56, 0.64, 1), cubic-bezier(0.68, -0.55, 0.27, 1.55)');
-  lines.push('【禁止】animation-delay、keyframes 里写 width/height/font-size 等布局属性');
-  lines.push('');
-  lines.push('【替代方案】width 动画 → transform: scaleX()；font-size → transform: scale()；animation-delay → 错开元素 start/end 时间');
-  throw new Error(lines.join('\n'));
-}
-
-// ============================================================
-// SRT 字幕解析（轻量版，只看 00:00:00,000 格式）
+// SRT 字幕解析
 // ============================================================
 
 /**
- * 把 SRT 索引转成秒
- * @param {string} idx - "1" / "1,3,5" / "1-8"
- * @returns {Array<number>} 字幕序号数组
+ * 把 SRT 索引表达式转成字幕序号数组
+ * @param {string} expr - "1" / "1,3,5" / "1-8"
+ * @returns {Array<number>}
  */
 function parseSubtitleIndexExpr(expr) {
   if (!expr) return [];
@@ -124,733 +84,102 @@ function resolveSubtitleRange(indices, srtList) {
 }
 
 // ============================================================
-// HTML 解析
+// HTML 元素扫描（建立嵌套关系）
 // ============================================================
 
 /**
- * 扫描 HTML，提取所有带 id 的元素 ID 列表（轻量版）
+ * 扫描 HTML 标签流，提取所有带 class 的元素并建立嵌套关系
  * @param {string} html
- * @returns {string[]} id 列表
+ * @returns {Array<{
+ *   tagName: string,
+ *   classNames: string[],
+ *   classAttrValue: string,
+ *   hasManualId: boolean,
+ *   hasDataSubtitle: boolean,
+ *   hasDataGlobal: boolean,
+ *   dataSubtitleValue: string|null,
+ *   parentClassElement: Object|null,  // 最近的、声明了 data-subtitle/data-global 的 class 祖先
+ *   rawTagStart: number,
+ *   rawTagEnd: number,
+ *   attrsString: string,
+ *   isSelfClose: boolean
+ * }>}
  */
-function scanElementIds(html) {
-  const ids = [];
-  const re = /<(\w+)([^>]*?)\s+id=(["'])([^"']+)\3([^>]*?)>/g;
-  let m;
-  while ((m = re.exec(html)) !== null) {
-    ids.push(m[4]);
-  }
-  return ids;
-}
-
-/**
- * 扫描 HTML，提取所有带 id 的元素及其属性
- * @returns {Array<{id, tag, dataSubtitle, dataGlobal, dataAnimIn, classes, rawMatch}>}
- */
-function extractElementsWithDataSubtitle(html) {
+function analyzeClassElements(html) {
   const results = [];
-  // 匹配 <tag ... id="X" ... data-subtitle="Y" ...>
-  // 支持双引号和单引号
-  const re = /<(\w+)([^>]*?)\s+id=(["'])([^"']+)\3([^>]*?)>/g;
+  // 栈：所有开始标签（包括非 class 的）
+  const stack = [];
+
+  const tagRe = /<(\/?)([\w-]+)([^>]*?)(\/?)>/g;
   let m;
-  while ((m = re.exec(html)) !== null) {
-    const tag = m[1];
-    const pre = m[2] || '';
-    const id = m[4];
-    const post = m[5] || '';
-    const allAttrs = pre + post;
+  while ((m = tagRe.exec(html)) !== null) {
+    const isClose = m[1] === '/';
+    const tagName = m[2];
+    const attrs = m[3] || '';
+    const isSelfClose = m[4] === '/';
 
-    // 提取 data-subtitle
-    const subMatch = allAttrs.match(/\s+data-subtitle=(["'])([^"']+)\1/);
-    const dataSubtitle = subMatch ? subMatch[2] : null;
-
-    // 提取 data-global（"true" / "1" 视为全局元素，忽略 data-subtitle）
-    const globalMatch = allAttrs.match(/\s+data-global=(["'])([^"']+)\1/);
-    const dataGlobal = globalMatch ? (globalMatch[2] === 'true' || globalMatch[2] === '1') : false;
-
-    // 提取 data-anim-in（AI 声明入场动画完整简写）
-    const animInMatch = allAttrs.match(/\s+data-anim-in=(["'])([^"']+)\1/);
-    const dataAnimIn = animInMatch ? animInMatch[2] : null;
-
-    // 提取 data-cv-anim（前端动画模板名）
-    const cvAnimMatch = allAttrs.match(/\s+data-cv-anim=(["'])([^"']+)\1/);
-    const dataCvAnim = cvAnimMatch ? cvAnimMatch[2] : null;
-    const cvAnimDurMatch = allAttrs.match(/\s+data-cv-anim-duration=(["'])([^"']+)\1/);
-    const dataCvAnimDuration = cvAnimDurMatch ? cvAnimDurMatch[2] : null;
-    const cvAnimDelayMatch = allAttrs.match(/\s+data-cv-anim-delay=(["'])([^"']+)\1/);
-    const dataCvAnimDelay = cvAnimDelayMatch ? cvAnimDelayMatch[2] : null;
-
-    // 提取 class
-    const classMatch = allAttrs.match(/\s+class=(["'])([^"']+)\1/);
-    const classes = classMatch ? classMatch[2].split(/\s+/).filter(Boolean) : [];
-
-    results.push({ id, tag, dataSubtitle, dataGlobal, dataAnimIn, dataCvAnim, dataCvAnimDuration, dataCvAnimDelay, classes, rawMatch: m[0] });
-  }
-  return results;
-}
-
-// ============================================================
-// HTML 校验
-// ============================================================
-// validateHtml 来自 ./validate-html
-
-// ============================================================
-// @keyframes 解析
-// ============================================================
-
-/**
- * 解析 @keyframes 块
- * @param {string} css - CSS 字符串
- * @returns {Object} { "fade-up": { duration, keyframes, ... }, ... }
- */
-function parseKeyframes(css) {
-  const result = {};
-  const allErrors = [];
-  // 匹配 @keyframes name { ... }（支持嵌套大括号）
-  const re = /@keyframes\s+([a-zA-Z_-][\w-]*)\s*\{/g;
-  let match;
-  while ((match = re.exec(css)) !== null) {
-    const name = match[1];
-    const start = match.index + match[0].length;
-    let depth = 1, i = start;
-    while (i < css.length && depth > 0) {
-      if (css[i] === '{') depth++;
-      else if (css[i] === '}') depth--;
-      i++;
-    }
-    const body = css.substring(start, i - 1);
-
-    const { keyframes, errors } = parseKeyframeBody(body, name);
-    allErrors.push(...errors);
-    if (keyframes.length > 0) {
-      result[name] = { keyframes };
-    }
-  }
-  return { result, errors: allErrors };
-}
-
-/**
- * 解析单个 @keyframes 的 body
- * @returns {{keyframes: Array, errors: string[]}}
- */
-function parseKeyframeBody(body, kfName) {
-  const keyframes = [];
-  const errors = [];
-  const re = /((?:\d+%|from|to)(?:\s*,\s*(?:\d+%|from|to))*)\s*\{([^}]*)\}/g;
-  let m;
-  while ((m = re.exec(body)) !== null) {
-    const selectors = m[1].split(',').map(s => s.trim());
-    const props = parseKeyframeProps(m[2]);
-
-    for (const key of Object.keys(props)) {
-      const kebabKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-      if (!SUPPORTED_KEYFRAME_PROPS.has(key) && !SUPPORTED_KEYFRAME_PROPS.has(kebabKey)) {
-        errors.push(`@keyframes ${kfName} 里使用了不支持的属性 "${key}"，请用支持的属性替代`);
-      }
-    }
-
-    for (const sel of selectors) {
-      let offset;
-      if (sel === 'from') offset = 0;
-      else if (sel === 'to') offset = 1;
-      else offset = parseInt(sel.replace('%', ''), 10) / 100;
-      keyframes.push({ offset, ...props });
-    }
-  }
-
-  if (keyframes.length === 0) {
-    errors.push(`@keyframes ${kfName} 块为空或格式错误`);
-  } else {
-    keyframes.sort((a, b) => a.offset - b.offset);
-    if (keyframes[0].offset > 0) keyframes.unshift({ offset: 0, ...keyframes[0] });
-    if (keyframes[keyframes.length - 1].offset < 1) keyframes.push({ offset: 1, ...keyframes[keyframes.length - 1] });
-  }
-
-  return { keyframes, errors };
-}
-
-/**
- * 解析 keyframe 的属性块
- * @param {string} propsStr - "opacity: 1; transform: translateY(0)"
- * @returns {Object}
- */
-function parseKeyframeProps(propsStr) {
-  const props = {};
-  propsStr.split(';').forEach(line => {
-    line = line.trim();
-    if (!line) return;
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) return;
-    const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim();
-    if (!key || !value) return;
-    // camelCase: background-color → backgroundColor
-    const camelKey = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    props[camelKey] = value;
-  });
-  return props;
-}
-
-// ============================================================
-// class 上的 animation 简写解析
-// ============================================================
-
-/**
- * 解析 CSS 里的 animation 简写
- * @param {string} css - CSS 字符串
- * @param {Array<string>} classes - 元素的 class 列表
- * @returns {Object} { "moon-glow": { name, duration, timingFunction, iterationCount, fill } }
- */
-function parseClassAnimations(css, classes) {
-  const result = {};
-  for (const cls of classes) {
-    const re = new RegExp(
-      `\\.${escapeRegExp(cls)}\\s*\\{([^}]*)\\}`,
-      'g'
-    );
-    let m;
-    while ((m = re.exec(css)) !== null) {
-      const body = m[1];
-      const animMatch = body.match(/(?:^|;)\s*animation\s*:\s*([^;]+)/);
-      if (animMatch) {
-        const animStr = animMatch[1].trim();
-        const shorthandList = splitAnimationShorthand(animStr);
-        for (const sh of shorthandList) {
-          const { result: parsed, errors } = parseAnimationShorthand(sh, cls);
-          if (parsed) {
-            result[parsed.name] = parsed;
-          }
+    if (isClose) {
+      // 弹出最近一个匹配的 tag
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].tagName === tagName) {
+          stack.splice(i, 1);
+          break;
         }
       }
-    }
-  }
-  return result;
-}
-
-/**
- * 把 CSS animation 简写字符串按顶层逗号切分
- * 注意：cubic-bezier(0.1, 0.2) 内的逗号不能切
- */
-function splitAnimationShorthand(s) {
-  const out = [];
-  let buf = '';
-  let depth = 0;
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (c === '(') depth++;
-    else if (c === ')') depth--;
-    if (c === ',' && depth === 0) {
-      out.push(buf.trim());
-      buf = '';
-    } else {
-      buf += c;
-    }
-  }
-  if (buf.trim()) out.push(buf.trim());
-  return out.filter(Boolean);
-}
-
-/**
- * 解析 animation 简写字符串
- * 例： "moon-glow 1.5s ease-in-out infinite"
- *      "fade-up 0.7s ease-out forwards"
- * @param {string} shorthand
- * @param {string} className - 用于错误信息
- * @returns {Object|null}
- */
-function parseAnimationShorthand(shorthand, className) {
-  const tokens = [];
-  let buf = '';
-  let parenDepth = 0;
-  for (let i = 0; i < shorthand.length; i++) {
-    const c = shorthand[i];
-    if (c === '(') {
-      parenDepth++;
-      buf += c;
       continue;
     }
-    if (c === ')') {
-      parenDepth--;
-      buf += c;
-      continue;
-    }
-    if (/\s/.test(c) && parenDepth === 0) {
-      if (buf) tokens.push(buf);
-      buf = '';
-    } else {
-      buf += c;
-    }
-  }
-  if (buf) tokens.push(buf);
-  if (tokens.length === 0) return null;
 
-  const result = {
-    name: null,
-    duration: 0,
-    timingFunction: 'ease',
-    iterationCount: 1,
-    fill: 'none'
-  };
-  const errors = [];
-
-  for (const tok of tokens) {
-    if (/^\d+(\.\d+)?(ms|s)$/.test(tok)) {
-      if (tok.endsWith('ms')) {
-        result.duration = parseFloat(tok);
-      } else {
-        result.duration = parseFloat(tok) * 1000;
+    const classMatch = attrs.match(/\s+class\s*=\s*(["'])([^"']+)\1/);
+    if (!classMatch) {
+      // 非 class 元素：只压栈
+      if (!isSelfClose) {
+        stack.push({ tagName, isClass: false });
       }
       continue;
     }
-    if (tok === 'infinite' || /^\d+$/.test(tok)) {
-      result.iterationCount = tok === 'infinite' ? 'infinite' : parseInt(tok, 10);
-      continue;
-    }
-    if (['none', 'forwards', 'backwards', 'both'].includes(tok)) {
-      result.fill = tok;
-      continue;
-    }
-    if (tok.startsWith('cubic-bezier(')) {
-      result.timingFunction = tok;
-      continue;
-    }
-    if (tok.startsWith('steps(')) {
-      result.timingFunction = tok;
-      continue;
-    }
-    if (SUPPORTED_TIMING_FUNCTIONS.has(tok)) {
-      result.timingFunction = tok;
-      continue;
-    }
-    if (result.name === null) {
-      result.name = tok;
-      continue;
-    }
-    errors.push(`.${className} 的 animation "${result.name}" 包含不支持的 token "${tok}"`);
-  }
 
-  if (result.name === null) {
-    errors.push(`.${className} 的 animation 简写 "${shorthand}" 缺少动画名`);
-  }
-  if (result.duration <= 0) {
-    errors.push(`.${className} 的 animation 缺少 duration（如 "1.5s"）`);
-  }
+    // 带 class 的元素
+    const classNames = classMatch[2].split(/\s+/).filter(Boolean);
+    const idMatch = attrs.match(/\sid\s*=\s*(["'])([^"']+)\1/);
+    const hasManualId = !!idMatch;
+    const dataSubtitleMatch = attrs.match(/\s+data-subtitle\s*=\s*(["'])([^"']+)\1/);
+    const hasDataSubtitle = !!dataSubtitleMatch;
+    const dataGlobalMatch = attrs.match(/\s+data-global\s*=\s*(["'])([^"']+)\1/);
+    const hasDataGlobal = !!dataGlobalMatch && (dataGlobalMatch[2] === 'true' || dataGlobalMatch[2] === '1');
 
-  return { result, errors };
-}
+    // 最近的、声明了时间控制的 class 祖先
+    const parentClassElement = [...stack].reverse().find(
+      s => s.isClass && (s.hasDataSubtitle || s.hasDataGlobal)
+    ) || null;
 
-// ============================================================
-// validateCentering：校验 standard CSS absolute 居中
-// ------------------------------------------------------------
-// 校验依据：W3C CSS Position Module Level 3 + MDN transform 文档
-//   公开标准：absolute 居中必须配 transform: translate(-50%, -50%)
-//   原因：top: 50%; left: 50% 只把"元素的 top-left 角"放在 50%，
-//         不是把"元素的中心"放在 50%。要居中必须用 transform 抵消自身尺寸。
-//   参考：https://developer.mozilla.org/en-US/docs/Web/CSS/transform
-//         https://css-tricks.com/centering-css-complete-guide/
-//
-// 触发条件（class 内同时满足才报错）：
-//   1. 含 animation 声明
-//   2. 含 position: absolute|fixed
-//   3. 至少一个方向有 50%（top/bottom/left/right）
-//   4. 缺少 transform: translate(-50%, -50%) 居中修正
-// ============================================================
+    const entry = {
+      tagName,
+      classNames,
+      classAttrValue: classMatch[2],
+      hasManualId,
+      hasDataSubtitle,
+      hasDataGlobal,
+      dataSubtitleValue: hasDataSubtitle ? dataSubtitleMatch[2] : null,
+      parentClassElement,
+      rawTagStart: m.index,
+      rawTagEnd: m.index + m[0].length,
+      attrsString: attrs,
+      isSelfClose
+    };
+    results.push(entry);
 
-function classBodyHasAnimation(body) {
-  return /(^|;|\s)animation\s*:/i.test(body);
-}
-
-function classBodyHasAbsolutePositioning(body) {
-  return /(^|;|\s)position\s*:\s*(absolute|fixed)\b/i.test(body);
-}
-
-function classBodyHasCenteringIntent(body) {
-  const positionMatch = body.match(/(^|;|\s)(top|left|right|bottom)\s*:\s*([^;]+)/gi);
-  if (positionMatch) {
-    for (const m of positionMatch) {
-      if (/\b50\s*%/.test(m)) return true;
-    }
-  }
-  const transformMatch = body.match(/(^|;|\s)transform\s*:\s*([^;]+)/i);
-  if (transformMatch && /-50%/.test(transformMatch[2])) return true;
-  return false;
-}
-
-function classBodyHasCenteringFix(body) {
-  const transformMatch = body.match(/(^|;|\s)transform\s*:\s*([^;]+)/i);
-  if (!transformMatch) return false;
-  const value = transformMatch[2];
-  // 居中修正 = 含 -50% 平移即可（方向、组合方式不限）
-  if (!/-50%/.test(value)) return false;
-  // 任意以下居中变换都算"已修正"
-  if (/translate\s*\(\s*-50%\s*,\s*-50%\s*\)/i.test(value)) return true;
-  if (/translateX\s*\(\s*-50%\s*\)/i.test(value)) return true;
-  if (/translateY\s*\(\s*-50%\s*\)/i.test(value)) return true;
-  if (/translate\s*\(\s*0\s*,\s*-50%\s*\)/i.test(value)) return true;
-  if (/translate\s*\(\s*-50%\s*,\s*0\s*\)/i.test(value)) return true;
-  return false;
-}
-
-function validateCentering(compId, css) {
-  const errors = [];
-  const re = /\.([\w-]+)\s*\{([^}]*)\}/g;
-  let m;
-  while ((m = re.exec(css)) !== null) {
-    const cls = m[1];
-    const body = m[2];
-    if (!classBodyHasAnimation(body)) continue;
-    if (!classBodyHasAbsolutePositioning(body)) continue;
-    if (!classBodyHasCenteringIntent(body)) continue;
-    if (classBodyHasCenteringFix(body)) continue;
-    errors.push(
-      `[CssError in ${compId} .${cls}]\n` +
-      `检测到 absolute 居中（top/left/right/bottom 含 50%）但缺少 transform: translate(-50%, -50%) 居中修正。\n` +
-      `原因：top: 50%; left: 50% 只把元素"左上角"放在 50%，不是"中心"在 50%。要真正居中必须用 transform 抵消自身尺寸。\n\n` +
-      `正确写法：\n` +
-      `  .${cls} {\n` +
-      `    position: absolute;\n` +
-      `    top: 50%;\n` +
-      `    left: 50%;\n` +
-      `    transform: translate(-50%, -50%);  /* 必须加这一行 */\n` +
-      `  }\n\n` +
-      `参考：https://developer.mozilla.org/en-US/docs/Web/CSS/transform`
-    );
-  }
-  return errors;
-}
-
-// ============================================================
-// validateKeyframeProps：校验 @keyframes 内只允许白名单属性
-// ------------------------------------------------------------
-// 校验依据：CSS Animations Level 1 规范
-//   公开标准：https://www.w3.org/TR/css-animations-1/
-//   规范 § 2.1 列出所有 animate-able 属性
-//   已被白名单包含的：opacity, transform, box-shadow, text-shadow,
-//                     color, background-color, border-color, filter,
-//                     stroke-dashoffset, stroke-dasharray, clip-path
-//   不在白名单的：width, height, font-size, top, left, right, bottom,
-//                margin, padding 等
-//   原因：CSS 规范不支持这些属性的插值动画；前端 JS 动画系统也
-//        无法实现（需 discrete step）。
-//   替代方案：width 动画 → transform: scaleX()；
-//             font-size → transform: scale()；
-//             位置 → transform: translate()。
-// ============================================================
-
-function validateKeyframeProps(compId, allKeyframes) {
-  const errors = [];
-  for (const [kfName, kf] of Object.entries(allKeyframes)) {
-    for (const frame of kf.frames || []) {
-      for (const prop of Object.keys(frame)) {
-        if (prop === 'offset' || prop === 'easing') continue;
-        if (SUPPORTED_KEYFRAME_PROPS.has(prop)) continue;
-        errors.push(
-          `[CssError in ${compId} @keyframes ${kfName}]\n` +
-          `检测到 keyframe 使用了不支持的属性 "${prop}"。\n` +
-          `原因：CSS Animations Level 1 规范不支持该属性的插值动画。\n\n` +
-          `替代方案：\n` +
-          `  width 动画     → transform: scaleX()\n` +
-          `  height 动画    → transform: scaleY()\n` +
-          `  font-size 动画 → transform: scale()\n` +
-          `  top/left 等位置 → transform: translate()\n\n` +
-          `允许的属性：${Array.from(SUPPORTED_KEYFRAME_PROPS).join(', ')}\n\n` +
-          `参考：https://www.w3.org/TR/css-animations-1/`
-        );
-      }
-    }
-  }
-  return errors;
-}
-
-// ============================================================
-// autoSplitCentering：解决"居中 transform + animation"冲突
-// ------------------------------------------------------------
-// 背景：JS 动画系统在动画进行时会用 keyframe 中的 transform
-//       覆盖 el.style.transform，导致 AI 写的
-//       `transform: translate(-50%, -50%)` 居中失效。
-//
-// 解决：检测"含 animation + 绝对定位"的 class：
-//       - 把 position / top / left / right / bottom 搬到 wrapper 上
-//       - wrapper 自动加 transform: translate(-50%, -50%) 居中
-//       - 原 class 保留 animation 和其他非定位属性
-//       - HTML 改造：原元素外包 wrapper
-//       解决"AI 写 absolute 居中 + animation"的标准场景
-// ============================================================
-
-function hasAnimationDecl(body) {
-  return /(^|;|\s)animation\s*:/i.test(body);
-}
-
-function hasAbsolutePositioning(body) {
-  return /(^|;|\s)position\s*:\s*(absolute|fixed)\b/i.test(body);
-}
-
-const POSITION_KEYS = ['position', 'top', 'left', 'right', 'bottom'];
-const POSITION_OFFSET_KEYS = ['top', 'left', 'right', 'bottom'];
-
-function extractPositionAndTransform(body) {
-  const lines = body.split(';');
-  const keep = [];
-  const positionProps = {};
-  let transform = null;
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) continue;
-    const m = line.match(/^(position|top|left|right|bottom)\s*:\s*(.+)$/i);
-    if (m) {
-      const key = m[1].toLowerCase();
-      positionProps[key] = m[2].trim();
-      continue;
-    }
-    const tm = line.match(/^transform\s*:\s*(.+)$/i);
-    if (tm && /-50%/.test(tm[1])) {
-      transform = tm[1].trim();
-      continue;
-    }
-    keep.push(line);
-  }
-  const newBody = keep.length > 0 ? keep.join('; ') + ';' : '';
-  return { newBody, positionProps, transform };
-}
-
-function hasCenteringIntent(positionProps, transform) {
-  if (transform && /-50%/.test(transform)) return true;
-  for (const key of POSITION_OFFSET_KEYS) {
-    const v = positionProps[key];
-    if (v != null && /\b50\s*%/.test(v)) return true;
-  }
-  return false;
-}
-
-function findCenteringConflicts(css) {
-  const conflicts = [];
-  const re = /\.([\w-]+)\s*\{([^}]*)\}/g;
-  let m;
-  while ((m = re.exec(css)) !== null) {
-    const cls = m[1];
-    const body = m[2];
-    if (!hasAnimationDecl(body)) continue;
-    if (!hasAbsolutePositioning(body)) continue;
-    const { newBody, positionProps, transform } = extractPositionAndTransform(body);
-    const hasOffset = POSITION_OFFSET_KEYS.some(k => positionProps[k] != null);
-    if (!hasOffset) continue;
-    if (!hasCenteringIntent(positionProps, transform)) continue;
-    conflicts.push({ className: cls, originalBody: body, newBody, positionProps, transform });
-  }
-  return conflicts;
-}
-
-function makeWrapperClassName(className, idx) {
-  return `cv-c-${idx}-${className}`;
-}
-
-function buildWrapperDeclarations(positionProps, transform) {
-  const decls = [];
-  for (const key of POSITION_KEYS) {
-    if (positionProps[key] != null) {
-      decls.push(`${key}: ${positionProps[key]}`);
-    }
-  }
-  if (transform) {
-    decls.push(`transform: ${transform}`);
-  } else {
-    decls.push('transform: translate(-50%, -50%)');
-  }
-  return decls.join('; ');
-}
-
-function patchCssWithWrappers(css, conflicts) {
-  const classMap = {};
-  const wrapperRules = [];
-  conflicts.forEach((c, idx) => {
-    const wrapperClass = makeWrapperClassName(c.className, idx);
-    classMap[c.className] = wrapperClass;
-    const decls = buildWrapperDeclarations(c.positionProps, c.transform);
-    wrapperRules.push(`.${wrapperClass} { ${decls} }`);
-    const re = new RegExp(
-      `(\\.${escapeRegExp(c.className)}\\s*\\{)([^}]*)(\\})`,
-      'g'
-    );
-    css = css.replace(re, (_, p, b, s) => p + c.newBody + s);
-  });
-  if (wrapperRules.length > 0) {
-    css = css.trimEnd() + '\n\n/* === auto-generated centering wrappers === */\n' + wrapperRules.join('\n') + '\n';
-  }
-  return { css, wrappers: wrapperRules, classMap };
-}
-
-function findMatchingCloseTag(html, tagName, startPos) {
-  const openRe = new RegExp(`<${tagName}(?:\\s|>)`, 'gi');
-  const closeRe = new RegExp(`</${tagName}\\s*>`, 'gi');
-  let depth = 1;
-  let pos = startPos;
-  while (pos < html.length && depth > 0) {
-    openRe.lastIndex = pos;
-    closeRe.lastIndex = pos;
-    const openMatch = openRe.exec(html);
-    const closeMatch = closeRe.exec(html);
-    if (!closeMatch) return -1;
-    if (openMatch && openMatch.index < closeMatch.index) {
-      depth++;
-      pos = openMatch.index + openMatch[0].length;
-    } else {
-      depth--;
-      pos = closeMatch.index + closeMatch[0].length;
-      if (depth === 0) return closeMatch.index;
-    }
-  }
-  return -1;
-}
-
-function findElementSpan(html, attrStartIdx) {
-  const ltIdx = html.lastIndexOf('<', attrStartIdx);
-  if (ltIdx === -1) return null;
-  if (html[ltIdx + 1] === '/' || html[ltIdx + 1] === '!') return null;
-  const gtIdx = html.indexOf('>', ltIdx);
-  if (gtIdx === -1) return null;
-  if (html[gtIdx - 1] === '/') return null;
-  const tagMatch = html.slice(ltIdx, gtIdx).match(/^<(\w+)/);
-  if (!tagMatch) return null;
-  const tagName = tagMatch[1];
-  const endIdx = findMatchingCloseTag(html, tagName, gtIdx + 1);
-  if (endIdx === -1) return null;
-  return { openStart: ltIdx, openEnd: gtIdx + 1, closeStart: endIdx, closeEnd: endIdx + (`</${tagName}>`).length };
-}
-
-function wrapHtmlElements(html, classMap) {
-  const conflictClassNames = Object.keys(classMap);
-  if (conflictClassNames.length === 0) return html;
-
-  for (const className of conflictClassNames) {
-    const wrapperClass = classMap[className];
-    const classAttrRe = new RegExp(
-      `class\\s*=\\s*(["'])([^"']*?\\b${escapeRegExp(className)}\\b[^"']*?)\\1`,
-      'g'
-    );
-
-    const spans = [];
-    let m;
-    while ((m = classAttrRe.exec(html)) !== null) {
-      const span = findElementSpan(html, m.index);
-      if (span) spans.push(span);
-    }
-
-    spans.sort((a, b) => b.openStart - a.openStart);
-    for (const span of spans) {
-      html =
-        html.slice(0, span.openStart) +
-        `<div class="${wrapperClass}">` +
-        html.slice(span.openStart, span.closeEnd) +
-        `</div>` +
-        html.slice(span.closeEnd);
+    if (!isSelfClose) {
+      stack.push({
+        tagName,
+        isClass: true,
+        className: classNames.join(' '),
+        hasDataSubtitle,
+        hasDataGlobal
+      });
     }
   }
 
-  return html;
-}
-
-function autoSplitCentering(html, css) {
-  const conflicts = findCenteringConflicts(css);
-  if (conflicts.length === 0) {
-    return { html, css, splits: [] };
-  }
-  const { css: patchedCss, classMap } = patchCssWithWrappers(css, conflicts);
-  const patchedHtml = wrapHtmlElements(html, classMap);
-  return {
-    html: patchedHtml,
-    css: patchedCss,
-    splits: conflicts.map((c, i) => ({
-      className: c.className,
-      wrapperClass: classMap[c.className],
-      positionProps: c.positionProps,
-      transform: c.transform
-    }))
-  };
-}
-
-// ============================================================
-// 主转换函数
-// ============================================================
-
-/**
- * 转换 HtmlComponent（新版本）
- * @param {Object} comp - { id, content: { html, css, ... } }
- * @param {Array} srtList - parseSrt 返回的字幕数组
- * @returns {{
- *   elementIds: Object,
- *   animations: Object,   // 空，动画由前端 data-cv-anim 接管
- *   cleanedHtml: string,
- *   cleanedCss: string
- * }}
- *
- * 职责说明：
- *   - 校验 HTML 结构
- *   - 解析 data-subtitle（时间可见性）
- *   - 解析 data-cv-anim（动画名，透传到前端）
- *   - 不解析 @keyframes / animation CSS 属性（前端强制禁掉）
- *   - cleanedHtml / cleanedCss 等于原值，不修改
- */
-function transformHtmlComponent(comp, srtList) {
-  if (!comp.content || !comp.content.html) {
-    return { elementIds: {}, animations: {}, cleanedHtml: '', cleanedCss: '' };
-  }
-
-  const html = comp.content.html;
-  const css = comp.content.css || '';
-  const errors = [];
-
-  validateHtml(html, comp.id);
-
-  // 校验 background.html 里的元素不能带 id
-  // 原因：HEAD 禁动画的 CSS 选择器是 [id]，背景元素带 id 会被误禁，CSS 动画失效
-  if (comp.background && comp.background.html) {
-    const bgIds = scanElementIds(comp.background.html);
-    if (bgIds.length > 0) {
-      errors.push(
-        `background.html 里的元素不允许配 id（发现 ${bgIds.map(id => '#' + id).join(', ')}）。` +
-        `背景元素由 CSS class 控制，HEAD 不会管它；带 id 会被强制禁动画。` +
-        `请删除 id 属性。`
-      );
-    }
-  }
-
-  const elements = extractElementsWithDataSubtitle(html);
-
-  const elementIds = {};
-
-  for (const el of elements) {
-    let entry = { id: el.id };
-
-    if (el.dataGlobal) {
-      // 全局元素：无时间控制
-    } else if (el.dataSubtitle) {
-      const indices = parseSubtitleIndexExpr(el.dataSubtitle);
-      const range = resolveSubtitleRange(indices, srtList);
-      if (range) {
-        entry.start = range.start;
-        entry.end = range.end;
-      }
-    }
-
-    // 解析 data-cv-anim（已废弃 - 2026-07 动画禁用）
-    // HEAD 不再支持该接口，写了也不生效；保留解析仅为向后兼容
-    if (el.dataCvAnim) {
-      entry.animName = el.dataCvAnim;
-      entry.animDuration = el.dataCvAnimDuration || null;
-      entry.animDelay = el.dataCvAnimDelay || null;
-      errors.push(`#${el.id} 用了已废弃的 data-cv-anim="${el.dataCvAnim}"（2026-07 起前端已禁用，建议删除该属性）`);
-    }
-
-    elementIds[`#${el.id}`] = entry;
-  }
-
-  buildUnsupportedReport(comp.id, errors);
-
-  return {
-    elementIds,
-    animations: {},   // 前端不再用此字段，动画由 data-cv-anim 接管
-    cleanedHtml: html,
-    cleanedCss: css
-  };
+  return results;
 }
 
 // ============================================================
@@ -861,21 +190,192 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * 从 comp.id 提取 regionId
+ * 例："P1-099" → "P1"
+ */
+function extractRegionId(comp) {
+  if (comp.regionId) return comp.regionId;
+  const m = comp.id && comp.id.match(/^(P\d+)/);
+  if (m) return m[1];
+  throw new Error(`[${comp.id}] 无法提取 regionId，请检查 comp.id 格式（P{区域}-{三位数字}）`);
+}
+
+/**
+ * 把分配好的 id 写回 HTML 标签
+ * 在 class 属性前插入 id="..."
+ * @param {string} html
+ * @param {Array} elements
+ * @param {Map<Object, string>} idMap - element → 分配的 id
+ * @returns {string}
+ */
+function injectIdsToHtml(html, elements, idMap) {
+  // 倒序处理，避免 index 偏移
+  const sorted = [...elements].sort((a, b) => b.rawTagStart - a.rawTagStart);
+  let result = html;
+  for (const el of sorted) {
+    const newId = idMap.get(el);
+    if (!newId) continue;
+    const originalTag = html.substring(el.rawTagStart, el.rawTagEnd);
+    // 在 class 之前插入 id
+    const newTag = originalTag.replace(
+      new RegExp(`(\\sclass\\s*=\\s*)(["'])${escapeRegExp(el.classAttrValue)}\\2`),
+      ` id="${newId}"$1$2${el.classAttrValue}$2`
+    );
+    result = result.substring(0, el.rawTagStart) + newTag + result.substring(el.rawTagEnd);
+  }
+  return result;
+}
+
+// ============================================================
+// 主转换函数
+// ============================================================
+
+/**
+ * 转换 HtmlComponent
+ * @param {Object} comp - { id, regionId, content: { html, css, ... } }
+ * @param {Array} srtList - parseSrt 返回的字幕数组
+ * @returns {{
+ *   elementIds: Object,    // { "#P1-100": { id, start?, end? } }
+ *   animations: Object,    // 始终空对象（保留字段）
+ *   cleanedHtml: string,   // 注入了 id 的 HTML
+ *   cleanedCss: string     // 原样透传
+ * }}
+ */
+function transformHtmlComponent(comp, srtList) {
+  if (!comp.content || !comp.content.html) {
+    return { elementIds: {}, animations: {}, cleanedHtml: '', cleanedCss: '' };
+  }
+
+  const html = comp.content.html;
+  const css = comp.content.css || '';
+  const errors = [];
+
+  // 1. 校验 HTML 结构
+  validateHtml(html, comp.id);
+
+  // 2. 校验 background.html 里的元素不能带 id
+  if (comp.background && comp.background.html) {
+    const bgIdRe = /\bid\s*=\s*(["'])([^"']+)\1/g;
+    let m;
+    const bgIds = [];
+    while ((m = bgIdRe.exec(comp.background.html)) !== null) bgIds.push(m[1]);
+    if (bgIds.length > 0) {
+      errors.push(
+        `background.html 里的元素不允许配 id（发现 ${bgIds.map(id => '#' + id).join(', ')}）。` +
+        `背景元素由 CSS class 控制；带 id 会被强制禁动画。` +
+        `请删除 id 属性。`
+      );
+    }
+  }
+
+  // 3. 扫描所有带 class 的元素
+  const elements = analyzeClassElements(html);
+
+  // 4. 校验：AI 写了 id → 报错
+  for (const el of elements) {
+    if (!el.hasManualId) continue;
+    const classDesc = el.classNames.join(' ');
+    errors.push(
+      `<${el.tagName} class="${classDesc}"> 不允许手写 id 属性。` +
+      `id 由 merge 阶段自动分配（P{区}-100 起按出现顺序），请删除 id="..."。`
+    );
+  }
+
+  // 5. 校验：class 元素必须声明 data-subtitle/data-global（嵌套子元素豁免）
+  for (const el of elements) {
+    if (el.hasDataSubtitle || el.hasDataGlobal) continue;
+    if (el.parentClassElement) continue;  // 嵌套在已声明时间控制的 class 父元素内，豁免
+    const classDesc = el.classNames.join(' ');
+    errors.push(
+      `<${el.tagName} class="${classDesc}"> 必须显式声明 data-subtitle="..." 或 data-global="true"。` +
+      `否则该元素无时间控制语义，前端无法渲染。` +
+      `data-subtitle 格式："1"（单条）/ "1-8"（范围）/ "1,3,5"（列表）；data-global 始终显示。`
+    );
+  }
+
+  // 6. 校验 data-subtitle 表达式格式
+  for (const el of elements) {
+    if (!el.hasDataSubtitle) continue;
+    try {
+      parseSubtitleIndexExpr(el.dataSubtitleValue);
+    } catch (e) {
+      const classDesc = el.classNames.join(' ');
+      errors.push(
+        `<${el.tagName} class="${classDesc}"> data-subtitle="${el.dataSubtitleValue}" 格式错误：${e.message}`
+      );
+    }
+  }
+
+  // 7. 校验 data-global 取值
+  for (const el of elements) {
+    const m = el.attrsString.match(/\s+data-global\s*=\s*(["'])([^"']+)\1/);
+    if (!m) continue;
+    const v = m[2];
+    if (v !== 'true' && v !== 'false' && v !== '1' && v !== '0') {
+      const classDesc = el.classNames.join(' ');
+      errors.push(
+        `<${el.tagName} class="${classDesc}"> data-global="${v}" 取值只能是 "true" / "false" / "1" / "0"`
+      );
+    }
+  }
+
+  // 先抛错（一次性列出所有错误）
+  if (errors.length > 0) {
+    throw new Error(`[${comp.id}] 转换失败，共 ${errors.length} 个问题：\n  - ${errors.join('\n  - ')}`);
+  }
+
+  // 8. 自动分配 id
+  // 起始编号：100（避开顶级组件 001-099）
+  let counter = 99;
+  const idMap = new Map(); // element → 分配的 id
+  for (const el of elements) {
+    // 嵌套豁免：父元素是 data-subtitle 控制的，子元素继承时间，不分配 id
+    if (el.parentClassElement && el.parentClassElement.hasDataSubtitle && !el.hasDataSubtitle) {
+      continue;
+    }
+    counter++;
+    const newId = `${extractRegionId(comp)}-${String(counter).padStart(3, '0')}`;
+    idMap.set(el, newId);
+  }
+
+  // 9. 把 id 写回 HTML 标签
+  const cleanedHtml = injectIdsToHtml(html, elements, idMap);
+
+  // 10. 构建 elementIds
+  const elementIds = {};
+  for (const el of elements) {
+    const newId = idMap.get(el);
+    if (!newId) continue;  // 嵌套豁免的元素不进 elementIds
+    const entry = { id: newId };
+    if (el.hasDataSubtitle) {
+      const indices = parseSubtitleIndexExpr(el.dataSubtitleValue);
+      const range = resolveSubtitleRange(indices, srtList);
+      if (range) {
+        entry.start = range.start;
+        entry.end = range.end;
+      }
+    }
+    // data-global 不写 start/end（前端视为始终可见）
+    elementIds[`#${newId}`] = entry;
+  }
+
+  return {
+    elementIds,
+    animations: {},
+    cleanedHtml,
+    cleanedCss: css
+  };
+}
+
 // ============================================================
 // 导出
 // ============================================================
 
 module.exports = {
-  // 主函数
   transformHtmlComponent,
-  // 子函数（供测试）
   parseSubtitleIndexExpr,
   resolveSubtitleRange,
-  extractElementsWithDataSubtitle,
-  parseKeyframes,
-  parseAnimationShorthand,
-  parseClassAnimations,
-  // 支持列表（供校验和文档）
-  SUPPORTED_KEYFRAME_PROPS,
-  SUPPORTED_TIMING_FUNCTIONS
+  analyzeClassElements,
+  extractRegionId
 };

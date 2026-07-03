@@ -7,9 +7,9 @@
 
 ## 目标
 
-基于 skeleton.json 中的区域配置，为每个区域编写 HtmlComponent JSON（含 HTML 模板和 CSS 动画）。
+基于 skeleton.json 中的区域配置，为每个区域编写 HtmlComponent JSON。AI **只写标准 H5+CSS**（class + data-subtitle），所有 id、时间、校验由 merge 脚本自动处理。
 
-> **核心原则**：AI 不再手填时间数字，所有元素出现/消失/动画由 **CSS keyframes** 决定，时间由 `data-subtitle` 或 `data-global` 自动从 SRT 推算。
+> **核心原则**：AI 不再写 `id`、`start`、`end`、`elementIds` 等任何前端协议字段。AI 只描述"元素长什么样、什么时候出现"，其他由程序完成。
 
 ---
 
@@ -19,7 +19,6 @@
 |------|------|
 | 骨架配置 | `skeleton.json`（由 [步骤4](04-skeleton-build.md) 产出，含 regions 数组） |
 | 区域模板 | `regions/P{n}.json`（由步骤4同时生成，含 region 基本信息和 component 基本框架，背景/内容 HTML/CSS 为空） |
-| 引用规则 | [rules/06-components.md §R11](rules/06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)（CSS animation + data-subtitle 模式） |
 
 ---
 
@@ -33,71 +32,140 @@
 
 ## 元素出现时机
 
-### 四种写法
+### 三种写法
 
 ```html
-<!-- 1. 区域全局（装饰/背景元素）：跟随 region 全生命周期，前端用 region 边界兜底 -->
-<div id='P1-016' class='corner-deco' data-global='true'></div>
+<!-- 1. 全局装饰：跟随 region 全生命周期 -->
+<div class='corner-deco' data-global='true'></div>
 
 <!-- 2. 单条字幕：出现=字幕3.start，消失=字幕3.end -->
-<div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
+<div class='title' data-subtitle='3'>标题</div>
 
 <!-- 3. 范围字幕：出现=字幕3.start，消失=字幕5.end -->
-<div id='P1-001-title' class='title' data-subtitle='3-5'>标题</div>
+<div class='title' data-subtitle='3-5'>标题</div>
 
 <!-- 4. 多选字幕（断续）：字幕3段显示，字幕4段隐藏，字幕5段再显示 -->
-<div id='P1-001-badge' class='badge' data-subtitle='3,5'>徽章</div>
+<div class='badge' data-subtitle='3,5'>徽章</div>
 ```
 
 ### 解析规则
 
-| 写法 | 含义 | elementIds 结果 |
-|------|------|----------------|
-| `data-global='true'` | 跟随 region 全生命周期 | 无 start/end（前端用 region 边界兜底） |
-| `data-subtitle='3'` | 出现=字幕3.start，消失=字幕3.end | 写 start/end；若字幕=region 首字幕，省略 start；若字幕=region 末字幕，省略 end |
-| `data-subtitle='3-5'` | 出现=字幕3.start，消失=字幕5.end | 同上规则 |
-| `data-subtitle='3,5'` | 元素在 字幕3 和 字幕5 段时间窗分别显示（断续） | 写 start/end |
-
-### 省略规则
-
-当元素的字幕首/末与 region 字幕首/末重合时，merge 脚本会自动省略 start/end：
-
-- 元素首字幕 == region 首字幕 → **省略** start
-- 元素末字幕 == region 末字幕 → **省略** end
-- 两者都成立 → 只写 id，无 start/end（等同于 data-global 效果）
+| 写法 | 含义 |
+|------|------|
+| `data-global='true'` | 跟随 region 全生命周期，前端用 region 边界兜底 |
+| `data-subtitle='3'` | 出现=字幕3.start，消失=字幕3.end |
+| `data-subtitle='3-5'` | 出现=字幕3.start，消失=字幕5.end |
+| `data-subtitle='3,5'` | 元素在字幕3和字幕5段时间窗分别显示（断续） |
 
 ---
 
-## 两步校验（merge 脚本自动执行，仅针对 content）
+## ⚠️ id 自动分配机制（新约定）
 
-merge 脚本会校验 **content.html**：
+**AI 不写 id 属性**。所有带 class 的元素，merge 脚本会自动分配 id：
 
-**第一步：有 class 必有 id**
-- content.html 中有 `class` 属性的元素必须也有 `id`（SVG 图形原子豁免）
+- **起始编号**：`P{区域}-100`（避开顶级组件 `P{区域}-001` ~ `P{区域}-099`）
+- **分配顺序**：按 HTML 中出现顺序依次递增
+- **同 class 多个元素**：每个实例分配不同 id（`P1-100, P1-101, P1-102...`）
+- **嵌套子元素豁免**：父元素已声明 `data-subtitle` / `data-global` 时，子元素不分配 id（继承父元素时间控制）
 
-**第二步：有 id 必有归属属性**
-- content.html 中有 `id` 的元素必须写 `data-subtitle` 或 `data-global="true"`（二选一，互斥）
-
-> **background.html 元素不需要任何属性**：merge 不处理 background，background.html 是普通 HTML，背景效果直接写 CSS 即可。
+### 错例（AI 写 id → merge 报错）
 
 ```html
-<!-- content.html 示例 -->
+<!-- ❌ AI 写了 id，会被 merge 拒绝 -->
+<div id='P1-100' class='title' data-subtitle='3'>标题</div>
+```
 
-<!-- 错：class 无 id -->
-<div class='clock-num'>12</div>
+### 正例
 
-<!-- 错：id 无归属属性 -->
-<div id='P1-002'>元素</div>
+```html
+<!-- ✅ AI 不写 id，由 merge 自动分配 -->
+<div class='title' data-subtitle='3'>标题</div>
+```
 
-<!-- 对：绑定字幕 -->
-<div id='P1-001-title' class='title' data-subtitle='3'>标题</div>
+---
 
-<!-- 对：全局装饰 -->
-<div id='P1-016' class='corner-deco' data-global='true'></div>
+## ⚠️ 校验规则（merge 严格化）
 
-<!-- background.html 示例（普通 HTML，不需要 id 或 data-global） -->
+merge 脚本校验 **content.html**，违反会直接报错：
+
+### 1. AI 不许写 id
+
+```html
+<!-- ❌ -->
+<div id='P1-100' class='title' data-subtitle='3'>标题</div>
+```
+
+### 2. class 元素必须声明 data-subtitle 或 data-global
+
+**顶级 class 元素**（无 class 父元素）必须显式声明时间控制：
+
+```html
+<!-- ❌ 顶级 class 元素无时间控制 -->
+<div class='label'>文字</div>
+
+<!-- ✅ -->
+<div class='label' data-subtitle='1-5'>文字</div>
+<div class='label' data-global='true'>文字</div>
+```
+
+**嵌套子元素豁免**：嵌套在已声明 `data-subtitle` / `data-global` 的父 class 元素内时，子元素可省略（继承父元素时间控制）：
+
+```html
+<!-- ✅ 父已声明 data-subtitle，子元素豁免 -->
+<div class='card' data-subtitle='1-5'>
+  <span class='card-icon'>🌙</span>
+  <span class='card-text'>文字</span>
+</div>
+```
+
+### 3. background.html 元素不许带 id
+
+```html
+<!-- ❌ 背景元素带 id -->
+<div id='P1-bg' class='region-bg'></div>
+
+<!-- ✅ 背景元素只靠 class，merge 不注入 id -->
 <div class='region-bg'></div>
 ```
+
+### 4. data-subtitle / data-global 互斥
+
+```html
+<!-- ❌ 同时存在 -->
+<div class='card' data-subtitle='5' data-global='true'>...</div>
+```
+
+### 5. CSS keyframe 属性白名单
+
+`@keyframes` 内**只允许**以下属性（CSS 规范不支持其他属性的插值动画）：
+
+```
+opacity, transform, box-shadow, text-shadow,
+color, background-color, border-color, filter,
+stroke-dashoffset, stroke-dasharray, clip-path
+```
+
+**禁止**：`width`, `height`, `font-size`, `top`, `left`, `right`, `bottom`, `margin`, `padding`
+
+**替代方案**：
+- `width` 动画 → `transform: scaleX()`
+- `height` 动画 → `transform: scaleY()`
+- `font-size` 动画 → `transform: scale()`
+- 位置变化 → `transform: translate()`
+
+### 6. 居中必须配 `translate(-50%, -50%)`
+
+`position: absolute` + 含 50% 定位时，**必须**配 `transform: translate(-50%, -50%)` 居中修正：
+
+```css
+/* ❌ 缺居中修正 */
+.centered { position: absolute; top: 50%; left: 50%; }
+
+/* ✅ */
+.centered { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+```
+
+> merge 不再自动修这些错误，**写错直接报错**。
 
 ---
 
@@ -111,14 +179,8 @@ merge 脚本会校验 **content.html**：
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slide-in {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
 @keyframes scale-pop {
   from { opacity: 0; transform: scale(0.8); }
-  50% { transform: scale(1.05); }
   to { opacity: 1; transform: scale(1); }
 }
 ```
@@ -135,25 +197,11 @@ merge 脚本会校验 **content.html**：
 }
 ```
 
-**关键点**：
+**注意**：
 
-1. **必须用 `forwards`** — 动画跑完元素停在最终态，否则会回到初始态（opacity: 0）不可见
-2. **delay 不需要写** — merge 脚本会自动根据 `data-subtitle` 注入 `animation-delay`
-3. **duration 写元素本身** — 0.3s~0.8s 是常见值
-
-### 进阶：自定义 transition
-
-```css
-/* 多段动画 */
-.badge {
-  animation: fade-in 0.5s ease-out forwards, bounce 0.3s ease-out 0.5s;
-}
-
-/* 弹性缓动 */
-.elastic {
-  animation: scale-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-}
-```
+- **属性白名单**：`@keyframes` 里只能用上面列的 11 个属性
+- **timing function 白名单**：`linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier(...)`
+- 前端**强制禁用**带 id 元素的 CSS 动画（统一用 opacity 控制可见性），所以 `forwards` 等关键字不会生效，但写上保持 CSS 独立可预览
 
 ---
 
@@ -161,111 +209,133 @@ merge 脚本会校验 **content.html**：
 
 ```json
 {
-  "id": "P1-001",
+  "id": "P1-099",
   "type": "HtmlComponent",
   "regionId": "P1",
+  "background": {
+    "html": "<div class='region-bg'></div>",
+    "css": ".region-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e, #16213e); }"
+  },
   "content": {
-    "html": "<div id='P1-016' class='corner-deco' data-global='true'></div><div id='P1-001-frame' class='frame' data-subtitle='3-5'><div class='frame-title'>核心观点</div></div><div id='P1-001-title' class='title' data-subtitle='3'>Skill 是什么</div><div id='P1-001-desc' class='desc' data-subtitle='4'>它的核心定义与作用</div><div id='P1-001-badge' class='badge' data-subtitle='5'>重要</div>",
-    "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } @keyframes slide-in { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } } @keyframes scale-pop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } } .corner-deco { animation: fade-in 0.5s ease-out forwards; } .frame { animation: fade-in 0.5s ease-out forwards; } .title { animation: fade-in 0.5s ease-out forwards; } .desc { animation: slide-in 0.4s ease-out forwards; } .badge { animation: scale-pop 0.4s ease-out forwards; }"
+    "html": "<div class='corner-deco' data-global='true'></div><div class='frame' data-subtitle='3-5'><div class='frame-title'>核心观点</div></div><div class='title' data-subtitle='3'>Skill 是什么</div><div class='desc' data-subtitle='4'>它的核心定义与作用</div><div class='badge' data-subtitle='5'>重要</div>",
+    "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .frame { animation: fade-in 0.5s ease-out forwards; } .title { animation: fade-in 0.5s ease-out forwards; } .desc { animation: fade-in 0.4s ease-out forwards; } .badge { animation: fade-in 0.4s ease-out forwards; }"
   }
 }
 ```
+
+> 上面例子中，merge 会自动为以下 5 个 class 元素分配 id（按出现顺序）：
+> - `corner-deco` → `P1-100`（data-global，无 start/end）
+> - `frame` → `P1-101`（data-subtitle 3-5，start=字幕3.start, end=字幕5.end）
+> - `frame-title` → 不分配（嵌套在 frame 内，豁免）
+> - `title` → `P1-102`（data-subtitle 3）
+> - `desc` → `P1-103`（data-subtitle 4）
+> - `badge` → `P1-104`（data-subtitle 5）
 
 ---
 
 ## AI 不需要做的事
 
-- ❌ 写 `start` / `end` 数字（步骤4已生成，合并时不重新计算）
-- ❌ 写 `elementIds` 字段（merge 脚本会从 HTML 的 `data-subtitle` 自动生成）
+- ❌ 写 `id` 属性（merge 自动分配）
+- ❌ 写 `start` / `end` 数字
+- ❌ 写 `elementIds` 字段
 - ❌ 写 `background` 的 id 或 data-global
-- ❌ 算 `animation-delay` 时间
+- ❌ 写 `animation-delay` 时间
+- ❌ 写 `animations` manifest
 
 ## AI 需要做的事
 
 - ✅ 直接在模板 `regions/P{n}.json` 上填写，不新建文件
-- ✅ 给 background 写 HTML/CSS（普通 HTML，不需要 id 或 data-global）
-- ✅ 给 content 写 HTML/CSS，所有有 `id` 的元素必须写 `data-subtitle`
-- ✅ 写 CSS keyframes（标准 CSS 动画）
-- ✅ 给元素 class，用 class 应用 animation
-- ✅ 两步校验（仅 content.html）：有 class 必有 id，有 id 必有归属
+- ✅ 给 background 写 HTML/CSS（普通 HTML，不要带 id）
+- ✅ 给 content 写 HTML，元素加 class + `data-subtitle` / `data-global`（不要写 id）
+- ✅ 写标准 CSS（`@keyframes` + `animation`），遵守属性白名单
+- ✅ 居中元素必须配 `transform: translate(-50%, -50%)`
 
 ---
 
 ## 常见错误
 
-### 1. 忘记 `forwards`
-
-```css
-/* 错：动画跑完元素回到 opacity: 0 */
-.title { animation: fade-in 0.5s ease-out; }
-
-/* 对 */
-.title { animation: fade-in 0.5s ease-out forwards; }
-```
-
-### 2. 元素 id 重复
+### 1. AI 写了 id
 
 ```html
-<!-- 错 -->
-<div id='P1-002'>标题</div>
-<div id='P1-002'>描述</div>
+<!-- ❌ -->
+<div id='P1-100' class='title' data-subtitle='3'>标题</div>
 
-<!-- 对：必须用 P{区域编号}-{三位数字} 格式 -->
-<div id='P1-002'>标题</div>
-<div id='P1-003'>描述</div>
+<!-- ✅ 删掉 id，由 merge 自动分配 -->
+<div class='title' data-subtitle='3'>标题</div>
+```
+
+### 2. 顶级 class 元素无时间控制
+
+```html
+<!-- ❌ 顶级元素，既无 data-subtitle 也无 data-global -->
+<div class='label'>文字</div>
+
+<!-- ✅ -->
+<div class='label' data-subtitle='1-5'>文字</div>
 ```
 
 ### 3. data-subtitle 字幕 ID 越界
 
 ```html
-<!-- 错：SRT 只有 20 条字幕 -->
+<!-- ❌ SRT 只有 20 条字幕 -->
 <div data-subtitle='25'>元素</div>
 
-<!-- 对 -->
+<!-- ✅ -->
 <div data-subtitle='15'>元素</div>
 ```
 
-### 4. CSS 用 id 选择器（影响 @scope）
+### 4. keyframe 用了不支持的属性
 
 ```css
-/* 错：受 @scope 影响，可能失效 */
-#P1-001-title { animation: ...; }
+/* ❌ width 不可插值 */
+@keyframes bad {
+  from { width: 0; }
+  to { width: 100%; }
+}
 
-/* 对：用 class 选择器 */
-.title { animation: ...; }
+/* ✅ 改用 transform: scaleX */
+@keyframes good {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 ```
 
-### 5. 有 id 但无归属属性
+### 5. 居中缺 `translate(-50%, -50%)`
 
-```html
-<!-- 错：id 既没有 data-subtitle 也没有 data-global -->
-<div id='P1-005'>元素</div>
+```css
+/* ❌ 元素左上角在 50% 处，不是中心 */
+.centered { position: absolute; top: 50%; left: 50%; }
 
-<!-- 对 -->
-<div id='P1-005' class='card' data-subtitle='5'>元素</div>
+/* ✅ */
+.centered { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 ```
 
-### 6. 同时写了 data-subtitle 和 data-global
+### 6. background 元素带 id
 
 ```html
-<!-- 错：互斥，不能同时存在 -->
-<div id='P1-005' class='card' data-subtitle='5' data-global='true'>元素</div>
+<!-- ❌ -->
+<div id='P1-bg' class='region-bg'></div>
 
-<!-- 对 -->
-<div id='P1-005' class='card' data-subtitle='5'>元素</div>
+<!-- ✅ 背景元素只靠 class -->
+<div class='region-bg'></div>
 ```
 
 ---
 
-## 校验规则
+## 校验规则总览
 
-selfcheck 会校验：
+selfcheck + merge 会校验：
 
-1. 每个有 `id` 的元素必须格式 `P{数字}-{三位数字}`
-2. `data-subtitle` 引用的字幕 ID 必须存在
-3. `data-subtitle` 多选/范围必须合法
-4. CSS 中引用的 keyframes 必须有 `@keyframes` 定义
-5. `animation` 简写建议带 `forwards`
+1. AI 不许手写 id
+2. 顶级 class 元素必须声明 data-subtitle 或 data-global
+3. background.html 元素不许带 id
+4. data-subtitle / data-global 互斥
+5. data-subtitle 引用的字幕 ID 必须存在
+6. data-subtitle 表达式格式合法（"1" / "1-5" / "1,3,5"）
+7. @keyframes 属性白名单（11 个支持属性）
+8. 居中元素必须配 `transform: translate(-50%, -50%)`
+9. 元素 id 全局唯一（merge 自动分配后保证）
+10. elementId ⊂ 组件 ⊂ region 层级合法
 
 ---
 
