@@ -255,7 +255,7 @@ async function prepareFromGenerate(workdir, args) {
       shortSubtitle: true,
     });
   } catch (e) {
-    throw new Error(`TTS 合成失败: ${e.message}`);
+    throw new Error(`TTS 合成失败: ${e.message} | ${e.stack || ''}`);
   }
 
   const [generatedMp3, generatedSrt] = result;

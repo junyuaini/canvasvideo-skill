@@ -191,6 +191,7 @@ function getMp3DurationMsFromBuffer(buf) {
 // ===== TTS 业务处理 =====
 async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
   const tmpAudio = path.join(tmpDir, `chunk_${crypto.randomBytes(4).toString('hex')}.mp3`);
+  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
   const tts = new EdgeTTS({
     voice,
     lang: 'zh-CN',
@@ -200,6 +201,7 @@ async function synthesizeOneChunk(text, voice, rate, volume, pitch, tmpDir) {
     volume,
     pitch,
     timeout: 60000,
+    proxy: proxy || undefined,
   });
   await tts.ttsPromise(text, tmpAudio);
 
