@@ -18,31 +18,20 @@
         "h": 585
       },
       "content": {
-        "html": "<div class=\"cover\">\n  <div class=\"cover__bg\"></div>\n  <div class=\"cover__content\">\n    <h1 class=\"cover__title\">CanvasVideo</h1>\n    <p class=\"cover__subtitle\">在线视频编辑器</p>\n  </div>\n  <span class=\"cover__watermark\">我是占位图 · 赶紧换我</span>\n</div>",
-        "css": ".cover { position: relative; width: 780px; height: 585px; overflow: hidden; background: #f5f5f5; }\n.cover__bg { position: absolute; inset: 0; background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%); }\n.cover__content { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; z-index: 1; }\n.cover__title { font-size: 56px; font-weight: 800; color: #1a1a1a; margin: 0 0 16px; letter-spacing: -1px; }\n.cover__subtitle { font-size: 24px; font-weight: 400; color: #666; margin: 0; }\n.cover__watermark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #fff; background: rgba(0,0,0,0.45); letter-spacing: 0.1em; }",
-        "elementIds": ["P1-001"]
-      },
-      "animations": [
-        {
-          "selector": ".cover__title",
-          "keyframes": [
-            { "offset": 0, "opacity": 0, "transform": "translateY(20px)" },
-            { "offset": 0.2, "opacity": 1, "transform": "translateY(0)" }
-          ],
-          "duration": 0.8,
-          "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
-        },
-        {
-          "selector": ".cover__subtitle",
-          "keyframes": [
-            { "offset": 0, "opacity": 0, "transform": "translateY(20px)" },
-            { "offset": 0.3, "opacity": 1, "transform": "translateY(0)" }
-          ],
-          "duration": 0.6,
-          "delay": 0.3,
-          "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
+        "html": "<div class=\"cover\">\n  <div class=\"cover__bg\"></div>\n  <div class=\"cover__title\" data-subtitle=\"1\">CanvasVideo</div>\n  <div class=\"cover__subtitle\" data-subtitle=\"1\">在线视频编辑器</div>\n  <span class=\"cover__watermark\">我是占位图 · 赶紧换我</span>\n</div>",
+        "css": ".cover { position: relative; width: 780px; height: 585px; overflow: hidden; background: #f5f5f5; }\n.cover__bg { position: absolute; inset: 0; background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%); }\n@keyframes fadeInUp { from { opacity: 0; margin-top: 20px; } to { opacity: 1; margin-top: 0; } }\n.cover__title { position: absolute; top: 46%; left: 0; right: 0; text-align: center; font-size: 56px; font-weight: 800; color: #1a1a1a; margin: 0; letter-spacing: -1px; animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }\n.cover__subtitle { position: absolute; top: 56%; left: 0; right: 0; text-align: center; font-size: 24px; font-weight: 400; color: #666; margin: 0; animation: fadeInUp 0.6s 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }\n.cover__watermark { position: absolute; left: 50%; top: 50%; margin-left: -90px; margin-top: -12px; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #fff; background: rgba(0,0,0,0.45); letter-spacing: 0.1em; z-index: 2; }",
+        "elementIds": {
+          "cover__title": { "id": "cover__title" },
+          "cover__subtitle": { "id": "cover__subtitle" },
+          "cover__bg": { "id": "cover__bg" },
+          "cover__watermark": { "id": "cover__watermark" }
         }
-      ],
+      },
+      "subtitle": {
+        "start": 0,
+        "end": 5,
+        "text": "CanvasVideo 在线视频编辑器"
+      },
       "background": "transparent"
     }
   ]

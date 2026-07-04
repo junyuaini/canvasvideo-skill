@@ -7,7 +7,7 @@
 
 ## 目标
 
-基于 skeleton.json 中的区域配置，为每个区域编写 HtmlComponent JSON。AI **只写标准 H5+CSS**（class + data-subtitle），所有 id、时间、校验由 merge 脚本自动处理。
+基于 skeleton.json 中的区域配置，为每个区域编写 HtmlComponent JSON。AI **只写标准 H5+CSS**（class + data-subtitle），所有 id、data-global 缺失补全、校验由 merge 脚本自动处理。
 
 > **核心原则**：AI 不再写 `id`、`start`、`end`、`elementIds` 等任何前端协议字段。AI 只描述"元素长什么样、什么时候出现"，其他由程序完成。
 
@@ -95,17 +95,26 @@ merge 脚本校验 **content.html**，违反会直接报错：
 <div id='P1-100' class='title' data-subtitle='3'>标题</div>
 ```
 
-### 2. class 元素必须声明 data-subtitle 或 data-global
+### 2. 元素时间控制的三种写法
 
-**顶级 class 元素**（无 class 父元素）必须显式声明时间控制：
+AI 写元素时间控制有 **3 种方式**（择一即可）：
+
+| 方式 | 写法 | 用途 |
+|------|------|------|
+| 跟随字幕 | `data-subtitle='3-5'` | 字幕 3-5 期间显示 |
+| 留空由 merge 补 | `<div class='deco'></div>` | 整段 region 显示（merge 自动补 `data-global="true"`） |
+| 嵌套继承 | `<div class='card' data-subtitle='1-5'><span class='card-icon'>🌙</span></div>` | 子元素继承父元素时间 |
+
+**注意**：
+- AI **不要**显式写 `data-global="true"`——这是 merge 内部概念（详见 [rules/06-components.md §R15](rules/06-components.md#r15-data--参数规范ai-只写-data-subtitle)）
+- 整段显示的装饰元素（背景/水印/底图/分割线）直接**留空**，merge 会自动补
+- 单个 region 的 `data-subtitle` 元素**不要超过 70%**（详见 [§R15.1](rules/06-components.md#r151-70-上限硬约束data-subtitle-元素占比--70)）
 
 ```html
-<!-- ❌ 顶级 class 元素无时间控制 -->
-<div class='label'>文字</div>
-
-<!-- ✅ -->
-<div class='label' data-subtitle='1-5'>文字</div>
-<div class='label' data-global='true'>文字</div>
+<!-- ✅ AI 只写 data-subtitle，装饰元素留空 -->
+<div class='title' data-subtitle='3-5'>标题</div>
+<div class='subtitle' data-subtitle='3-5'>副标题</div>
+<div class='deco-line'></div>  <!-- 留空，merge 自动补 data-global -->
 ```
 
 **嵌套子元素豁免**：嵌套在已声明 `data-subtitle` / `data-global` 的父 class 元素内时，子元素可省略（继承父元素时间控制）：

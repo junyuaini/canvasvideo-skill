@@ -100,7 +100,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | start | number | ✅ | 出现时间（秒） |
 | end | number | ✅ | 消失时间（秒） |
 
-> 💡 **AI 不写 `content.elementIds`**：merge 会从 HTML 的 `class` 元素自动分配 id（从 `P{区}-100` 起），并生成 `elementIds` 字段。AI 写 class + `data-subtitle` / `data-global` 即可。
+> 💡 **AI 不写 `content.elementIds` 也不写 `data-global`**：merge 会从 HTML 的 `class` 元素自动分配 id（从 `P{区}-100` 起），并自动补全缺失的 `data-global="true"`。AI 只写 class + `data-subtitle` 即可（详见 §R15）。
 
 ### R2.2 完整示例
 
@@ -337,7 +337,7 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 
 ## R12 元素动效（AI 写 CSS，merge 严格校验）
 
-> **2026-07 更新**：AI 写标准 CSS（`@keyframes` + `animation`），merge 严格校验（属性白名单、居中修正等）。前端**只通过 `opacity` 控制显隐时机**（不解析 CSS animation，不写 transform），所以 CSS animation **实际不生效**，但写出来 CSS 独立可预览、merge 校验通过。
+> **2026-07 更新**：AI 写标准 CSS（`@keyframes` + `animation` + `transition` + `transform` 等全部 CSS 能力）。前端**只通过 `display` 控制显隐时机**，CSS @keyframes / transition / animation **由浏览器原生执行**，可任意使用 transform / filter / clip-path / cubic-bezier 等全部 CSS 能力。
 >
 > 旧 R12"禁用动效"版已更新。R11 旧约定已废弃。
 
@@ -357,7 +357,7 @@ https://picsum.photos/seed/{seed}/{width}/{height}
   position: absolute;
   top: 58%;
   left: 50%;
-  transform: translate(-50%, -50%);  /* 必须：HEAD 不写 transform */
+  transform: translate(-50%, -50%);  /* 标准 CSS 居中 */
   font-size: 42px;
   color: white;
 }
@@ -386,7 +386,7 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 
 ### R12.3 CSS 写法
 
-**AI 可以写**（merge 校验通过，前端会忽略但 CSS 独立可预览）：
+**AI 可以写**（merge 校验通过 + 前端浏览器原生执行，CSS animation 100% 生效）：
 
 ```css
 @keyframes fade-in {
@@ -403,10 +403,8 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 
 | 校验项 | 错误时行为 |
 |---|---|
-| `@keyframes` 用了非白名单属性（`width` / `height` / `font-size` 等） | 报错 |
 | 居中元素（`position: absolute` + 50%）缺 `transform: translate(-50%, -50%)` | 报错 |
 | `animation-delay` + `opacity: 0` 共用 | 报错 |
-| timing function 不在白名单 | 报错 |
 
 > ❌ **不要写 `data-cv-anim="fade-in-up"` 等旧动画属性** —— 已废弃（2026-07），HEAD 不解析。
 
@@ -425,7 +423,7 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 | 元素加 `id` | ❌ **禁止**（merge 校验会报错） | ⚠️ **AI 不写**，merge 自动注入 |
 | 元素配 `data-subtitle` | ❌ 无意义（merge 不扫描 background） | ✅ 推荐 |
 | 元素配 `data-global` | ❌ 无意义 | ✅ 可选 |
-| CSS animation / @keyframes | ✅ **正常生效**（无 id 元素前端不禁） | ⚠️ merge 校验通过但前端不解析（硬切） |
+| CSS animation / @keyframes | ✅ **正常生效**（浏览器原生执行） | ✅ **正常生效**（浏览器原生执行） |
 | 受 HEAD 时间线控制 | ❌ 否 | ✅ 是（通过 elementIds 同步） |
 
 ### R12.6 居中（W3C 规范）
@@ -476,18 +474,231 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 | AI 写了 `id` 属性 | 报错 | merge 自动分配 |
 | 顶级 class 元素无 `data-subtitle` 也无 `data-global` | 报错 | 必须显式声明时间控制 |
 | background 元素带 `id` | 报错 | background 元素不许带 id |
-| `@keyframes` 用了非白名单属性 | 报错 | 11 个支持属性（opacity/transform/box-shadow 等） |
 | 居中元素缺 `transform: translate(-50%, -50%)` | 报错 | standard CSS 居中规范 |
 | `animation-delay` + `opacity: 0` 共用 | 报错 | 期间元素会闪 |
 
 ### AI 学习成本（仅 4 条）
 
 1. ✅ `transform: translate(-50%, -50%)` 居中（标准 CSS）
-2. ✅ 元素加 class + `data-subtitle="字幕ID"` / `data-global="true"`
+2. ✅ 元素加 class + `data-subtitle="字幕ID"`（**AI 只写这一个**；`data-global` 由 merge 自动补）
 3. ✅ 嵌套子元素可省略（继承父元素时间）
 4. ❌ 不写 `id` 属性（merge 自动分配）
 5. ❌ background 元素不带 id
 6. ❌ 居中元素必须配 `transform: translate(-50%, -50%)`
+7. ❌ AI 不写 `data-global`（这是 merge 内部概念）
+
+---
+
+## R15 data-* 参数规范（AI 只写 data-subtitle）
+
+> 🟢 **新规则（2026-07）**：AI 写组件 HTML 时**只考虑 `data-subtitle` 一个属性**。`data-global` 完全不暴露给 AI 写作流程——它是 **merge 脚本的内部机制**，自动为缺失元素补齐。
+
+### 核心规则
+
+| 属性 | AI 是否写 | merge 是否补 | 说明 |
+|------|----------|-------------|------|
+| `data-subtitle` | ✅ 必须写（如需按字幕控制） | ❌ | 绑定字幕序号区间 |
+| `data-global` | ❌ **禁止写** | ✅ **自动补** | merge 兜底，AI 不需要关心 |
+| 其他 `data-*` | ❌ | ❌ | 仅上面两个 |
+
+### AI 写作心智模型（简化版）
+
+**只问自己一个问题：**
+> 这个元素要跟随**哪条/哪些字幕**出现？
+
+**三种情况：**
+
+| 情况 | 写法 |
+|------|------|
+| 跟随某条字幕出现 | `<div class='title' data-subtitle='3-5'>标题</div>` |
+| 跟随多条离散字幕 | `<div class='badge' data-subtitle='1,3,5'>徽章</div>` |
+| 整段 region 都在 | （**不写 data-*，merge 自动补 data-global**） |
+
+### data-subtitle 取值格式
+
+| 写法 | 含义 | 示例 |
+|------|------|------|
+| `"3"` | 单字幕：字幕 3 出现到结束 | `data-subtitle='3'` |
+| `"3-5"` | 连续区间：字幕 3 开始到字幕 5 结束 | `data-subtitle='3-5'` |
+| `"3,5"` | 离散段：字幕 3 段 + 字幕 5 段（中间隐藏） | `data-subtitle='3,5'` |
+| `"3,5,7"` | 多段离散：可任意组合 | `data-subtitle='1,3,5,7'` |
+
+### ❌ AI 禁止写法
+
+```html
+<!-- ❌ 禁止：AI 写 data-global（merge 内部概念） -->
+<div class='corner' data-global='true'>角标</div>
+
+<!-- ❌ 禁止：data-subtitle 和 data-global 同时存在 -->
+<div class='bad' data-subtitle='3' data-global='true'>错误</div>
+
+<!-- ❌ 禁止：data-subtitle 引用不存在的字幕序号 -->
+<div class='wrong' data-subtitle='999'>超出字幕范围</div>
+
+<!-- ❌ 禁止：data-subtitle 格式错误（必须引号包裹完整） -->
+<div class='wrong' data-subtitle=3>缺引号</div>
+```
+
+### ✅ AI 推荐写法
+
+```html
+<!-- ✅ 绑定单个字幕区间 -->
+<div class='main-title' data-subtitle='2-3'>A股上半年收官</div>
+
+<!-- ✅ 绑定离散字幕 -->
+<div class='date-badge' data-subtitle='1,2,5'>2024-06-30</div>
+
+<!-- ✅ 整段 region 都在（不写 data-*，merge 自动补） -->
+<div class='watermark'>水印</div>
+
+<!-- ✅ 父元素声明，子元素继承 -->
+<div class='stage' data-subtitle='1-5'>
+  <div class='title'>标题</div>          <!-- 子元素继承，无须再写 -->
+  <div class='subtitle'>副标题</div>     <!-- 子元素继承，无须再写 -->
+</div>
+```
+
+### merge 自动补全规则（脚本内部逻辑）
+
+merge 在解析每个 HtmlComponent 的 `content.html` 时：
+
+1. **扫描所有顶级 class 元素**（`<div class='xxx'>` 等）
+2. **跳过 background 元素**（background 不参与时间控制）
+3. 对每个元素检查：
+   - 若已有 `data-subtitle` → 不处理
+   - 若已有 `data-global` → 不处理
+   - 若**都没有** → **自动注入 `data-global="true"`**，并 console 输出 `[AUTO] P{n}-XXX: 自动补 data-global="true"`
+4. 若元素**同时含** `data-subtitle` 和 `data-global` → **报错阻断**（互斥规则保留）
+
+### 嵌套子元素豁免
+
+- 父元素已声明 `data-subtitle` / `data-global` 时，子元素继承时间控制
+- 子元素**不需要**再写 data-*
+- 子元素如果**单独**写了 `data-subtitle`（父元素没声明）→ 视为"独立的顶级元素"，按顶级规则处理
+
+### 与 elementIds 关系
+
+merge 在自动补完后生成的 elementIds：
+
+```json
+{
+  "P1-100": { "id": "P1-100", "dataGlobal": true },
+  "P1-101": { "id": "P1-101", "dataGlobal": false }
+}
+```
+
+新增 `dataGlobal` 字段供前端识别（前端已有兼容逻辑，无需改动）。
+
+### 自检 checklist
+
+- [ ] 元素加 class
+- [ ] 元素加 `data-subtitle="..."`（**不写 data-global**）
+- [ ] 不写 `id` 属性（merge 自动分配）
+- [ ] 不写 `data-global`（merge 自动补）
+- [ ] 不在 background 元素上写 data-*
+
+### 反例对照
+
+```html
+<!-- ❌ 反例 1：AI 写 data-global -->
+<div class='corner' data-global='true'>角标</div>
+<!-- ✅ 正例：什么都不写 -->
+<div class='corner'>角标</div>
+
+<!-- ❌ 反例 2：同时写两个 -->
+<div class='bad' data-subtitle='3' data-global='true'>错误</div>
+<!-- ✅ 正例：只写一个 -->
+<div class='good' data-subtitle='3'>正确</div>
+
+<!-- ❌ 反例 3：漏写 data-* 但也没说"想全程显示" -->
+<!-- merge 会自动补 data-global，没问题，但 AI 自己要知道这是"兜底" -->
+```
+
+### R15.1 60% 上限硬约束（data-subtitle 元素占比 ≤ 60%）
+
+> 🟡 **强约束**：单个 region（HtmlComponent）的顶级 class 元素中，**显式写 `data-subtitle` 的元素数量 ≤ 60% 总数**。超过 60% 时 merge 报错阻断，提示"将部分元素改为不写 data-*，由 merge 自动补 data-global"。
+
+#### 目的
+
+- 引导 AI 多用"留空 → merge 兜底 data-global"模式
+- 装饰性元素（背景/水印/底图/图标）应直接留空
+- 减少每个元素都写 data-subtitle 的繁琐
+
+#### 计算公式
+
+```
+ratio = 显式 data-subtitle 的顶级 class 元素数 / 总顶级 class 元素数
+```
+
+#### 触发条件
+
+```
+if 总元素数 <= 2:
+  PASS（豁免小区域）
+elif ratio > 0.6:
+  throw Error（阻断）
+else:
+  PASS
+```
+
+#### 豁免情况
+
+| 情况 | 行为 |
+|------|------|
+| 总元素数 = 0 | PASS（无元素） |
+| 总元素数 = 1 | PASS（豁免） |
+| 总元素数 = 2 | PASS（豁免） |
+| 嵌套子元素继承父 | **不计入顶级统计** |
+| 元素已写 data-global | 不算 data-subtitle 元素 |
+
+#### 边界示例
+
+| 总数 | data-subtitle | ratio | 行为 |
+|------|---------------|-------|------|
+| 3 | 1 | 33% | ✅ PASS |
+| 3 | 2 | 67% | ❌ 阻断 |
+| 3 | 3 | 100% | ❌ 阻断 |
+| 4 | 2 | 50% | ✅ PASS |
+| 4 | 3 | 75% | ❌ 阻断 |
+| 5 | 3 | 60% | ✅ PASS（边界） |
+| 5 | 4 | 80% | ❌ 阻断 |
+| 5 | 0 | 0% | ✅ PASS（全部留空） |
+| 2 | 2 | 100% | ✅ 豁免 |
+
+#### 错误信息
+
+```
+HtmlComponent [P1-001] R15.1 60% 上限校验失败：
+  data-subtitle 元素 = 5（占比 100%）
+  总顶级 class 元素 = 5
+  60% 上限 = 3
+  → 请将 ≥ 2 个元素改为不写 data-*，由 merge 自动补 data-global="true"。
+  → 参考：rules/06-components.md §R15.1
+```
+
+#### AI 写作建议
+
+- **核心信息元素**（标题/数字/重点）：写 `data-subtitle`
+- **装饰元素**（背景/水印/底图/分割线/装饰图标）：不写 data-*，让 merge 兜底
+- **嵌套子元素**：写在父元素里继承
+
+#### 反例对照
+
+```html
+<!-- ❌ 反例 1：5 元素全写 data-subtitle（100% 阻断） -->
+<div class='tag' data-subtitle='1'>标签</div>
+<div class='title' data-subtitle='1-2'>标题</div>
+<div class='subtitle' data-subtitle='1-2'>副标题</div>
+<div class='badge' data-subtitle='3'>徽章</div>
+<div class='line'></div>
+
+<!-- ✅ 正例：3 个写 data-subtitle，2 个留空（60% 通过） -->
+<div class='tag' data-subtitle='1'>标签</div>
+<div class='title' data-subtitle='1-2'>标题</div>
+<div class='subtitle' data-subtitle='1-2'>副标题</div>
+<div class='badge'></div>          <!-- 留空，merge 自动补 data-global -->
+<div class='line'></div>          <!-- 留空，merge 自动补 data-global -->
+```
 
 ---
 
@@ -496,3 +707,106 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 > ⚠️ **R11 CSS keyframes 写法已废弃**——请改用 R12 新版（AI 写标准 CSS + merge 严格校验）。
 
 旧 R12"data-cv-anim 模板"已废弃：HEAD 不再支持 `data-cv-anim` 接口，写了也不生效。改用标准 `@keyframes` + `animation` 写法。
+
+---
+
+## R14 居中与动画互斥规则（强约束）
+
+> 🔴 **血泪教训**：很多教程教 `transform: translate(-50%, -50%)` 居中 + `@keyframes` 动画，**实际不兼容**。CSS Animations 规范规定：动画运行时 transform 计算值会被重置为 keyframe 起始值，**静态 `translate(-50%, -50%)` 被吞掉**——元素看起来"先居中后跑偏"。
+
+### ❌ 禁止写法
+
+```css
+/* 居中靠 transform + 同时有 animation → 动画期间居中失效 */
+.center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);     /* ← 被 animation 吞掉 */
+  animation: fadeIn 0.5s forwards;       /* ← 凶手 */
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }  /* 哪怕 keyframe 写了 transform 也无效 */
+  to { opacity: 1; }
+}
+```
+
+### ✅ 正确写法：三选一
+
+#### 方案 A：text-align 三件套（推荐，最简单）
+
+```css
+.center {
+  position: absolute;
+  left: 0; right: 0;          /* 撑满父容器 */
+  text-align: center;         /* 文字水平居中 */
+  /* 完全不碰 transform，animation 怎么动都不影响 */
+  animation: fadeIn 0.5s forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; margin-top: 20px; }  /* 用 margin-top 实现"上移渐入" */
+  to { opacity: 1; margin-top: 0; }
+}
+```
+
+#### 方案 B：flex 居中
+
+```css
+.center {
+  position: absolute;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;    /* 水平居中 */
+  align-items: center;        /* 垂直居中（如需要） */
+}
+```
+
+#### 方案 C：margin 居中（已知元素宽度）
+
+```css
+.center {
+  position: absolute;
+  left: 50%;
+  margin-left: -150px;        /* 元素宽度的负一半 */
+  width: 300px;
+}
+```
+
+### 自检 checklist
+
+- [ ] 用了 `transform: translate(-50%, -50%)`？→ 改方案 A/B/C
+- [ ] 用了 `position: absolute; left: 50%` + `transform` 居中？→ 改方案 A/B/C
+- [ ] keyframe 里写了 `transform: translateX/Y/scale/rotate`？→ 改用 `margin-top/left/width/opacity` 替代
+
+### 进阶：水平居中但垂直位置自定义
+
+```css
+/* 居中水平，垂直位置用 top 控制 */
+.center {
+  position: absolute;
+  top: 42%; left: 0; right: 0;
+  text-align: center;
+}
+```
+
+### 进阶：标签/徽章（圆角胶囊）
+
+```html
+<div class="tag-wrap">
+  <span class="tag-inner">老板提问</span>
+</div>
+```
+```css
+.tag-wrap {
+  position: absolute; top: 26%; left: 0; right: 0;
+  text-align: center;
+  padding: 6px 0;
+  animation: fadeInUp 0.5s forwards;
+}
+.tag-inner {                          /* 嵌套 span 只负责"圆角胶囊"样式，不参与居中 */
+  display: inline-block;
+  padding: 6px 16px;
+  background: rgba(255,107,53,0.12);
+  color: #ff6b35;
+  border-radius: 999px;
+}
+```

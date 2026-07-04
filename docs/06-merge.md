@@ -111,14 +111,23 @@ node scripts/validate.js --cwd=<Agent工作目录的绝对路径> {skillProjectI
 |------|------|------|
 | `region.startTime / endTime` | 从 SRT 字幕范围取 | merge 自动写入 |
 | `component.start / end` | subtitles（查 SRT）/ 旧 start/end / 缺省=region 起止 | merge 自动写入 |
-| `elementIds[].start / end` | data-subtitle 查 SRT 推算；data-global 不写（前端用 region 边界兜底） | merge 自动写入 |
+| `elementIds[].start` | data-subtitle 查 SRT 推算；data-global 不写 | merge 自动写入 |
+| `elementIds[].end` | **不再注入**，由前端推算（见下方说明） | — |
 | HTML 元素 `id` 属性 | **AI 不写**，merge 自动给 class 元素分配（`P{区}-100` 起按 HTML 出现顺序） | merge 唯一允许的 HTML 改动 |
 
 **elementIds 字段**：
 - AI 在区域 JSON 里**不需要写** `content.elementIds`
 - merge 脚本会从 HTML 的 `class` 元素**自动分配 id** 并生成 elementIds
 - 元素出现/消失时间由 HTML `data-subtitle` 或 `data-global` 属性 + CSS `animation` 控制
-- AI 不写 `id` 属性（merge 报错），不写 `start`/`end`（merge 从 SRT 推算）
+- AI 不写 `id` 属性（merge 报错），不写 `start`（merge 从 SRT 推算），不写 `end`（前端推算）
+
+**`end` 字段由前端推算，不在 merge 阶段注入**：
+- 原因：避免前端与 merge 出现"end 不一致"（merge 推算的 end 与前端期望的 end 经常不同步），同时让 elementIds 数据更精简
+- 前端推算规则（推荐实现）：
+  1. **有 `start` 的元素**：end = min(下一个同 component 元素的 `start`, 所属 component.end, region.end)
+  2. **data-global 元素**（无 start）：end = 所属 component.end（即整个 region 都可见）
+  3. **最后的元素**：end = 所属 component.end
+- 前端实现该推算逻辑后，merge 注入的 `end` 会被忽略，但保留以做兜底（如前端未实现推算，则用 merge 注入的 end）
 
 **缺省规则**：所有时间字段都可省略不填
 - 组件 start/end 未填 → 展示整个 region

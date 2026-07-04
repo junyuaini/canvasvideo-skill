@@ -96,10 +96,10 @@
 - `start` 和 `end` 必填（**有限**数字、非负），且 `start <= end`（**不允许 Infinity**）
 - 元素时间范围必须落在所属 HtmlComponent 时间范围内（见第 4 节）
 
-#### 5.2 新约定（R11，CSS animation 模式，推荐）
+#### 5.2 新约定（R12，原生 CSS 模式，推荐）
 
-- elementIds 字段**可选** — 缺失时由 merge 脚本从 HTML `id` 自动生成
-- HTML 子元素必须写 `id` 属性（标准 HTML 规范）
+- elementIds 字段**自动生成** — merge 脚本从 HTML `class` 出现顺序自动分配 `id`，AI 不必手写
+- HTML 子元素必须写 `class` 属性（**不写 id**，merge 自动注入 `P{区}-100` 起按顺序）
 - HTML 子元素归属属性（二选一，互斥）：
   - `data-subtitle="3"` / `"3-5"` / `"3,5"` — 绑定字幕区间
     - `"3"` = 字幕3 出现到结束
@@ -109,21 +109,122 @@
 - **省略规则**（merge 脚本自动生效）：
   - 元素首字幕 == region 首字幕 → 自动省略 start
   - 元素末字幕 == region 末字幕 → 自动省略 end
-- **两步校验**（merge 脚本 6.3 节自动执行）：
-  - 有 `class` 必有 `id`（SVG 内部图形原子豁免）
-  - 有 `id` 必有 `data-subtitle` 或 `data-global`（二选一，互斥）
-- CSS 中引用 keyframes 必须有 `@keyframes` 定义
-- `animation` 简写**建议带 `forwards`** — 否则动画跑完元素回到初始态
+- **校验项**（merge 脚本自动执行）：
+  - 顶级 class 元素必须有 `data-subtitle` 或 `data-global`（二选一，互斥）
+  - CSS 中引用 keyframes 必须有 `@keyframes` 定义
+  - `animation` 简写**建议带 `forwards`** — 否则动画跑完元素回到初始态
+- CSS @keyframes / transition / animation 由浏览器**原生执行**（前端只控制 display 显隐时机）
+
+---
+
+#### 5.4 R14 居中与动画互斥检查（**强约束**）
+
+> 🔴 **R14**：禁止 `transform: translate(-50%, -50%)` 与 `animation` 同时使用——CSS Animations 规范会让动画期间 transform 计算值被重置为 identity matrix，居中失效。详见 [06-components.md §R14](06-components.md#r14-居中与动画互斥规则强约束)。
+
+**selfcheck 自动检查项**：
+
+- [E] **致命**：检测 `transform: translate(-50%, -50%)` 与 `animation:` 同时存在于同一选择器 → **报错阻断**
+- [E] **致命**：检测 `@keyframes` 中包含 `transform:` 属性 → **报错阻断**（除非整个元素无居中需求）
+- [W] **警告**：检测 `position: absolute; left: 50%` 但无对应 margin-left 修正 → 警告建议改 flex 或 left:0+right:0
+
+**推荐替代**：
+
+```css
+/* ✅ 推荐：text-align 三件套 */
+.center {
+  position: absolute;
+  left: 0; right: 0;
+  text-align: center;
+  animation: fadeIn 0.5s forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; margin-top: 20px; }
+  to { opacity: 1; margin-top: 0; }
+}
+```
 
 #### 5.3 兼容性矩阵
 
 | elementIds | HTML 有 id | 归属属性 | 前端行为 | 校验 |
 |-----------|-----------|---------|---------|------|
 | 缺失 | ✅ | data-subtitle | 新约定：CSS animation 播放，时间由字幕驱动 | OK |
-| 缺失 | ✅ | data-global | 新约定：CSS animation 播放，时间跟随 region | OK |
-| 缺失 | ❌ | — | 全部元素都显示，无动画 | 警告：建议为元素加 id |
+| 缺失 | ✅ | data-global | 新约定：CSS animation 播放，时间跟随 region | OK（merge 自动补） |
+| 缺失 | ❌ | — | merge 自动补 data-global="true"，整段显示 | OK |
 | 旧（R4） | ✅ | — | 优先 CSS animation | OK（兼容） |
 | 旧（R4） | ❌ | — | 旧约定：JS display 控制 | OK（兼容） |
+
+#### 5.5 R15 data-* 参数自检（AI 写作时必查）
+
+> 🟢 **新规则（2026-07）**：AI 只写 `data-subtitle`，不写 `data-global`（merge 自动补）。详见 [06-components.md §R15](06-components.md#r15-data--参数规范ai-只写-data-subtitle)。
+
+**selfcheck 自动检查项**：
+
+- [E] **致命**：AI 写了 `data-global="true"` → **报错**（AI 不应写 merge 内部概念）
+- [E] **致命**：同一元素同时含 `data-subtitle` 和 `data-global` → **报错**（互斥规则保留）
+- [W] **警告**：顶级 class 元素既无 `data-subtitle` 也无 `data-global` → 警告（merge 会自动补，但 AI 自己要知道这是兜底）
+- [E] **致命**：`data-subtitle` 引用了不存在的字幕 ID → **报错**
+- [W] **警告**：`data-subtitle` 格式不规范（缺引号等） → 警告
+
+**AI 自查 checklist**（写完 HTML 后逐项过）：
+
+- [ ] 每个顶级 class 元素都有 class（必备）
+- [ ] 跟随字幕的元素已写 `data-subtitle="..."`
+- [ ] 整段显示的元素**未写 data-global**（merge 会自动补）
+- [ ] 没有写 `data-global="true"`（这是 merge 内部概念）
+- [ ] 没有元素同时含 `data-subtitle` 和 `data-global`
+- [ ] data-subtitle 引用的字幕序号在 SRT 范围 [1, subtitleCount]
+- [ ] 嵌套子元素**未单独**写 data-*（继承父元素）
+
+**反例对照**：
+
+```html
+<!-- ❌ 反例：AI 写 data-global -->
+<div class='corner' data-global='true'>角标</div>
+
+<!-- ✅ 正例：什么都不写 -->
+<div class='corner'>角标</div>
+
+<!-- ❌ 反例：data-subtitle 和 data-global 同时存在 -->
+<div class='bad' data-subtitle='3' data-global='true'>错误</div>
+
+<!-- ✅ 正例：只写 data-subtitle -->
+<div class='good' data-subtitle='3'>正确</div>
+```
+
+#### 5.6 R15.1 60% 上限自检（AI 写完后必查）
+
+> 🟡 **强约束**：单个 region 顶级 class 元素中，**显式 data-subtitle 元素 ≤ 60% 总数**。详见 [06-components.md §R15.1](06-components.md#r151-60-上限硬约束data-subtitle-元素占比--60)。
+
+**selfcheck 自动检查项**：
+
+- [E] **致命**：data-subtitle 元素数 / 总顶级 class 元素数 > 60% → **报错阻断**
+- [W] **警告**：data-subtitle 元素数 / 总顶级 class 元素数 > 50% → 警告（接近上限，建议调整）
+- [ ] **豁免**：总元素数 ≤ 2 不校验（小区域）
+
+**AI 自查 checklist**：
+
+- [ ] 数一下有几个元素显式写了 data-subtitle
+- [ ] ratio = data-subtitle / 总数 ≤ 60%
+- [ ] ratio > 60% 时，把部分装饰元素（背景/水印/底图/分割线）留空不写 data-*
+- [ ] 装饰元素通常都是留空（merge 自动补 data-global）
+
+**反例对照**：
+
+```html
+<!-- ❌ 反例：5 元素全写 data-subtitle（100% 触发 50% 上限） -->
+<div class='tag' data-subtitle='1'>标签</div>
+<div class='title' data-subtitle='1-2'>标题</div>
+<div class='subtitle' data-subtitle='1-2'>副标题</div>
+<div class='badge' data-subtitle='3'>徽章</div>
+<div class='line'></div>
+
+<!-- ✅ 正例：2 个写 data-subtitle（核心信息），3 个留空（装饰） -->
+<div class='tag' data-subtitle='1'>标签</div>
+<div class='title' data-subtitle='1-2'>标题</div>
+<div class='subtitle'></div>      <!-- 留空 -->
+<div class='badge'></div>          <!-- 留空 -->
+<div class='line'></div>          <!-- 留空 -->
+```
 
 ---
 

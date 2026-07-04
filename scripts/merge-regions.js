@@ -653,6 +653,7 @@ function mergeRegions(workdir, workdirRoot) {
 
     // 6. 处理 components：自动转换 subtitles → start/end
     if (Array.isArray(regionData.components)) {
+      const allComponentErrors = [];  // 累积所有 component 转换错误，循环结束统一抛出（避免一次一报）
       for (const comp of regionData.components) {
         // 6.0 注入 regionId（合并阶段携带的"所属区域"标识，自检与前端均依赖）
         if (!comp.regionId) comp.regionId = skeletonRegion.id;
@@ -708,6 +709,31 @@ function mergeRegions(workdir, workdirRoot) {
         // 6.1.7 校验 elementIds 格式（与 selfcheck.js checkHtmlElementIds 对齐）
         validateHtmlElementIds(comp, project);
 
+        // 6.1.8 R14 校验：transform: translate(-50%, -50%) + animation 互斥
+        // 规则：CSS 中若含 translate(-50%, -50%)（居中常用），则同一文件不得有 @keyframes / animation
+        // 原因：CSS Animations 规范会让动画期间 transform 计算值被重置为 identity matrix，居中失效
+        // 推荐替代：left:0 + right:0 + text-align:center 三件套
+        if (comp.type === 'HtmlComponent' && comp.content && typeof comp.content.css === 'string') {
+          const cssText = comp.content.css;
+          const hasTranslateCenter = /transform\s*:\s*translate\s*\(\s*-50%\s*,\s*-50%\s*\)/.test(cssText);
+          const hasKeyframes = /@keyframes\b/.test(cssText);
+          const hasAnimation = /animation\s*(?:-name)?\s*:/.test(cssText);
+          if (hasTranslateCenter && (hasKeyframes || hasAnimation)) {
+            throw new Error(
+              `HtmlComponent [${comp.id}] R14 校验失败：检测到 "transform: translate(-50%, -50%)" 与 animation/@keyframes 共存。\n` +
+              `原因：CSS Animations 规范规定动画期间 transform 计算值会被重置为 identity matrix，居中失效（元素会偏）。\n` +
+              `修复：用 "left:0; right:0; text-align:center" 三件套替代（详见 rules/06-components.md §R14）。`
+            );
+          }
+          // 额外：keyframes 内出现 transform 也警告（容易与居中冲突）
+          if (hasKeyframes) {
+            const keyframeWithTransform = /@keyframes[^{]+\{[^}]*transform\s*:/.test(cssText);
+            if (keyframeWithTransform) {
+              console.warn(`[W] HtmlComponent [${comp.id}] @keyframes 内含 transform 属性，建议改用 margin/width/opacity 避免与居中冲突（详见 R14）。`);
+            }
+          }
+        }
+
         // 6.1.6 新约定（2026-07）：调用 transformHtmlComponent
         //   - elementIds: { "#X": { id, start?, end? } }（start/end 查 SRT 推算；data-global 无时间）
         //   - cleanedHtml: 注入 id 后的 HTML（AI 写的 id 会被报错；merge 自动分配并写回标签）
@@ -720,13 +746,17 @@ function mergeRegions(workdir, workdirRoot) {
             if (transformed.cleanedHtml) {
               comp.content.html = transformed.cleanedHtml;
             }
-            // 2) elementIds 用转换结果（AI 不写，全权由 transformHtmlComponent 生成）
+            // 2) cleanedCss 覆盖：R16 自动加 region 前缀后的 CSS
+            if (transformed.cleanedCss) {
+              comp.content.css = transformed.cleanedCss;
+            }
+            // 3) elementIds 用转换结果（AI 不写，全权由 transformHtmlComponent 生成）
             if (transformed.elementIds && Object.keys(transformed.elementIds).length > 0) {
               comp.content.elementIds = transformed.elementIds;
             }
           } catch (err) {
-            // 转换失败阻断打包（错误信息直接告诉 AI 怎么改）
-            throw new Error(`[merge-regions / transformHtmlComponent] ${comp.id}: ${err.message}`);
+            // 累积错误：循环结束统一抛出（避免一次只报 1 个错）
+            allComponentErrors.push({ compId: comp.id, message: err.message });
           }
         }
 
@@ -816,6 +846,8 @@ if (require.main === module) {
     console.log(`  区域数: ${project.regions.length}`);
     console.log(`  HtmlComponent 数: ${project.components.length}`);
     console.log(`  字幕数: ${project.subtitles.length}`);
+    // 6.x 提醒：后续用户修改时 id → class 定位
+    console.log(`\n📌 后续修改：当用户提供 id（如 "P1-101"）时，通过合并后的 project.json 反查：elementIds["#P1-101"] → 所在 component → regions/P{n}.json → class 名`);
     process.exit(0);
   } catch (e) {
     if (e.message && e.message.includes('Expected double-quoted')) {

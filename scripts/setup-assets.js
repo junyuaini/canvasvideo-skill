@@ -89,23 +89,32 @@ function encodeAssets(workdirRoot, skillProjectId) {
   projectStr = projectStr.replace(/"audio"\s*:\s*"[^"]*"/, `"audio": "${audioBase64}"`);
   projectStr = projectStr.replace(/"audio"\s*:\s*\{[^}]*\}/, `"audio": "${audioBase64}"`);
 
-  // 图片 base64：替换 <img src="./..." 为 data URI
-  const imgSrcRegex = /<img([^>]+)src="(\.\/[^"]+)"/g;
+  // 图片 base64：替换 <img src="./..." 或 <img src='./...' 为 data URI
+  // 匹配单引号或双引号包裹的 src，路径前缀 ./ 或 /
+  const imgSrcRegex = /<img\b([^>]*?)\bsrc=(["'])\.\/([^"']+)\2/gi;
   let imgMatch;
+  let imgReplaceCount = 0;
   while ((imgMatch = imgSrcRegex.exec(projectStr)) !== null) {
-    const imgSrc = imgMatch[2];
-    if (imgSrc.startsWith('data:') || imgSrc.startsWith('http://') || imgSrc.startsWith('https://')) {
+    const imgAttrs = imgMatch[1];
+    const quote = imgMatch[2];
+    const imgPath = imgMatch[3];
+    if (imgPath.startsWith('data:') || imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
       continue;
     }
-    const imgFullPath = path.resolve(workdir, imgSrc.replace(/^\.\//, ''));
+    const imgFullPath = path.resolve(workdir, imgPath);
     if (!fs.existsSync(imgFullPath)) {
       throw new Error(`图片文件不存在: ${imgFullPath}`);
     }
     const imgBase64 = fileToBase64(imgFullPath);
-    projectStr = projectStr.replace(
-      `<img${imgMatch[1]}src="${imgSrc}"`,
-      `<img${imgMatch[1]}src="${imgBase64}"`
-    );
+    const oldTag = `<img${imgAttrs}src=${quote}./${imgPath}${quote}`;
+    const newTag = `<img${imgAttrs}src=${quote}${imgBase64}${quote}`;
+    projectStr = projectStr.replace(oldTag, newTag);
+    imgReplaceCount++;
+  }
+  if (imgReplaceCount === 0) {
+    console.log('[!] 警告：未找到任何需要转换的 <img src="./..."> 标签');
+  } else {
+    console.log(`[✓] 已将 ${imgReplaceCount} 张图片转 base64`);
   }
 
   fs.writeFileSync(projectPath, projectStr, 'utf-8');

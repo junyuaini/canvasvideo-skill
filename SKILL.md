@@ -84,17 +84,17 @@ sequenceDiagram
 
 ## 步骤清单
 
-| 步骤 | 操作 | 产出物 | 流程 | 脚本 | 样例 | 规则 | 模式 |
-|------|------|--------|------|------|------|------|------|
-| 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) | `init-project.js` | — | [01-principles.md](rules/01-principles.md) | 通用 |
-| **2** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [02-voice-prepare.md](docs/02-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） | **仅口播** |
-| 3 | 骨架设计 | `design-skeleton-dubbing.md` | [03-skeleton-design-dubbing.md](docs/03-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) | 通用 |
-| 4 | 生成骨架JSON | `skeleton.json` | [04-skeleton-build.md](docs/04-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） | 通用 |
-| 5 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [05-region-design-dubbing.md](docs/05-region-design-dubbing.md) | — | — | [06-components.md §R11](rules/06-components.md#r11-元素动画新约定css-keyframes--data-subtitle)（CSS animation + data-subtitle 模式） | 通用 |
-| 6 | 合并 + 自检 | `project.json` + 校验报告 | [06-merge.md](docs/06-merge.md) | `merge-regions.js` + `validate.js` | — | [09-selfcheck.md](rules/09-selfcheck.md) | 通用 |
-| **7** | **素材检查** | — | [07-assets.md](docs/07-assets.md) | `setup-assets.js` | — | — | 通用 |
-| 8 | 打包 | `<skillProjectId>.zip` | [08-package.md](docs/08-package.md) | `package.js` | — | — | 通用 |
-| 9 | 上传 | 预览链接 | [09-upload.md](docs/09-upload.md) | `upload-video.js` | — | — | 通用 |
+| 步骤 | 操作 | 产出物 | 流程 | 脚本 | 样例 | 规则 |
+|------|------|--------|------|------|------|------|
+| 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) | `init-project.js` | — | [01-principles.md](rules/01-principles.md) |
+| **2** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [02-voice-prepare.md](docs/02-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） |
+| 3 | 骨架设计 | `design-skeleton-dubbing.md` | [03-skeleton-design-dubbing.md](docs/03-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) |
+| 4 | 生成骨架JSON | `skeleton.json` | [04-skeleton-build.md](docs/04-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） |
+| 5 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [05-region-design-dubbing.md](docs/05-region-design-dubbing.md) | — | — | [06-components.md §R12](rules/06-components.md#r12-元素动效ai-写-cssmerge-严格校验)（原生 CSS @keyframes） + [§R15](rules/06-components.md#r15-data--参数规范ai-只写-data-subtitle)（AI 只写 data-subtitle，merge 自动补 data-global） |
+| 6 | 合并 + 自检 | `project.json` + 校验报告 | [06-merge.md](docs/06-merge.md) | `merge-regions.js` + `validate.js` | — | [09-selfcheck.md](rules/09-selfcheck.md) |
+| **7** | **素材检查** | — | [07-assets.md](docs/07-assets.md) | `setup-assets.js` | — | — |
+| 8 | 打包 | `<skillProjectId>.zip` | [08-package.md](docs/08-package.md) | `package.js` | — | — |
+| 9 | 上传 | 预览链接 | [09-upload.md](docs/09-upload.md) | `upload-video.js` | — | — |
 
 ---
 

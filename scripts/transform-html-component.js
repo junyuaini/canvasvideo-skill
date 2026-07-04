@@ -148,9 +148,10 @@ function analyzeClassElements(html) {
     const hasDataGlobal = !!dataGlobalMatch && (dataGlobalMatch[2] === 'true' || dataGlobalMatch[2] === '1');
 
     // 最近的、声明了时间控制的 class 祖先
-    const parentClassElement = [...stack].reverse().find(
-      s => s.isClass && (s.hasDataSubtitle || s.hasDataGlobal)
-    ) || null;
+    // 父 class 元素：取栈中最近的 class 祖先（无论是否带 data-*）
+    // 用于：1) R15 自动补 data-global 时跳过嵌套子元素；2) R15.1 60% 上限统计顶级元素
+    // 之前只找带 data-* 的祖先，导致嵌套在未带 data-* 的 class 父级下的子元素被误判为顶级
+    const parentClassElement = [...stack].reverse().find(s => s.isClass) || null;
 
     const entry = {
       tagName,
@@ -228,6 +229,120 @@ function injectIdsToHtml(html, elements, idMap) {
 }
 
 // ============================================================
+// CSS class 加前缀（跨 region 防冲突）
+// ============================================================
+//
+// 背景：前端 HtmlComponent 把 component.css 注入到组件容器的子 <style> 标签里。
+// HTML 规范下 body 内的 <style> 是全局 CSSOM，会跨 region 互相覆盖同名 class。
+//
+// 本函数把 component.css 内的所有 class 选择器、@keyframes 名、animation 引用
+// 统一加 {regionId}- 前缀（如 "item-title" → "p2-item-title"）。
+// 配套的 HTML class 属性也会同步改写。
+//
+// 注意：
+//   - 不处理 background.css（背景的 class 由 region 内独占使用，无跨 region 风险）
+//   - 不处理 element.tagName 选择器（type 选择器全局唯一）
+//   - 不处理 ID 选择器（id 由 merge 自动分配，已含 region 前缀）
+//   - 不处理伪类/伪元素（:hover、::before 等保持原样）
+
+/**
+ * 从 CSS 中提取所有 class 选择器名
+ * @param {string} css
+ * @returns {Set<string>}
+ */
+function extractClassNamesFromCss(css) {
+  const classSet = new Set();
+  const stripped = css.replace(/url\([^)]*\)/g, '');
+  // CSS 标识符不能以数字开头（class 名、属性名都不能）。要求首字符是字母/下划线/连字符。
+  // 这样 0.5s、1.5em 等数字 + 小数点不会被误识别。
+  const re = /\.([a-zA-Z_-][\w-]*)/g;
+  let m;
+  while ((m = re.exec(stripped)) !== null) {
+    classSet.add(m[1]);
+  }
+  return classSet;
+}
+
+/**
+ * 从 CSS 中提取所有 @keyframes 名称
+ * @param {string} css
+ * @returns {Set<string>}
+ */
+function extractKeyframesFromCss(css) {
+  const names = new Set();
+  const re = /@(?:-webkit-|-moz-|-o-)?keyframes\s+([\w-]+)/g;
+  let m;
+  while ((m = re.exec(css)) !== null) {
+    names.add(m[1]);
+  }
+  return names;
+}
+
+/**
+ * 给 CSS 字符串加前缀
+ * @param {string} css
+ * @param {string} prefix - 区域前缀，如 "p2"
+ * @returns {string}
+ */
+function prefixCss(css, prefix) {
+  if (!css || !prefix) return css;
+  const classes = extractClassNamesFromCss(css);
+  const keyframes = extractKeyframesFromCss(css);
+
+  let result = css;
+
+  // 1. 替换 .className 为 .{prefix-className}
+  const classList = [...classes].sort((a, b) => b.length - a.length);
+  for (const cls of classList) {
+    if (cls.startsWith(prefix + '-')) continue;
+    // 匹配 .cls 后不接 [a-zA-Z0-9_-]（避免误伤 .foo-bar 中 .foo）
+    // 前置要求：. 前面不应该是数字（避免误伤 0.5 中的 .5）
+    const re = new RegExp(`(?<![\\d.])\\.${escapeRegExp(cls)}(?![\\w-])`, 'g');
+    result = result.replace(re, `.${prefix}-${cls}`);
+  }
+
+  // 2. 替换 @keyframes name 和 animation 引用
+  const keyframesList = [...keyframes].sort((a, b) => b.length - a.length);
+  for (const name of keyframesList) {
+    if (name.startsWith(prefix + '-')) continue;
+    result = result.replace(
+      new RegExp(`(@(?:-webkit-|-moz-|-o-)?keyframes\\s+)${escapeRegExp(name)}(?![\\w-])`, 'g'),
+      `$1${prefix}-${name}`
+    );
+    result = result.replace(
+      new RegExp(`(animation(?:-name)?\\s*:\\s*)${escapeRegExp(name)}(?![\\w-])`, 'g'),
+      `$1${prefix}-${name}`
+    );
+  }
+
+  return result;
+}
+
+/**
+ * 给 HTML 字符串中的 class 属性值加前缀
+ * @param {string} html
+ * @param {string} prefix
+ * @returns {string}
+ */
+function prefixHtmlClass(html, prefix) {
+  if (!html || !prefix) return html;
+  return html.replace(
+    /(\bclass\s*=\s*)(["'])([^"']+)\2/g,
+    (match, prefixAttr, quote, classStr) => {
+      const newClassStr = classStr
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(cls => {
+          if (cls.startsWith(prefix + '-')) return cls;
+          return `${prefix}-${cls}`;
+        })
+        .join(' ');
+      return `${prefixAttr}${quote}${newClassStr}${quote}`;
+    }
+  );
+}
+
+// ============================================================
 // 主转换函数
 // ============================================================
 
@@ -247,8 +362,14 @@ function transformHtmlComponent(comp, srtList) {
     return { elementIds: {}, animations: {}, cleanedHtml: '', cleanedCss: '' };
   }
 
-  const html = comp.content.html;
-  const css = comp.content.css || '';
+  // 0. R16 跨 region CSS 隔离：自动给所有 class 和 @keyframes 加 {region}- 前缀
+  //    原因：前端 HtmlComponent 把 css 注入到组件容器子 <style> 标签里，
+  //    body 内的 <style> 是全局 CSSOM，多 region 同名 class 互相覆盖。
+  //    必须在所有其他处理之前做（确保 analyzeClassElements 看到的是前缀化后的名字）。
+  const regionId = extractRegionId(comp).toLowerCase();  // p1, p2, ...
+  const html = prefixHtmlClass(comp.content.html, regionId);
+  const css = prefixCss(comp.content.css || '', regionId);
+
   const errors = [];
 
   // 1. 校验 HTML 结构
@@ -283,15 +404,48 @@ function transformHtmlComponent(comp, srtList) {
   }
 
   // 5. 校验：class 元素必须声明 data-subtitle/data-global（嵌套子元素豁免）
+  // R15 新约定：AI 只写 data-subtitle；缺 data-* 时 merge 自动补 data-global="true"（不再报错）
+  // 旧约定下这里是 throw errors.push(...)；R15 改为自动补全
   for (const el of elements) {
     if (el.hasDataSubtitle || el.hasDataGlobal) continue;
-    if (el.parentClassElement) continue;  // 嵌套在已声明时间控制的 class 父元素内，豁免
-    const classDesc = el.classNames.join(' ');
-    errors.push(
-      `<${el.tagName} class="${classDesc}"> 必须显式声明 data-subtitle="..." 或 data-global="true"。` +
-      `否则该元素无时间控制语义，前端无法渲染。` +
-      `data-subtitle 格式："1"（单条）/ "1-8"（范围）/ "1,3,5"（列表）；data-global 始终显示。`
-    );
+    if (el.parentClassElement && el.parentClassElement.hasDataSubtitle) continue;  // 父级带 data-subtitle，嵌套子元素豁免
+    // R15：自动补 data-global="true"
+    el.hasDataGlobal = true;
+    el.autoInjectedDataGlobal = true;
+  }
+
+  // 5.1 R15 互斥校验：data-subtitle 和 data-global 不能同时存在
+  for (const el of elements) {
+    if (el.hasDataSubtitle && el.hasDataGlobal) {
+      const classDesc = el.classNames.join(' ');
+      errors.push(
+        `<${el.tagName} class="${classDesc}"> 同时含 data-subtitle 和 data-global，互斥（R15 规则）。` +
+        `AI 只能写 data-subtitle；要全局显示则不写 data-*，由 merge 自动补。`
+      );
+    }
+  }
+
+  // 5.2 R15.1 50% 上限校验：data-subtitle 元素 ≤ 50% 总顶级 class 元素
+  // 统计：仅顶级 class 元素（不含嵌套继承的子元素）
+  const topClassElements = elements.filter(el => !el.parentClassElement);
+  const totalTopClass = topClassElements.length;
+  const subtitleTopClass = topClassElements.filter(el => el.hasDataSubtitle).length;
+  if (totalTopClass > 2) {
+    const ratio = subtitleTopClass / totalTopClass;
+    if (ratio > 0.6) {
+      errors.push(
+        `R15.1 60% 上限校验失败：\n` +
+        `  data-subtitle 元素 = ${subtitleTopClass}（占比 ${(ratio * 100).toFixed(1)}%）\n` +
+        `  总顶级 class 元素 = ${totalTopClass}\n` +
+        `  60% 上限 = ${Math.floor(totalTopClass * 0.6)}\n` +
+        `  → 请将 ≥ ${subtitleTopClass - Math.floor(totalTopClass * 0.6)} 个元素改为不写 data-*，由 merge 自动补 data-global="true"。\n` +
+        `  → 参考：rules/06-components.md §R15.1`
+      );
+    } else if (ratio > 0.5) {
+      console.warn(
+        `[W] [${comp.id}] R15.1 60% 上限警告：data-subtitle 元素占比 ${(ratio * 100).toFixed(1)}%（接近上限 60%），建议把部分装饰元素留空。`
+      );
+    }
   }
 
   // 6. 校验 data-subtitle 表达式格式
@@ -340,23 +494,46 @@ function transformHtmlComponent(comp, srtList) {
   }
 
   // 9. 把 id 写回 HTML 标签
-  const cleanedHtml = injectIdsToHtml(html, elements, idMap);
+  let cleanedHtml = injectIdsToHtml(html, elements, idMap);
+
+  // 9.5 R15 自动补全：把 data-global="true" 写回 HTML（如果该元素是被自动补的）
+  for (const el of elements) {
+    if (!el.autoInjectedDataGlobal) continue;
+    if (!el.classNames || el.classNames.length === 0) continue;
+    // 在 class 属性后插入 data-global="true"
+    const originalTag = cleanedHtml.substring(el.rawTagStart, el.rawTagEnd);
+    // 注意：rawTagStart/rawTagEnd 是在原始 html 中的位置，但因为我们之前 injectIdsToHtml 时只改 class 之前位置，
+    // 之后位置不变，所以这里 rawTagStart/rawTagEnd 仍然指向注入 id 后的位置
+    // 但 injectIdsToHtml 改写了 m.index 之前的内容，所以需要重新定位
+    // 简单办法：直接在原始 html 上找 class 元素（不含 data-global），注入
+    const re = new RegExp(
+      `(<${el.tagName}\\b[^>]*?\\bclass\\s*=\\s*["']${escapeRegExp(el.classAttrValue)}["'][^>]*?)(/?>)`
+    );
+    const m = cleanedHtml.match(re);
+    if (m) {
+      // 仅当确实没有 data-global 时才注入
+      if (!/\sdata-global\s*=/.test(m[1])) {
+        const injected = m[1] + ' data-global="true"' + m[2];
+        cleanedHtml = cleanedHtml.replace(re, injected);
+      }
+    }
+  }
 
   // 10. 构建 elementIds
+  //    只注入 start（出现时间），不再注入 end（前端通过下一元素 start 推算 / 字幕自然结束）
   const elementIds = {};
   for (const el of elements) {
     const newId = idMap.get(el);
     if (!newId) continue;  // 嵌套豁免的元素不进 elementIds
-    const entry = { id: newId };
+    const entry = { id: newId, dataGlobal: el.hasDataGlobal && !el.hasDataSubtitle };
     if (el.hasDataSubtitle) {
       const indices = parseSubtitleIndexExpr(el.dataSubtitleValue);
       const range = resolveSubtitleRange(indices, srtList);
       if (range) {
         entry.start = range.start;
-        entry.end = range.end;
       }
     }
-    // data-global 不写 start/end（前端视为始终可见）
+    // data-global 不写 start（前端视为始终可见）
     elementIds[`#${newId}`] = entry;
   }
 
@@ -377,5 +554,9 @@ module.exports = {
   parseSubtitleIndexExpr,
   resolveSubtitleRange,
   analyzeClassElements,
-  extractRegionId
+  extractRegionId,
+  prefixCss,
+  prefixHtmlClass,
+  extractClassNamesFromCss,
+  extractKeyframesFromCss
 };
