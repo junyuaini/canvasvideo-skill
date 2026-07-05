@@ -187,6 +187,66 @@ function extractRegions(content, mode) {
 }
 
 /**
+ * 区域模板注入说明（精简版）
+ *
+ * 设计原则（用户确认）：只给 AI 最小可执行单元
+ *   - 写什么：必须填的字段
+ *   - 怎么写：元素写法示例
+ *   - 校验：硬性规则
+ * 不写：AI 不需要管的字段说明（已剥离 / 自动化）
+ *
+ * 校验规则来源（仅保留实际生效的硬约束）：
+ *   - transform-html-component.js: id 禁手写、data-* 互斥
+ *   - merge-regions.js: background 非空、animation-delay 禁与 opacity:0 共用、R14 居中互斥、R21.5 入场动画 forwards 禁与 opacity:0 共用
+ *   - transform-html L357: R16 跨 region CSS 自动加 {区域}- 前缀（无需 AI 关心）
+ */
+const REGION_TEMPLATE_RULES = {
+  HARD_RULES: [
+    '❌ 不要手写 id 属性（merge 自动分配）',
+    '❌ 不要手写 start / end / elementIds 字段（merge 从 data-* 推算）',
+    '❌ data-subtitle 和 data-global 不能写在同一个元素上（互斥，merge 报错）',
+    '❌ data-subtitle 必须是单个数字（如 data-subtitle="3"），不能用 "1-3" 或 "1,3"（merge 报错）',
+    '❌ data-subtitle 编号必须存在于本区域字幕范围（merge 报错）',
+    '❌ background.html 里的元素不能带 id 属性（merge 报错）',
+    '❌ R15：data-subtitle 和 data-global 互斥',
+    '❌ background.html 和 background.css 不能为空（merge 报错）',
+    '❌ R14：CSS 中 "transform: translate(-50%, -50%)" 不能与 @keyframes / animation 共存（merge 报错）',
+    '❌ CSS 中 "animation-delay" 不能与 "opacity: 0" 在同一选择器共存（merge 报错）',
+    "❌ R21.5：CSS 选择器不能同时含 \"opacity: 0\" 与 \"animation ... forwards\"（display:none → 切换后元素永远不可见）。入场动画的\"起手式\"必须写在 @keyframes from {} 里",
+    '✅ 元素用 class + data-subtitle="N" 绑字幕；整段显示的不写 data-*（merge 自动补 data-global=true）'
+  ]
+};
+
+/**
+ * 构建 region 模板的注入对象（精简版 + 结构化字段）
+ * 该对象以 `_` 前缀标识，merge 时由 stripUnderscoreFields 剥离
+ * @param {Object} skeleton - 完整 skeleton 对象
+ * @param {Object} region - 当前 region 对象
+ * @returns {Object} 包含 _whatToWrite / _howToWrite / _hardRules 的对象
+ */
+function buildValidationHints(skeleton, region) {
+  const subs = Array.isArray(region.subtitles) ? region.subtitles : [];
+  const subtitleCount = subs.length;
+  const dataSubtitleRange = subtitleCount > 0 ? `1-${subtitleCount}` : 'N/A';
+  const regionStart = region.startTime;
+  const regionEnd = region.endTime;
+
+  return {
+    _whatToWrite: {
+      background: 'components[0].background.html/css — 区域背景（HTML+CSS）',
+      content: 'components[0].content.html/css — 区域画面元素（HTML+CSS）'
+    },
+    _howToWrite: {
+      globalDisplay: '整段显示：<div class="my-title">…</div>',
+      bindSubtitle: `绑字幕 1：<div class="my-card" data-subtitle="1">…</div>（起=${subs[0]?.start ?? '?'}s，止=${regionEnd}s）`,
+      timeWindow: `区域时间窗：[${regionStart}, ${regionEnd}]`,
+      subtitleRange: `共 ${subtitleCount} 条字幕（编号 ${dataSubtitleRange}）`
+    },
+    _hardRules: REGION_TEMPLATE_RULES.HARD_RULES
+  };
+}
+
+/**
  * 生成 skeleton.json
  * @param {string} workdirRoot - 工作根目录
  * @param {string} skillProjectId - 项目ID
@@ -380,6 +440,8 @@ function generateSkeleton(workdirRoot, skillProjectId) {
         }
       ]
     };
+    // 注入校验提示（_ 前缀字段，merge 时由 stripUnderscoreFields 剥离）
+    Object.assign(template, buildValidationHints(skeleton, region));
     const templatePath = path.join(regionsDir, `${region.id}.json`);
     fs.writeFileSync(templatePath, JSON.stringify(template, null, 2));
     console.log(`[✓] 区域模板已生成: ${templatePath}`);
@@ -415,4 +477,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { generateSkeleton, extractJsonConfig, extractRegions, detectMode };
+module.exports = { generateSkeleton, extractJsonConfig, extractRegions, detectMode, buildValidationHints, REGION_TEMPLATE_RULES };

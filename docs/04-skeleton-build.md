@@ -65,7 +65,7 @@ node scripts/generate-skeleton.js --cwd=<Agent工作目录的绝对路径> {skil
 | emotion_curve_template | 情绪曲线类型 |
 | subtitle_count | SRT 字幕总条数 |
 | regions[].subtitle_range | 该区域包含的字幕序号范围 |
-| subtitle | 项目级字幕样式（6 字段必填） |
+| subtitle | **必填**，项目级字幕样式（`enabled` + `html` + `css`，见 §R8） |
 | mode | 固定为 "dubbing" |
 
 **脚本会自动校验**：

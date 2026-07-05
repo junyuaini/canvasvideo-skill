@@ -101,14 +101,8 @@
 - elementIds 字段**自动生成** — merge 脚本从 HTML `class` 出现顺序自动分配 `id`，AI 不必手写
 - HTML 子元素必须写 `class` 属性（**不写 id**，merge 自动注入 `P{区}-100` 起按顺序）
 - HTML 子元素归属属性（二选一，互斥）：
-  - `data-subtitle="3"` / `"3-5"` / `"3,5"` — 绑定字幕区间
-    - `"3"` = 字幕3 出现到结束
-    - `"3-5"` = 字幕3 出现到字幕5 结束
-    - `"3,5"` = 字幕3 段显示 + 字幕5 段显示（断续）
+  - `data-subtitle="3"` — 绑定单字幕（新规 2026-07：仅接受单个字幕 ID；元素起始 = 字幕3.start，结束 = region.endTime）
   - `data-global="true"` — 跟随 region 全生命周期，前端用 region 边界兜底
-- **省略规则**（merge 脚本自动生效）：
-  - 元素首字幕 == region 首字幕 → 自动省略 start
-  - 元素末字幕 == region 末字幕 → 自动省略 end
 - **校验项**（merge 脚本自动执行）：
   - 顶级 class 元素必须有 `data-subtitle` 或 `data-global`（二选一，互斥）
   - CSS 中引用 keyframes 必须有 `@keyframes` 定义
@@ -191,42 +185,6 @@
 <div class='good' data-subtitle='3'>正确</div>
 ```
 
-#### 5.6 R15.1 60% 上限自检（AI 写完后必查）
-
-> 🟡 **强约束**：单个 region 顶级 class 元素中，**显式 data-subtitle 元素 ≤ 60% 总数**。详见 [06-components.md §R15.1](06-components.md#r151-60-上限硬约束data-subtitle-元素占比--60)。
-
-**selfcheck 自动检查项**：
-
-- [E] **致命**：data-subtitle 元素数 / 总顶级 class 元素数 > 60% → **报错阻断**
-- [W] **警告**：data-subtitle 元素数 / 总顶级 class 元素数 > 50% → 警告（接近上限，建议调整）
-- [ ] **豁免**：总元素数 ≤ 2 不校验（小区域）
-
-**AI 自查 checklist**：
-
-- [ ] 数一下有几个元素显式写了 data-subtitle
-- [ ] ratio = data-subtitle / 总数 ≤ 60%
-- [ ] ratio > 60% 时，把部分装饰元素（背景/水印/底图/分割线）留空不写 data-*
-- [ ] 装饰元素通常都是留空（merge 自动补 data-global）
-
-**反例对照**：
-
-```html
-<!-- ❌ 反例：5 元素全写 data-subtitle（100% 触发 50% 上限） -->
-<div class='tag' data-subtitle='1'>标签</div>
-<div class='title' data-subtitle='1-2'>标题</div>
-<div class='subtitle' data-subtitle='1-2'>副标题</div>
-<div class='badge' data-subtitle='3'>徽章</div>
-<div class='line'></div>
-
-<!-- ✅ 正例：2 个写 data-subtitle（核心信息），3 个留空（装饰） -->
-<div class='tag' data-subtitle='1'>标签</div>
-<div class='title' data-subtitle='1-2'>标题</div>
-<div class='subtitle'></div>      <!-- 留空 -->
-<div class='badge'></div>          <!-- 留空 -->
-<div class='line'></div>          <!-- 留空 -->
-```
-
----
 
 ## 示例
 

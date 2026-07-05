@@ -38,14 +38,8 @@
 <!-- 1. 全局装饰：跟随 region 全生命周期 -->
 <div class='corner-deco' data-global='true'></div>
 
-<!-- 2. 单条字幕：出现=字幕3.start，消失=字幕3.end -->
+<!-- 2. 单条字幕（新规 2026-07）：出现=字幕3.start，消失=region.endTime -->
 <div class='title' data-subtitle='3'>标题</div>
-
-<!-- 3. 范围字幕：出现=字幕3.start，消失=字幕5.end -->
-<div class='title' data-subtitle='3-5'>标题</div>
-
-<!-- 4. 多选字幕（断续）：字幕3段显示，字幕4段隐藏，字幕5段再显示 -->
-<div class='badge' data-subtitle='3,5'>徽章</div>
 ```
 
 ### 解析规则
@@ -53,9 +47,7 @@
 | 写法 | 含义 |
 |------|------|
 | `data-global='true'` | 跟随 region 全生命周期，前端用 region 边界兜底 |
-| `data-subtitle='3'` | 出现=字幕3.start，消失=字幕3.end |
-| `data-subtitle='3-5'` | 出现=字幕3.start，消失=字幕5.end |
-| `data-subtitle='3,5'` | 元素在字幕3和字幕5段时间窗分别显示（断续） |
+| `data-subtitle='3'` | 出现=字幕3.start，消失=**region.endTime**（新规 2026-07：结束时间固定为区域结束） |
 
 ---
 
@@ -101,19 +93,18 @@ AI 写元素时间控制有 **3 种方式**（择一即可）：
 
 | 方式 | 写法 | 用途 |
 |------|------|------|
-| 跟随字幕 | `data-subtitle='3-5'` | 字幕 3-5 期间显示 |
+| 跟随单字幕 | `data-subtitle='3'` | 起始=字幕3.start，结束=region.endTime |
 | 留空由 merge 补 | `<div class='deco'></div>` | 整段 region 显示（merge 自动补 `data-global="true"`） |
-| 嵌套继承 | `<div class='card' data-subtitle='1-5'><span class='card-icon'>🌙</span></div>` | 子元素继承父元素时间 |
+| 嵌套继承 | `<div class='card' data-subtitle='1'><span class='card-icon'>🌙</span></div>` | 子元素继承父元素时间 |
 
 **注意**：
 - AI **不要**显式写 `data-global="true"`——这是 merge 内部概念（详见 [rules/06-components.md §R15](rules/06-components.md#r15-data--参数规范ai-只写-data-subtitle)）
 - 整段显示的装饰元素（背景/水印/底图/分割线）直接**留空**，merge 会自动补
-- 单个 region 的 `data-subtitle` 元素**不要超过 70%**（详见 [§R15.1](rules/06-components.md#r151-70-上限硬约束data-subtitle-元素占比--70)）
 
 ```html
 <!-- ✅ AI 只写 data-subtitle，装饰元素留空 -->
-<div class='title' data-subtitle='3-5'>标题</div>
-<div class='subtitle' data-subtitle='3-5'>副标题</div>
+<div class='title' data-subtitle='3'>标题</div>
+<div class='subtitle' data-subtitle='3'>副标题</div>
 <div class='deco-line'></div>  <!-- 留空，merge 自动补 data-global -->
 ```
 
@@ -121,7 +112,7 @@ AI 写元素时间控制有 **3 种方式**（择一即可）：
 
 ```html
 <!-- ✅ 父已声明 data-subtitle，子元素豁免 -->
-<div class='card' data-subtitle='1-5'>
+<div class='card' data-subtitle='1'>
   <span class='card-icon'>🌙</span>
   <span class='card-text'>文字</span>
 </div>
@@ -144,25 +135,7 @@ AI 写元素时间控制有 **3 种方式**（择一即可）：
 <div class='card' data-subtitle='5' data-global='true'>...</div>
 ```
 
-### 5. CSS keyframe 属性白名单
-
-`@keyframes` 内**只允许**以下属性（CSS 规范不支持其他属性的插值动画）：
-
-```
-opacity, transform, box-shadow, text-shadow,
-color, background-color, border-color, filter,
-stroke-dashoffset, stroke-dasharray, clip-path
-```
-
-**禁止**：`width`, `height`, `font-size`, `top`, `left`, `right`, `bottom`, `margin`, `padding`
-
-**替代方案**：
-- `width` 动画 → `transform: scaleX()`
-- `height` 动画 → `transform: scaleY()`
-- `font-size` 动画 → `transform: scale()`
-- 位置变化 → `transform: translate()`
-
-### 6. 居中必须配 `translate(-50%, -50%)`
+### 5. 居中必须配 `translate(-50%, -50%)`
 
 `position: absolute` + 含 50% 定位时，**必须**配 `transform: translate(-50%, -50%)` 居中修正：
 
@@ -208,9 +181,8 @@ stroke-dashoffset, stroke-dasharray, clip-path
 
 **注意**：
 
-- **属性白名单**：`@keyframes` 里只能用上面列的 11 个属性
-- **timing function 白名单**：`linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier(...)`
-- 前端**强制禁用**带 id 元素的 CSS 动画（统一用 opacity 控制可见性），所以 `forwards` 等关键字不会生效，但写上保持 CSS 独立可预览
+- 前端只通过 `display` 控制显隐时机，CSS `@keyframes` / `transition` / `animation` **由浏览器原生执行**，可任意使用 transform / filter / clip-path / cubic-bezier 等全部 CSS 能力
+- `forwards` 等关键字会正常生效
 
 ---
 
@@ -226,7 +198,7 @@ stroke-dashoffset, stroke-dasharray, clip-path
     "css": ".region-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e, #16213e); }"
   },
   "content": {
-    "html": "<div class='corner-deco' data-global='true'></div><div class='frame' data-subtitle='3-5'><div class='frame-title'>核心观点</div></div><div class='title' data-subtitle='3'>Skill 是什么</div><div class='desc' data-subtitle='4'>它的核心定义与作用</div><div class='badge' data-subtitle='5'>重要</div>",
+    "html": "<div class='corner-deco' data-global='true'></div><div class='frame' data-subtitle='3'><div class='frame-title'>核心观点</div></div><div class='title' data-subtitle='3'>Skill 是什么</div><div class='desc' data-subtitle='4'>它的核心定义与作用</div><div class='badge' data-subtitle='5'>重要</div>",
     "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .frame { animation: fade-in 0.5s ease-out forwards; } .title { animation: fade-in 0.5s ease-out forwards; } .desc { animation: fade-in 0.4s ease-out forwards; } .badge { animation: fade-in 0.4s ease-out forwards; }"
   }
 }
@@ -234,7 +206,7 @@ stroke-dashoffset, stroke-dasharray, clip-path
 
 > 上面例子中，merge 会自动为以下 5 个 class 元素分配 id（按出现顺序）：
 > - `corner-deco` → `P1-100`（data-global，无 start/end）
-> - `frame` → `P1-101`（data-subtitle 3-5，start=字幕3.start, end=字幕5.end）
+> - `frame` → `P1-101`（data-subtitle 3，start=字幕3.start, end=region.endTime）
 > - `frame-title` → 不分配（嵌套在 frame 内，豁免）
 > - `title` → `P1-102`（data-subtitle 3）
 > - `desc` → `P1-103`（data-subtitle 4）
@@ -256,7 +228,7 @@ stroke-dashoffset, stroke-dasharray, clip-path
 - ✅ 直接在模板 `regions/P{n}.json` 上填写，不新建文件
 - ✅ 给 background 写 HTML/CSS（普通 HTML，不要带 id）
 - ✅ 给 content 写 HTML，元素加 class + `data-subtitle` / `data-global`（不要写 id）
-- ✅ 写标准 CSS（`@keyframes` + `animation`），遵守属性白名单
+- ✅ 写标准 CSS（`@keyframes` + `animation` + `transition` + `transform` 等全部 CSS 能力）
 - ✅ 居中元素必须配 `transform: translate(-50%, -50%)`
 
 ---
@@ -280,7 +252,7 @@ stroke-dashoffset, stroke-dasharray, clip-path
 <div class='label'>文字</div>
 
 <!-- ✅ -->
-<div class='label' data-subtitle='1-5'>文字</div>
+<div class='label' data-subtitle='1'>文字</div>
 ```
 
 ### 3. data-subtitle 字幕 ID 越界
@@ -319,7 +291,26 @@ stroke-dashoffset, stroke-dasharray, clip-path
 .centered { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 ```
 
-### 6. background 元素带 id
+### 6. 入场动画错误写法（R21.5）
+
+```css
+/* ❌ 选择器写 opacity:0 + animation forwards（display:none → '' 切换后元素永远不可见）*/
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* ✅ 把 opacity:0 挪到 @keyframes from 里 */
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+```
+
+### 7. background 元素带 id
 
 ```html
 <!-- ❌ -->
@@ -339,12 +330,12 @@ selfcheck + merge 会校验：
 2. 顶级 class 元素必须声明 data-subtitle 或 data-global
 3. background.html 元素不许带 id
 4. data-subtitle / data-global 互斥
-5. data-subtitle 引用的字幕 ID 必须存在
-6. data-subtitle 表达式格式合法（"1" / "1-5" / "1,3,5"）
-7. @keyframes 属性白名单（11 个支持属性）
-8. 居中元素必须配 `transform: translate(-50%, -50%)`
-9. 元素 id 全局唯一（merge 自动分配后保证）
-10. elementId ⊂ 组件 ⊂ region 层级合法
+5. data-subtitle 表达式格式合法（仅 `"3"` 单字幕，连续区间 / 离散段已废弃）
+6. data-subtitle 引用的字幕 ID 必须存在
+7. 居中元素必须配 `transform: translate(-50%, -50%)`
+8. 元素 id 全局唯一（merge 自动分配后保证）
+9. elementId ⊂ 组件 ⊂ region 层级合法
+10. **R21.5**：CSS 选择器不能同时含 `opacity: 0` 与 `animation ... forwards`（入场动画"起手式"必须写在 `@keyframes from {}` 里）
 
 ---
 

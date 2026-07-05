@@ -3,7 +3,7 @@
 > 项目级（project.json）字段、HtmlComponent 写法、字幕/主题/图片等公共资源使用规范。
 > 改组件写法、看不懂字段、不知道该用谁，**先看本文件**。
 > 
-> 📌 **新约定 R12（2026-07-更新）**：AI 写标准 CSS（`@keyframes` + `animation`），merge 严格校验（属性白名单、居中修正），前端**只通过 `opacity` 控制显隐时机**（不解析 CSS animation）。R11 旧约定已废弃，R12 旧"禁用动效"版已更新。
+> 📌 **新约定 R12（2026-07-更新）**：AI 写标准 CSS（`@keyframes` + `animation` + `transition` + `transform` 等全部 CSS 能力），merge 只校验居中修正（R14），前端**只通过 `display` 控制显隐时机**（不解析 CSS animation，CSS 动画由浏览器原生执行）。R11 旧约定已废弃。
 
 ---
 
@@ -17,7 +17,7 @@
 | `mode` | `"dubbing"` | ✅ | 固定 | 项目模式（口播模式），必须配置配音音频+字幕 |
 | `theme` | `"black" \| "white"` | ✅ | AI 决策 | 背景主题，决定 scaffold 复制 `dark/` 还是 `light/` 占位图 |
 | `viewport` | `{ width, height }` | ✅ | AI 设计 | 视口尺寸（默认 780×585） |
-| `subtitle` | object（6 字段） | ✅ | **R8 必填** | 字幕样式，必填 |
+| `subtitle` | object（3 字段：`enabled` / `html` / `css`） | ✅ | **R8 必填** | 字幕样式，必填 |
 | `regions[]` | array | ✅ | 步骤 4 产出 | 区域列表 |
 | `assets` | object | ✅ | 步骤 6 产出 | 素材清单（voice / subtitles / placeholders / images） |
 | `audio` | object | ✅ | 步骤 1.5 产出 | 口播音频配置（口播模式必填） |
@@ -115,7 +115,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
     "css": ".region-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a1530 0%, #1a1a40 50%, #0f0f2a 100%); }"
   },
   "content": {
-    "html": "<div class='stage' data-subtitle='1-5'><div class='title'>标题</div><div class='subtitle'>副标题</div></div>",
+    "html": "<div class='stage' data-subtitle='1'><div class='title'>标题</div><div class='subtitle'>副标题</div></div>",
     "css": ".stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; } .title { font-size: 48px; font-weight: 900; color: #fff; } .subtitle { font-size: 20px; color: #ccc; }"
   },
   "start": 0,
@@ -176,7 +176,7 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 | key | string | 自动 | `#ID` 形式，与 HTML 注入的 id 一致 |
 | id | string | 自动 | 元素 id（与 key 去掉 `#` 一致） |
 | start | number | 自动 | 元素起始时间（从 `data-subtitle` 解析 SRT 推算） |
-| end | number | 自动 | 元素结束时间（从 `data-subtitle` 解析 SRT 推算） |
+| end | number | 自动 | 元素结束时间（固定为区域 endTime，新规 2026-07） |
 
 `data-global="true"` 元素：无 start/end（前端用 region 边界兜底）。
 
@@ -346,7 +346,7 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 | 属性 | 必填 | 说明 |
 |---|---|---|
 | `class` | ✅ | CSS 选择器，HEAD 通过 class 找 DOM |
-| `data-subtitle` | ✅ | 引用字幕序号（`"3"` / `"1-3"` / `"1,3,5"`），决定元素显示的字幕时间窗 |
+| `data-subtitle` | ✅ | 引用字幕序号（`"3"`，单字幕 ID），决定元素起始时间；end 固定为区域 endTime |
 | `data-global` | ❌ | 设为 `"true"` 表示跟随 region 全生命周期（不绑字幕），与 `data-subtitle` 互斥 |
 | `id` | ❌ | **AI 不写**，merge 自动分配（`P{区}-100` 起按 HTML 出现顺序） |
 
@@ -369,8 +369,8 @@ https://picsum.photos/seed/{seed}/{width}/{height}
 <!-- 时间维度：显示在第 2 句字幕期间 -->
 <div class='main-title' data-subtitle='2'>A股上半年收官</div>
 
-<!-- 时间维度：显示在第 1-2 句字幕期间 -->
-<div class='date-badge' data-subtitle='1-2'>2024-06-30</div>
+<!-- 时间维度：起始于字幕 1，结束于区域 endTime -->
+<div class='date-badge' data-subtitle='1'>2024-06-30</div>
 
 <!-- 全局元素：跟随 region 全生命周期 -->
 <div class='corner-tl' data-global='true'></div>
@@ -380,7 +380,7 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 
 ```html
 <div id='P1-100' class='main-title' data-subtitle='2'>A股上半年收官</div>
-<div id='P1-101' class='date-badge' data-subtitle='1-2'>2024-06-30</div>
+<div id='P1-101' class='date-badge' data-subtitle='1'>2024-06-30</div>
 <div id='P1-102' class='corner-tl' data-global='true'></div>
 ```
 
@@ -410,9 +410,9 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 
 ### R12.4 显隐时间与字幕的关系
 
-- `data-subtitle="3"` → 字幕 3 的时间区间 [t3_start, t3_end]
+- `data-subtitle="3"` → 元素起始时间 = 字幕 3 的 `start`；结束时间 = **区域 endTime**（新规 2026-07）
 - 元素在 `t3_start` 时刻 opacity 0→1 出现
-- 元素在 `t3_end` 时刻 opacity 1→0 消失
+- 元素在 `region.endTime` 时刻 opacity 1→0 消失
 - 切换是**硬切**（无过渡），靠 HEAD 每帧根据 currentTime 重算
 - `data-global="true"` → 跟随 region 全生命周期（region 开始→结束都显示）
 
@@ -453,7 +453,7 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
     "css": ".bg { position: absolute; inset: 0; background: #0a0a1a; }"
   },
   "content": {
-    "html": "<div class='date-badge' data-subtitle='2'>06·30</div><div class='main-title' data-subtitle='2-3'>A股上半年收官</div><div class='title-glow' data-subtitle='2-3'>光晕</div>",
+    "html": "<div class='date-badge' data-subtitle='2'>06·30</div><div class='main-title' data-subtitle='2'>A股上半年收官</div><div class='title-glow' data-subtitle='2'>光晕</div>",
     "css": "@keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .date-badge { position: absolute; top: 8%; left: 50%; transform: translate(-50%, -50%); font-size: 72px; color: gold; animation: fade-in 0.5s ease-out forwards; } .main-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 42px; color: white; animation: fade-in 0.5s ease-out forwards; } .title-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 80px; border: 2px solid gold; border-radius: 40px; }"
   }
 }
@@ -471,6 +471,7 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 |---|---|---|
 | HTML 结构合法 | 报错 | 标签闭合 |
 | `data-subtitle` 引用字幕存在 | 报错 | 字幕 ID 必须在 subtitles 数组里 |
+| `data-subtitle` 表达式格式合法 | 报错 | 仅接受单个字幕 ID（如 `"3"`），连续区间 / 离散段已废弃 |
 | AI 写了 `id` 属性 | 报错 | merge 自动分配 |
 | 顶级 class 元素无 `data-subtitle` 也无 `data-global` | 报错 | 必须显式声明时间控制 |
 | background 元素带 `id` | 报错 | background 元素不许带 id |
@@ -504,24 +505,22 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 ### AI 写作心智模型（简化版）
 
 **只问自己一个问题：**
-> 这个元素要跟随**哪条/哪些字幕**出现？
+> 这个元素要跟随**哪条字幕**出现？
 
-**三种情况：**
+**两种情况：**
 
-| 情况 | 写法 |
-|------|------|
-| 跟随某条字幕出现 | `<div class='title' data-subtitle='3-5'>标题</div>` |
-| 跟随多条离散字幕 | `<div class='badge' data-subtitle='1,3,5'>徽章</div>` |
-| 整段 region 都在 | （**不写 data-*，merge 自动补 data-global**） |
+| 情况 | 写法 | end 时间 |
+|------|------|----------|
+| 跟随某条字幕出现 | `<div class='title' data-subtitle='3'>标题</div>` | region.endTime |
+| 整段 region 都在 | （**不写 data-*，merge 自动补 data-global**） | region.endTime |
 
 ### data-subtitle 取值格式
 
-| 写法 | 含义 | 示例 |
-|------|------|------|
-| `"3"` | 单字幕：字幕 3 出现到结束 | `data-subtitle='3'` |
-| `"3-5"` | 连续区间：字幕 3 开始到字幕 5 结束 | `data-subtitle='3-5'` |
-| `"3,5"` | 离散段：字幕 3 段 + 字幕 5 段（中间隐藏） | `data-subtitle='3,5'` |
-| `"3,5,7"` | 多段离散：可任意组合 | `data-subtitle='1,3,5,7'` |
+> 🟢 **新规（2026-07）**：仅支持单个字幕 ID。元素 end 固定为区域 endTime，不再用字幕 end。
+
+| 写法 | 含义 | end 时间 | 示例 |
+|------|------|----------|------|
+| `"3"` | 单字幕：起始 = 字幕 3.start | region.endTime | `data-subtitle='3'` |
 
 ### ❌ AI 禁止写法
 
@@ -542,17 +541,17 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 ### ✅ AI 推荐写法
 
 ```html
-<!-- ✅ 绑定单个字幕区间 -->
-<div class='main-title' data-subtitle='2-3'>A股上半年收官</div>
+<!-- ✅ 绑定单字幕，起始 = 字幕 2.start，结束 = 区域 endTime -->
+<div class='main-title' data-subtitle='2'>A股上半年收官</div>
 
-<!-- ✅ 绑定离散字幕 -->
-<div class='date-badge' data-subtitle='1,2,5'>2024-06-30</div>
+<!-- ✅ 绑定单字幕，起始 = 字幕 1.start，结束 = 区域 endTime -->
+<div class='date-badge' data-subtitle='1'>2024-06-30</div>
 
 <!-- ✅ 整段 region 都在（不写 data-*，merge 自动补） -->
 <div class='watermark'>水印</div>
 
 <!-- ✅ 父元素声明，子元素继承 -->
-<div class='stage' data-subtitle='1-5'>
+<div class='stage' data-subtitle='1'>
   <div class='title'>标题</div>          <!-- 子元素继承，无须再写 -->
   <div class='subtitle'>副标题</div>     <!-- 子元素继承，无须再写 -->
 </div>
@@ -614,99 +613,76 @@ merge 在自动补完后生成的 elementIds：
 <!-- merge 会自动补 data-global，没问题，但 AI 自己要知道这是"兜底" -->
 ```
 
-### R15.1 60% 上限硬约束（data-subtitle 元素占比 ≤ 60%）
-
-> 🟡 **强约束**：单个 region（HtmlComponent）的顶级 class 元素中，**显式写 `data-subtitle` 的元素数量 ≤ 60% 总数**。超过 60% 时 merge 报错阻断，提示"将部分元素改为不写 data-*，由 merge 自动补 data-global"。
-
-#### 目的
-
-- 引导 AI 多用"留空 → merge 兜底 data-global"模式
-- 装饰性元素（背景/水印/底图/图标）应直接留空
-- 减少每个元素都写 data-subtitle 的繁琐
-
-#### 计算公式
-
-```
-ratio = 显式 data-subtitle 的顶级 class 元素数 / 总顶级 class 元素数
-```
-
-#### 触发条件
-
-```
-if 总元素数 <= 2:
-  PASS（豁免小区域）
-elif ratio > 0.6:
-  throw Error（阻断）
-else:
-  PASS
-```
-
-#### 豁免情况
-
-| 情况 | 行为 |
-|------|------|
-| 总元素数 = 0 | PASS（无元素） |
-| 总元素数 = 1 | PASS（豁免） |
-| 总元素数 = 2 | PASS（豁免） |
-| 嵌套子元素继承父 | **不计入顶级统计** |
-| 元素已写 data-global | 不算 data-subtitle 元素 |
-
-#### 边界示例
-
-| 总数 | data-subtitle | ratio | 行为 |
-|------|---------------|-------|------|
-| 3 | 1 | 33% | ✅ PASS |
-| 3 | 2 | 67% | ❌ 阻断 |
-| 3 | 3 | 100% | ❌ 阻断 |
-| 4 | 2 | 50% | ✅ PASS |
-| 4 | 3 | 75% | ❌ 阻断 |
-| 5 | 3 | 60% | ✅ PASS（边界） |
-| 5 | 4 | 80% | ❌ 阻断 |
-| 5 | 0 | 0% | ✅ PASS（全部留空） |
-| 2 | 2 | 100% | ✅ 豁免 |
-
-#### 错误信息
-
-```
-HtmlComponent [P1-001] R15.1 60% 上限校验失败：
-  data-subtitle 元素 = 5（占比 100%）
-  总顶级 class 元素 = 5
-  60% 上限 = 3
-  → 请将 ≥ 2 个元素改为不写 data-*，由 merge 自动补 data-global="true"。
-  → 参考：rules/06-components.md §R15.1
-```
-
-#### AI 写作建议
-
-- **核心信息元素**（标题/数字/重点）：写 `data-subtitle`
-- **装饰元素**（背景/水印/底图/分割线/装饰图标）：不写 data-*，让 merge 兜底
-- **嵌套子元素**：写在父元素里继承
-
-#### 反例对照
-
-```html
-<!-- ❌ 反例 1：5 元素全写 data-subtitle（100% 阻断） -->
-<div class='tag' data-subtitle='1'>标签</div>
-<div class='title' data-subtitle='1-2'>标题</div>
-<div class='subtitle' data-subtitle='1-2'>副标题</div>
-<div class='badge' data-subtitle='3'>徽章</div>
-<div class='line'></div>
-
-<!-- ✅ 正例：3 个写 data-subtitle，2 个留空（60% 通过） -->
-<div class='tag' data-subtitle='1'>标签</div>
-<div class='title' data-subtitle='1-2'>标题</div>
-<div class='subtitle' data-subtitle='1-2'>副标题</div>
-<div class='badge'></div>          <!-- 留空，merge 自动补 data-global -->
-<div class='line'></div>          <!-- 留空，merge 自动补 data-global -->
-```
-
----
 
 ## R11 旧约定（已废弃）
 
 > ⚠️ **R11 CSS keyframes 写法已废弃**——请改用 R12 新版（AI 写标准 CSS + merge 严格校验）。
 
 旧 R12"data-cv-anim 模板"已废弃：HEAD 不再支持 `data-cv-anim` 接口，写了也不生效。改用标准 `@keyframes` + `animation` 写法。
+
+---
+
+## R21.5 入场动画与 opacity:0 互斥规则（强约束）
+
+> 🔴 **血泪教训**：很多 CSS 教程教"先在选择器里写 `opacity: 0`，再用 `animation ... forwards` 让动画把它变回 1"。**实际不兼容前端 HtmlComponent 的显隐机制**——前端只用 `display` 控制元素出现/消失，不主动改 opacity。
+
+### ❌ 禁止写法
+
+```css
+/* 选择器本体写 opacity: 0，配合 animation forwards —— 元素永远不可见 */
+.fade-in {
+  opacity: 0;                              /* ← 凶手 1 */
+  animation: fadeIn 0.5s ease-out forwards; /* ← 凶手 2 */
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+```
+
+### 触发原因（浏览器行为）
+
+前端 HtmlComponent 只通过 `display` 控制元素显隐时机（`display:none → ''` 切换）。
+- 元素首次加载时位于 `display:none`，`animation` 在不可见状态下已经"演完"
+- `animation-fill-mode: forwards` 让浏览器把"终态"冻结下来
+- 当切到 `display:''` 让元素显示时，浏览器认为动画已结束 → **元素以冻结的 opacity:0 渲染**
+- 结果：元素在页面上永远不可见（历史 P3 bug 根因）
+
+### ✅ 正确写法：把 `opacity: 0` 移到 `@keyframes from {}` 里
+
+```css
+/* ✅ 正确：选择器本体不写 opacity:0，由 @keyframes 起始帧负责"出场前不可见" */
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+```
+
+原理：浏览器在 `display:none → ''` 切换时会**重新启动** `animation`（因为上一次跑过了），新的执行周期从 `from` 开始 → 元素自然从透明渐入。
+
+### 校验
+
+- **merge-regions.js §6.1.6.b**：扫描每个 HtmlComponent 的 `content.css`，若任一选择器同时含 `opacity: 0` 与 `animation ... forwards`（或 `animation-fill-mode: forwards`）→ throw 阻断，列出冲突选择器
+- **selfcheck.js checkR21_5EntranceAnimationOpacity**：项目级 selfcheck 兜底，错误信息一致
+- 拦截方式与 R14（居中 vs 动画）一致：fail-fast，逐 region 修复
+
+### 与 R12 的关系
+
+| 规则 | 内容 | 是否冲突 |
+|------|------|----------|
+| R12.3 | AI 可写标准 CSS 动画（`@keyframes` + `animation` + `forwards`） | — |
+| R21.5 | `opacity: 0` 与 `animation ... forwards` 不能写在**同一个选择器**里 | 叠加约束 |
+
+R21.5 是 R12 的延伸：**入场动画的"初始不可见"必须靠 `@keyframes from`，不能靠选择器本体的 `opacity: 0`**。
+
+### 自检 checklist
+
+- [ ] 选择器本体没写 `opacity: 0`？（改成 `@keyframes from { opacity: 0 }`）
+- [ ] 元素入场动画的"起手式"（透明、位移）写在 `@keyframes from {}` 里？
+- [ ] `animation-fill-mode: forwards` 时，确认终态是"可见"状态？
 
 ---
 

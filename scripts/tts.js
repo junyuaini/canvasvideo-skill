@@ -46,9 +46,12 @@ function splitTextIntoChunks(text, chunkSize = DEFAULT_CHUNK_SIZE) {
   if (chunkSize <= 0) {
     throw new Error(`chunkSize 必须为正数，当前: ${chunkSize}`);
   }
-  const delims = '，。！？；…!?.;';
+  const delims = '，。！？…!?,?';
   const escaped = delims.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const sentencePattern = new RegExp(`[^${escaped}]+[${escaped}]?`, 'g');
+  const sentencePattern = new RegExp(
+    `[^${escaped}]+(?:[${escaped}]|(?<!\\d)\\.(?!\\d))?`,
+    'g'
+  );
   let sentences = text.match(sentencePattern) || [];
   sentences = sentences.map(s => s.trim()).filter(Boolean);
 
@@ -113,8 +116,10 @@ function serializeSrt(entries) {
 }
 
 // ===== 字幕聚合：把字级条目按标点切短 =====
-const TRAILING_PUNCT_RE = /([，。！？；：、,!?;:\."""''《》【】…—–]+)\s*$/;
-const STRIP_PUNCT_RE = /[，。！？；：、,!?;:\."""''《》【】…—–\s]+/g;
+const TRAILING_PUNCT_RE = /([，。！？；：、,!?;:"""''《》【】…—–]|(?<!\d)\.(?!\d))\s*$/;
+const STRIP_PUNCT_RE = /[，。！？；：、,!?;:"""''《》【】…—–\s]+|(?<!\d)\.(?!\d)/g;
+// 数字.数字 小数点守卫：buffer 末尾是数字 + 当前 entry.part 是孤立 "."（前后均无数字）→ 不当作句末
+const DECIMAL_DOT_GUARD = /^\.$/;
 function groupEntriesByPunctuation(entries) {
   // entries: [{part, start, end}, ...] 毫秒时间戳
   const result = [];
@@ -137,7 +142,7 @@ function groupEntriesByPunctuation(entries) {
     if (bufStart === null) bufStart = entry.start;
     bufEnd = entry.end;
     const punctMatch = raw.match(TRAILING_PUNCT_RE);
-    if (punctMatch) {
+    if (punctMatch && !(DECIMAL_DOT_GUARD.test(raw) && buffer.length > 0 && /\d$/.test(buffer[buffer.length - 1]))) {
       const wordPart = raw.slice(0, raw.length - punctMatch[0].length).trim();
       if (wordPart) buffer.push(wordPart);
       buffer.push(punctMatch[1]);

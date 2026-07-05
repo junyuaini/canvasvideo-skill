@@ -32,7 +32,10 @@
         "end": 5,
         "text": "CanvasVideo 在线视频编辑器"
       },
-      "background": "transparent"
+      "background": "transparent",
+      "_validationHints": {
+        "R21.5_demo": "❌ 不要写 '.x { opacity: 0; animation: fade 0.5s forwards }' —— display:none → '' 切换后元素永远 opacity:0。✅ 把 opacity:0 挪到 @keyframes from {} 里（如 from { opacity: 0; transform: translateY(20px); }）"
+      }
     }
   ]
 }

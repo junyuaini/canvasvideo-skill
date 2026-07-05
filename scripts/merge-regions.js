@@ -3,7 +3,7 @@
  *
  * 合并规则：
  *   - component 不写 start/end（前端按 region 边界自动推算）
- *   - elementIds 的 start/end 由 transformHtmlComponent 从 data-subtitle 解析，checkStartEndDefault 判断是否省略
+ *   - elementIds 的 start 由 transformHtmlComponent 从 data-subtitle 解析；end 固定为 region.endTime（新规 2026-07）
  *   - background 原样透传，不处理
  *
  * 用法：node merge-regions.js --cwd=<Agent工作目录> <skillProjectId> [输出路径]
@@ -231,126 +231,6 @@ function extractHtmlIds(html) {
 }
 
 /**
- * 解析 data-subtitle 属性
- * 支持 "3" / "3-5" / "3,5" 三种格式
- */
-function parseDataSubtitle(attr) {
-  if (!attr || typeof attr !== 'string') return null;
-  const trimmed = attr.trim();
-  if (!trimmed) return null;
-
-  if (trimmed.includes('-')) {
-    const [a, b] = trimmed.split('-').map(s => parseInt(s.trim(), 10));
-    if (isNaN(a) || isNaN(b)) return null;
-    const list = [];
-    const start = Math.min(a, b);
-    const end = Math.max(a, b);
-    for (let i = start; i <= end; i++) list.push(i);
-    return { type: 'range', ids: list };
-  }
-
-  if (trimmed.includes(',')) {
-    const ids = trimmed.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-    if (ids.length === 0) return null;
-    return { type: 'multi', ids };
-  }
-
-  const n = parseInt(trimmed, 10);
-  if (isNaN(n)) return null;
-  return { type: 'single', ids: [n] };
-}
-
-/**
- * 解析 data-subtitle 字符串，仅在 attribute 已存在时返回 (用于 merge 注入)
- */
-function getDataSubtitleAttr(html, id) {
-  if (!html || !id) return null;
-  const safeId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`<[^>]*\\bid\\s*=\\s*["']${safeId}["'][^>]*>`, 'g');
-  const m = regex.exec(html);
-  if (!m) return null;
-  const tag = m[0];
-  const dataSubtitleMatch = tag.match(/\bdata-subtitle\s*=\s*["']([^"']+)["']/);
-  return dataSubtitleMatch ? dataSubtitleMatch[1] : null;
-}
-
-/**
- * 提取元素 data-subtitle 对应字幕的全局时间范围
- * @returns {{start:number, end:number, isContinuous:boolean, subIds:number[]}|null}
- */
-function resolveElementSubtitleTimes(attrValue, srtList) {
-  const parsed = parseDataSubtitle(attrValue);
-  if (!parsed) return null;
-  if (srtList.length === 0) return null;
-
-  const ids = parsed.ids;
-  const validIds = ids.filter(id => id >= 1 && id <= srtList.length);
-  if (validIds.length === 0) return null;
-
-  const firstSub = srtList[validIds[0] - 1];
-  const lastSub = srtList[validIds[validIds.length - 1] - 1];
-
-  if (parsed.type === 'multi') {
-    const segments = validIds.map(id => ({
-      subId: id,
-      start: truncateTo3(srtList[id - 1].start),
-      end: truncateTo3(srtList[id - 1].end)
-    }));
-    return {
-      start: truncateTo3(firstSub.start),
-      end: truncateTo3(lastSub.end),
-      isContinuous: false,
-      segments,
-      subIds: validIds
-    };
-  }
-
-  return {
-    start: truncateTo3(firstSub.start),
-    end: truncateTo3(lastSub.end),
-    isContinuous: true,
-    subIds: validIds
-  };
-}
-
-/**
- * 把 animation 强制设为 none（前端会用 JS 完全控制元素可见性，不再依赖 CSS animation）
- */
-function injectAnimationDelay(css, classNames, delaySec) {
-  if (!css || !classNames || classNames.length === 0) return css;
-  let result = css;
-  classNames.forEach(cls => {
-    if (!cls) return;
-    const safeCls = cls.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(\\.${safeCls}\\s*\\{)([^}]*?)(\\})`, 'g');
-    result = result.replace(regex, (match, open, body, close) => {
-      let newBody = body;
-      // 强制禁用 CSS animation（前端 JS 用 element.style.opacity 控制可见性）
-      newBody = newBody.replace(/animation\s*:\s*[^;\n}]+/g, 'animation: none');
-      newBody = newBody.replace(/animation-delay\s*:\s*[^;\n}]+/g, '');
-      newBody = newBody.replace(/animation-fill-mode\s*:\s*[^;\n}]+/g, '');
-      return `${open}${newBody}${close}`;
-    });
-  });
-  return result;
-}
-
-/**
- * 提取元素 class 名列表
- */
-function getElementClasses(html, id) {
-  if (!html || !id) return [];
-  const safeId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`<[^>]*\\bid\\s*=\\s*["']${safeId}["'][^>]*>`, 'g');
-  const m = regex.exec(html);
-  if (!m) return [];
-  const tag = m[0];
-  const classMatch = tag.match(/\bclass\s*=\s*["']([^"']+)["']/);
-  if (!classMatch) return [];
-  return classMatch[1].split(/\s+/).filter(Boolean);
-}
-
-/**
  * 统计数组中每个值出现次数，过滤出 > 1 的项，返回 "[id](×count)" 列表
  */
 function countDuplicates(items) {
@@ -518,12 +398,35 @@ function validateHtmlElementIds(comp, project) {
 }
 
 /**
+ * 递归剥离去掉所有 `_` 前缀的字段
+ * 用途：AI 在 regions/P{n}.json 中可以携带 _validation_hints / _comment 等
+ *       提示字段，merge 时通过本函数剥离，避免污染最终 project.json
+ * @param {*} obj
+ * @returns {*}
+ */
+function stripUnderscoreFields(obj) {
+  if (Array.isArray(obj)) return obj.map(stripUnderscoreFields);
+  if (obj && typeof obj === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (k.startsWith('_')) continue;
+      out[k] = stripUnderscoreFields(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
+/**
  * 合并区域文件为完整 project.json
  * @param {string} workdir - 工作目录路径
  * @param {string} workdirRoot - canvasvideo-workdir 根目录
  * @returns {Object} 合并后的 project 对象
  */
 function mergeRegions(workdir, workdirRoot) {
+  // 累积器：循环结束统一抛出（避免一次一报 + 静默通过）
+  const allComponentErrors = [];
+
   const skeletonPath = path.join(workdir, 'skeleton.json');
   if (!fs.existsSync(skeletonPath)) {
     throw new Error('工作目录缺少 skeleton.json');
@@ -612,10 +515,12 @@ function mergeRegions(workdir, workdirRoot) {
     const nextRegionStartTime = nextSkeletonRegion ? regionTimes[nextSkeletonRegion.id].startTime : lastRegionEndTime;
 
     const regionFile = path.join(regionsDir, `${skeletonRegion.id}.json`);
-    const regionData = (() => {
+    let regionData = (() => {
       try { return JSON.parse(fs.readFileSync(regionFile, 'utf8')); }
       catch(e) { throw new Error(`${skeletonRegion.id}.json 解析失败: ${e.message}`); }
     })();
+    // 剥离 _ 前缀的提示字段（_validation_hints / _comment 等），防止污染 project.json
+    regionData = stripUnderscoreFields(regionData);
 
     const regionEntry = {
       id: skeletonRegion.id,
@@ -653,7 +558,7 @@ function mergeRegions(workdir, workdirRoot) {
 
     // 6. 处理 components：自动转换 subtitles → start/end
     if (Array.isArray(regionData.components)) {
-      const allComponentErrors = [];  // 累积所有 component 转换错误，循环结束统一抛出（避免一次一报）
+      // 累积所有 component 转换错误，mergeRegions 返回前统一抛出（避免一次一报 + 静默通过）
       for (const comp of regionData.components) {
         // 6.0 注入 regionId（合并阶段携带的"所属区域"标识，自检与前端均依赖）
         if (!comp.regionId) comp.regionId = skeletonRegion.id;
@@ -706,6 +611,41 @@ function mergeRegions(workdir, workdirRoot) {
           throw new Error(`HtmlComponent [${comp.id}] .${m[1]} 禁止 animation-delay 与 opacity: 0 同时使用（delay 期间元素已在页面会闪）。`);
         }
 
+        // 6.1.6.b R21.5 校验：opacity: 0 与 animation ... forwards 共用（会导致 display:none → '' 切换后元素永远不可见）
+        // 规则：同一选择器块内若同时含 `opacity: 0` 和 `animation: ... forwards`（或 animation-fill-mode: forwards）则报错。
+        // 原因：浏览器在 display:none 期间"已完成的 animation"终态会被冻结；切换到 display:'' 后元素保持冻结终态。
+        // 修复：把 opacity: 0 从选择器本体移到 @keyframes 的 `from {}` 里（参考 P3 brush-appear 写法）。
+        {
+          const selectorBlockRegex = /\.([\w-]+)(?:\s*,\s*\.([\w-]+))*\s*\{([^}]*)\}/g;
+          const r21_5Hits = [];
+          let bm;
+          while ((bm = selectorBlockRegex.exec(cssContent)) !== null) {
+            const selectorNames = [bm[1], ...(bm[2] ? [bm[2]] : [])];
+            const body = bm[3];
+            // 1) 块内必须有 opacity: 0（容忍任意空格、容忍 !important 不出现）
+            const hasOpacityZero = /(?:^|[;{]\s*)opacity\s*:\s*0(?:\s*!important)?\s*(?:;|$)/m.test(body);
+            if (!hasOpacityZero) continue;
+            // 2) 块内必须有 animation，且其值含 forwards
+            //    支持写法：`animation: name 0.8s ease-out forwards` 或 `animation-fill-mode: forwards`
+            const animDeclMatch = body.match(/(?:^|[;{]\s*)animation\s*:\s*([^;}]+)/m);
+            const fillModeMatch = body.match(/(?:^|[;{]\s*)animation-fill-mode\s*:\s*([^;}]+)/m);
+            let hasForwards = false;
+            if (animDeclMatch && /\bforwards\b/i.test(animDeclMatch[1])) hasForwards = true;
+            if (fillModeMatch && /\bforwards\b/i.test(fillModeMatch[1])) hasForwards = true;
+            if (!hasForwards) continue;
+            r21_5Hits.push(selectorNames.join(', .'));
+          }
+          if (r21_5Hits.length > 0) {
+            const list = r21_5Hits.map(s => `.${s}`).join('、');
+            throw new Error(
+              `HtmlComponent [${comp.id}] R21.5 校验失败：检测到选择器同时含 "opacity: 0" 与 "animation ... forwards"：${list}。\n` +
+              `原因：浏览器会在 display:none 期间冻结 animation 终态；切换到 display:'' 后元素保持冻结的 opacity:0，页面上看不见。\n` +
+              `修复：把 opacity:0 从选择器本体删掉，挪到 @keyframes 的 from {} 里（如 @keyframes brush-appear { from { opacity: 0; } to { opacity: 1; } }），让浏览器在 display:'' 时重新播放入场动画。\n` +
+              `参考：rules/06-components.md §R21.5。`
+            );
+          }
+        }
+
         // 6.1.7 校验 elementIds 格式（与 selfcheck.js checkHtmlElementIds 对齐）
         validateHtmlElementIds(comp, project);
 
@@ -741,7 +681,7 @@ function mergeRegions(workdir, workdirRoot) {
         // AI 不再写 elementIds、id、subtitles、animations 等任何前端协议字段
         if (comp.type === 'HtmlComponent' && comp.content && typeof comp.content.html === 'string') {
           try {
-            const transformed = transformHtmlComponent(comp, srtList);
+            const transformed = transformHtmlComponent(comp, srtList, regionEntry.endTime);
             // 1) cleanedHtml 覆盖：含注入的 id 属性
             if (transformed.cleanedHtml) {
               comp.content.html = transformed.cleanedHtml;
@@ -799,6 +739,15 @@ function mergeRegions(workdir, workdirRoot) {
   });
   project.subtitles.sort((a, b) => a.start - b.start);
 
+  // 循环结束后统一抛出累积错误（修复：之前此累积器没人读，导致 transform 失败静默通过，云端校验才发现）
+  if (allComponentErrors.length > 0) {
+    const lines = allComponentErrors.map(e => `  - [${e.compId}] ${e.message}`).join('\n');
+    throw new Error(
+      `merge 转换失败：${allComponentErrors.length} 个 component 出错\n${lines}\n` +
+      `提示：本地 merge 必须以 exit=0 通过，elementIds / cleanedHtml 才能被写入 project.json。`
+    );
+  }
+
   return project;
 }
 
@@ -846,8 +795,14 @@ if (require.main === module) {
     console.log(`  区域数: ${project.regions.length}`);
     console.log(`  HtmlComponent 数: ${project.components.length}`);
     console.log(`  字幕数: ${project.subtitles.length}`);
-    // 6.x 提醒：后续用户修改时 id → class 定位
-    console.log(`\n📌 后续修改：当用户提供 id（如 "P1-101"）时，通过合并后的 project.json 反查：elementIds["#P1-101"] → 所在 component → regions/P{n}.json → class 名`);
+    // 6.x 提醒：后续用户修改时 id → class 定位（使用 lookup-element.js 脚本）
+    console.log(``);
+    console.log(`📌 后续修改：当用户提供 id（如 "P1-101"）时，调用 lookup-element.js 自动反查：`);
+    console.log(`     node scripts/lookup-element.js --cwd=<Agent工作目录> ${skillProjectId} <id1> [id2 ...]`);
+    console.log(`     node scripts/lookup-element.js --cwd=<Agent工作目录> ${skillProjectId} --region=P{n}     # 列出某 region 全部元素`);
+    console.log(`     node scripts/lookup-element.js --cwd=<Agent工作目录> ${skillProjectId} --all               # 列出全部元素`);
+    console.log(``);
+    console.log(`   脚本会输出：id → region + 区域名 + class（已自动去掉 p{N}- 前缀，方便对照 regions/P{n}.json 源文件）+ data-subtitle 编号`);
     process.exit(0);
   } catch (e) {
     if (e.message && e.message.includes('Expected double-quoted')) {
@@ -868,4 +823,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { mergeRegions, resolveSubtitles, parseRegionSubtitleRange, getSubtitleRangeBound, inferSubtitleBoundFromTimeRange, checkStartEndDefault, validateHtmlElementIds, truncateTo3, assert3Decimal };
+module.exports = { mergeRegions, resolveSubtitles, parseRegionSubtitleRange, getSubtitleRangeBound, inferSubtitleBoundFromTimeRange, checkStartEndDefault, validateHtmlElementIds, truncateTo3, assert3Decimal, stripUnderscoreFields };

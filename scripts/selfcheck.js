@@ -69,6 +69,78 @@ function checkRegionSchema(regions) {
 }
 
 /**
+ * R21.5 校验：CSS 选择器同时含 `opacity: 0` 与 `animation ... forwards`
+ *
+ * 触发场景：前端 HtmlComponent 只通过 `display` 控制显隐（display:none → '' 切换）。
+ * 浏览器行为：在 display:none 期间，`animation` 已经"演完"，终态被冻结；
+ * 切换到 display:'' 时元素以冻结终态渲染。
+ * 因此若选择器同时声明 `opacity: 0` + `animation ... forwards`，
+ * 元素会保持 opacity:0 永远看不见（P3 历史 bug 根因）。
+ *
+ * 修复：把 `opacity: 0` 从选择器本体删掉，挪到 `@keyframes from {}` 里
+ * （参考 P3 brush-appear 写法）。这样浏览器在 display:'' 时会重新播放入场动画。
+ *
+ * @param {Array} components
+ * @returns {string[]} errors
+ */
+function checkR21_5EntranceAnimationOpacity(components) {
+  const errors = [];
+  if (!Array.isArray(components)) return errors;
+
+  function checkRecursive(comps, pathPrefix) {
+    comps.forEach((comp, idx) => {
+      if (!comp || typeof comp !== 'object') return;
+      const pathStr = pathPrefix ? `${pathPrefix}.children[${idx}]` : `components[${idx}]`;
+      const compLabel = `[${comp.id || `index ${idx}`}]`;
+
+      if (comp.type === 'HtmlComponent') {
+        const cssContent = comp.content && typeof comp.content.css === 'string' ? comp.content.css : '';
+        if (!cssContent) {
+          // 递归 children
+          if (Array.isArray(comp.children) && comp.children.length > 0) {
+            checkRecursive(comp.children, pathStr);
+          }
+          return;
+        }
+        const selectorBlockRegex = /\.([\w-]+)(?:\s*,\s*\.([\w-]+))*\s*\{([^}]*)\}/g;
+        const hits = [];
+        let bm;
+        while ((bm = selectorBlockRegex.exec(cssContent)) !== null) {
+          const selectorNames = [bm[1], ...(bm[2] ? [bm[2]] : [])];
+          const body = bm[3];
+          // 块内必须有 opacity: 0
+          const hasOpacityZero = /(?:^|[;{]\s*)opacity\s*:\s*0(?:\s*!important)?\s*(?:;|$)/m.test(body);
+          if (!hasOpacityZero) continue;
+          // 块内必须有 animation ... forwards 或 animation-fill-mode: forwards
+          const animDeclMatch = body.match(/(?:^|[;{]\s*)animation\s*:\s*([^;}]+)/m);
+          const fillModeMatch = body.match(/(?:^|[;{]\s*)animation-fill-mode\s*:\s*([^;}]+)/m);
+          let hasForwards = false;
+          if (animDeclMatch && /\bforwards\b/i.test(animDeclMatch[1])) hasForwards = true;
+          if (fillModeMatch && /\bforwards\b/i.test(fillModeMatch[1])) hasForwards = true;
+          if (!hasForwards) continue;
+          hits.push(selectorNames.map(n => `.${n}`).join(', '));
+        }
+        if (hits.length > 0) {
+          errors.push(
+            `${pathStr} HtmlComponent ${compLabel} R21.5 校验失败：选择器同时含 "opacity: 0" 与 "animation ... forwards"：${hits.join('、')}。` +
+            `原因：浏览器在 display:none 期间会冻结 animation 终态；切换到 display:'' 后元素保持 opacity:0 永远不可见（P3 历史 bug 根因）。` +
+            `修复：把 opacity:0 从选择器本体删掉，挪到 @keyframes 的 from {} 里（如 @keyframes brush-appear { from { opacity: 0; } to { opacity: 1; } }），让浏览器在 display:'' 时重新播放入场动画。` +
+            `参考：rules/06-components.md §R21.5。`
+          );
+        }
+      }
+
+      if (Array.isArray(comp.children) && comp.children.length > 0) {
+        checkRecursive(comp.children, pathStr);
+      }
+    });
+  }
+
+  checkRecursive(components, null);
+  return errors;
+}
+
+/**
  * 检查所有 HtmlComponent 的 background 必填字段（与 content 平级）
  * - background 是 HtmlComponent 的两个基本属性之一（另一个是 content）
  * - background.html 必填、字符串、非空（一般是单个根 div，承载 SVG/渐变/装饰）
@@ -657,6 +729,10 @@ function selfcheck(project) {
   // 检查顶级组件 type 白名单（后端 / Skill 只允许 HtmlComponent）
   const topTypeErrors = checkTopComponentType(components);
   errors.push(...topTypeErrors);
+
+  // [R21.5] opacity: 0 + animation ... forwards 危险组合（display:none 切换导致元素永远不可见）
+  const r21_5Errors = checkR21_5EntranceAnimationOpacity(components);
+  errors.push(...r21_5Errors);
 
   // [时间层次校验] project → region → component → element
   const timeHierarchyErrors = checkTimeHierarchy(project);

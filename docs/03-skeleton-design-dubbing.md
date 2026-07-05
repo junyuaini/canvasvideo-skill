@@ -198,11 +198,25 @@
 | style | ❌ | 视觉风格 `warm`（默认）/ `tech` / `business` / `art` |
 | emotion_curve_template | ❌ | 情绪曲线模板 |
 | subtitle_count | ❌ | 字幕总条数 |
-| subtitle | ❌ | 字幕样式，参考 rules/06-components.md §R8 |
+| subtitle | ✅ | **必填**，字幕样式。3 字段：`enabled`(boolean) / `html`(string, **必须含 `.subtitle-text`**) / `css`(string)。参考 [rules/06-components.md §R8](rules/06-components.md#r8-字幕样式项目级必填) |
 
 > ⚠️ **区域名称 4-12 字**：名称仅统计非空格字符，必须为 4-12 个字符。不符合则 generate-skeleton.js 报错。
 > 💡 **`audio.path` 会被自动覆盖**——步骤 4 跑 generate-skeleton.js 时，会用 `state.voice.audioPath` 强制覆盖。
 > 💡 **"时长(秒)"列不填**——由脚本按"包含字幕"自动从 SRT 算（保留 3 位小数）。
+
+**`subtitle` 默认模板**（直接复制到项目配置 JSON 里）：
+
+```json
+"subtitle": {
+  "enabled": true,
+  "html": "<div class='subtitle-bar'><span class='subtitle-text'></span></div>",
+  "css": ".subtitle-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 24px; display: flex; justify-content: center; pointer-events: none; z-index: 200; }\n.subtitle-text { display: inline-block; padding: 4px 12px; border-radius: 6px; background: rgba(0,0,0,0.6); color: #fff; font-size: 28px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.9); line-height: 1.4; }"
+}
+```
+
+- ❌ 不要写 `color / fontSize / position / fontWeight / lineHeight / background` 这些老版本字段（已废弃，前端不读取）
+- ❌ 不要省略 `subtitle`（server schema 会拒）
+- ❌ HTML 里必须有 `<span class='subtitle-text'></span>`，否则前端写入文字失败
 
 ---
 

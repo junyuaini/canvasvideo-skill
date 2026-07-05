@@ -28,49 +28,40 @@ const { validateHtml } = require('./validate-html');
 
 /**
  * 把 SRT 索引表达式转成字幕序号数组
- * @param {string} expr - "1" / "1,3,5" / "1-8"
+ * 新规（2026-07）：仅接受单个字幕 ID（如 "3"）。
+ * 连续区间（如 "3-5"）和离散段（如 "1,3,5"）已废弃，元素 end 由脚本自动设为区域 endTime。
+ * @param {string} expr - "3"
  * @returns {Array<number>}
  */
 function parseSubtitleIndexExpr(expr) {
   if (!expr) return [];
-  expr = expr.trim();
-
-  // "1-8" 范围
-  if (expr.includes('-')) {
-    const [a, b] = expr.split('-').map(s => parseInt(s.trim(), 10));
-    if (isNaN(a) || isNaN(b) || a > b) {
-      throw new Error(`data-subtitle 表达式 "${expr}" 格式错误，应为 "开始-结束" 且开始 ≤ 结束`);
-    }
-    const out = [];
-    for (let i = a; i <= b; i++) out.push(i);
-    return out;
+  expr = String(expr).trim();
+  if (!expr) return [];
+  if (!/^[1-9]\d*$/.test(expr)) {
+    throw new Error(
+      `data-subtitle="${expr}" 格式错误，新规只支持单个字幕 ID（如 "3"）。` +
+      `连续区间（如 "3-5"）和离散段（如 "1,3,5"）已废弃，` +
+      `元素结束时间由脚本自动设为区域结束时间。`
+    );
   }
-
-  // "1,3,5" 列表
-  if (expr.includes(',')) {
-    return expr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-  }
-
-  // "1" 单个
-  const n = parseInt(expr, 10);
-  if (isNaN(n)) {
-    throw new Error(`data-subtitle 表达式 "${expr}" 格式错误，应为字幕编号（如 "1"）或范围（如 "1-8"）`);
-  }
-  return [n];
+  return [parseInt(expr, 10)];
 }
 
 /**
  * 根据字幕序号查 start/end
- * @param {Array<number>} indices - 字幕序号数组
+ * 新规（2026-07）：end 固定为传入的 regionEndTime，不再用字幕 end。
+ * @param {Array<number>} indices - 字幕序号数组（新规只含 1 个 ID）
  * @param {Array} srtList - 字幕数组（index 1-based，与 SRT 序号对齐）
+ * @param {number} regionEndTime - 区域结束时间（元素 end 固定为此值）
  * @returns {{start: number, end: number}}
  */
-function resolveSubtitleRange(indices, srtList) {
+function resolveSubtitleRange(indices, srtList, regionEndTime) {
   if (!indices || indices.length === 0) return null;
-  const times = indices
-    .map(i => srtList[i - 1])  // SRT 1-based → 数组 0-based
-    .filter(Boolean);
-  if (times.length === 0) {
+  if (typeof regionEndTime !== 'number' || !Number.isFinite(regionEndTime)) {
+    throw new Error(`resolveSubtitleRange 缺少 regionEndTime 参数（必须为有限数字）`);
+  }
+  const sub = srtList[indices[0] - 1];  // SRT 1-based → 数组 0-based
+  if (!sub) {
     throw new Error(
       `data-subtitle 引用了字幕 [${indices.join(', ')}]，但 SRT 字幕表里找不到。` +
       `可用字幕编号: 1-${srtList.length}。` +
@@ -78,8 +69,8 @@ function resolveSubtitleRange(indices, srtList) {
     );
   }
   return {
-    start: times[0].start,
-    end: times[times.length - 1].end
+    start: sub.start,
+    end: regionEndTime
   };
 }
 
@@ -149,7 +140,7 @@ function analyzeClassElements(html) {
 
     // 最近的、声明了时间控制的 class 祖先
     // 父 class 元素：取栈中最近的 class 祖先（无论是否带 data-*）
-    // 用于：1) R15 自动补 data-global 时跳过嵌套子元素；2) R15.1 60% 上限统计顶级元素
+    // 用于：R15 自动补 data-global 时跳过嵌套子元素
     // 之前只找带 data-* 的祖先，导致嵌套在未带 data-* 的 class 父级下的子元素被误判为顶级
     const parentClassElement = [...stack].reverse().find(s => s.isClass) || null;
 
@@ -350,6 +341,7 @@ function prefixHtmlClass(html, prefix) {
  * 转换 HtmlComponent
  * @param {Object} comp - { id, regionId, content: { html, css, ... } }
  * @param {Array} srtList - parseSrt 返回的字幕数组
+ * @param {number} [regionEndTime] - 区域结束时间；data-subtitle 元素的 end 固定为此值（必填）
  * @returns {{
  *   elementIds: Object,    // { "#P1-100": { id, start?, end? } }
  *   animations: Object,    // 始终空对象（保留字段）
@@ -357,7 +349,7 @@ function prefixHtmlClass(html, prefix) {
  *   cleanedCss: string     // 原样透传
  * }}
  */
-function transformHtmlComponent(comp, srtList) {
+function transformHtmlComponent(comp, srtList, regionEndTime) {
   if (!comp.content || !comp.content.html) {
     return { elementIds: {}, animations: {}, cleanedHtml: '', cleanedCss: '' };
   }
@@ -421,29 +413,6 @@ function transformHtmlComponent(comp, srtList) {
       errors.push(
         `<${el.tagName} class="${classDesc}"> 同时含 data-subtitle 和 data-global，互斥（R15 规则）。` +
         `AI 只能写 data-subtitle；要全局显示则不写 data-*，由 merge 自动补。`
-      );
-    }
-  }
-
-  // 5.2 R15.1 50% 上限校验：data-subtitle 元素 ≤ 50% 总顶级 class 元素
-  // 统计：仅顶级 class 元素（不含嵌套继承的子元素）
-  const topClassElements = elements.filter(el => !el.parentClassElement);
-  const totalTopClass = topClassElements.length;
-  const subtitleTopClass = topClassElements.filter(el => el.hasDataSubtitle).length;
-  if (totalTopClass > 2) {
-    const ratio = subtitleTopClass / totalTopClass;
-    if (ratio > 0.6) {
-      errors.push(
-        `R15.1 60% 上限校验失败：\n` +
-        `  data-subtitle 元素 = ${subtitleTopClass}（占比 ${(ratio * 100).toFixed(1)}%）\n` +
-        `  总顶级 class 元素 = ${totalTopClass}\n` +
-        `  60% 上限 = ${Math.floor(totalTopClass * 0.6)}\n` +
-        `  → 请将 ≥ ${subtitleTopClass - Math.floor(totalTopClass * 0.6)} 个元素改为不写 data-*，由 merge 自动补 data-global="true"。\n` +
-        `  → 参考：rules/06-components.md §R15.1`
-      );
-    } else if (ratio > 0.5) {
-      console.warn(
-        `[W] [${comp.id}] R15.1 60% 上限警告：data-subtitle 元素占比 ${(ratio * 100).toFixed(1)}%（接近上限 60%），建议把部分装饰元素留空。`
       );
     }
   }
@@ -520,7 +489,8 @@ function transformHtmlComponent(comp, srtList) {
   }
 
   // 10. 构建 elementIds
-  //    只注入 start（出现时间），不再注入 end（前端通过下一元素 start 推算 / 字幕自然结束）
+  //    start = data-subtitle 对应字幕 start
+  //    end 不写入 elementIds，endTime 由前端按 region.endTime 兜底（新规 2026-07-05）
   const elementIds = {};
   for (const el of elements) {
     const newId = idMap.get(el);
@@ -528,9 +498,10 @@ function transformHtmlComponent(comp, srtList) {
     const entry = { id: newId, dataGlobal: el.hasDataGlobal && !el.hasDataSubtitle };
     if (el.hasDataSubtitle) {
       const indices = parseSubtitleIndexExpr(el.dataSubtitleValue);
-      const range = resolveSubtitleRange(indices, srtList);
+      const range = resolveSubtitleRange(indices, srtList, regionEndTime);
       if (range) {
         entry.start = range.start;
+        // entry.end 不写入（前端用 region.endTime）
       }
     }
     // data-global 不写 start（前端视为始终可见）

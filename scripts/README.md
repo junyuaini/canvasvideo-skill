@@ -24,6 +24,7 @@
 | `validate-region.js` | 区域时间范围验证：检查 HtmlComponent 时间是否在区域内 |
 | `query-api.js` | 封装所有后端 API 调用（LLM 专用，禁止手敲 curl） |
 | `save-project.js` | 将修改后的 project.json 保存到工作目录 |
+| `lookup-element.js` | 输入 HTML 元素 ID（如 P4-107），反查所在 region、class、subtitle |
 | `srt-parser.js` | SRT 字幕解析器 → project.json subtitles 数组 |
 | `state.js` | 读写 `.canvasvideo/project-state.json`，维护 skillProjectId、mode 等本地状态 |
 
