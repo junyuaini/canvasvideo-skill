@@ -155,15 +155,17 @@ AI 写元素时间控制有 **3 种方式**（择一即可）：
 
 ### 关键帧定义
 
+> ⚠️ **2026-07 升级**：R14 校验已强化——`@keyframes` 内**禁止出现 `transform` 属性**（避免与居中元素冲突）。下面用 `margin-top` 替代位移效果。
+
 ```css
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; margin-top: 20px; }
+  to { opacity: 1; margin-top: 0; }
 }
 
 @keyframes scale-pop {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; width: 0; }
+  to { opacity: 1; width: 100%; }
 }
 ```
 
@@ -181,8 +183,9 @@ AI 写元素时间控制有 **3 种方式**（择一即可）：
 
 **注意**：
 
-- 前端只通过 `display` 控制显隐时机，CSS `@keyframes` / `transition` / `animation` **由浏览器原生执行**，可任意使用 transform / filter / clip-path / cubic-bezier 等全部 CSS 能力
+- 前端只通过 `display` 控制显隐时机，CSS `@keyframes` / `transition` / `animation` **由浏览器原生执行**
 - `forwards` 等关键字会正常生效
+- **不要在 `@keyframes` 内使用 `transform`**（R14 强约束，merge 报错）；改用 `margin` / `width` / `opacity` / `top` / `left`
 
 ---
 
@@ -305,8 +308,8 @@ AI 写元素时间控制有 **3 种方式**（择一即可）：
   animation: fadeIn 0.5s ease-out forwards;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; margin-top: 20px; }
+  to   { opacity: 1; margin-top: 0; }
 }
 ```
 

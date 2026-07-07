@@ -686,9 +686,116 @@ R21.5 是 R12 的延伸：**入场动画的"初始不可见"必须靠 `@keyframe
 
 ---
 
+## R22 绑字幕元素与 animation 互斥（强约束）
+
+> 🔴 **核心结论**：`display: none → ''` 切换时浏览器**不会重启 animation**。若 `forwards` 冻结终态，元素会"啪"地出现——**绑字幕 + animation 入场 = 必闪**。
+
+### 违规场景
+
+```html
+<!-- ❌ 必闪：data-subtitle + animation forwards -->
+<div class="card" data-subtitle="3">设计文档</div>
+```
+
+```css
+.card {
+  animation: fade-in 0.5s ease-out forwards;  /* ← 凶手 */
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+```
+
+**为什么闪**：
+1. 元素首次入 DOM 时是 `display: none`
+2. `animation` 在 `display: none` 期间"演完"，`forwards` 冻结终态（`opacity: 1`）
+3. `data-subtitle` 触发时 `display` 切到 `''` → 浏览器**以冻结终态直接渲染** → "啪"地出现
+4. **没有渐入过程**
+
+### 二选一（强约束）
+
+#### 选项 A：绑字幕 + 不写 animation
+
+```html
+<div class="card" data-subtitle="3">设计文档</div>
+```
+
+```css
+.card { /* 不加 animation */ }
+```
+
+- ✅ 字幕一念就显示，字幕一念完就消失
+- ❌ 无渐入/渐出动画
+- **适用**：字幕切换的卡牌/按钮/列表项；不需要入场动效的短元素
+
+#### 选项 B：不绑字幕 + 单条 keyframe 控制全生命周期
+
+```html
+<div class="card">设计文档</div>  <!-- 不写 data-subtitle，merge 自动补 data-global -->
+```
+
+```css
+@keyframes card-life {
+  0%   { opacity: 0; }
+  33%  { opacity: 0; }   /* 等字幕 1 念完 */
+  37%  { opacity: 1; }   /* 入场 0.3s 渐入完成 */
+  95%  { opacity: 1; }   /* 保持显示 */
+  100% { opacity: 0; }   /* region 末渐出 */
+}
+.card { animation: card-life 17.633s linear forwards; }
+```
+
+- ✅ 渐入/保持/统一渐出（region 末），不闪
+- ❌ 不随字幕消失（要算时间）
+- **适用**：想要"画面保持完整"、想要"统一入场/出场时机"、不依赖字幕绑定的元素
+
+### 何时选 A / B？
+
+| 需求 | 选 A | 选 B |
+|---|---|---|
+| 元素要随字幕显示/隐藏 | ✅ | ❌ |
+| 想要入场渐入动画 | ❌ | ✅ |
+| 想要画面保持完整 | ❌ | ✅ |
+| 简单直接（字幕切换就显示/消失） | ✅ | ❌ |
+| 想要跟字幕精准同步 | ✅ | ⚠️（要自己算时间） |
+
+### 不查的场景（合法）
+
+- `data-global` 元素 + animation → **合法**（正是选项 B 标准写法）
+- 嵌套子元素 + animation → **不查**（继承父级时间，子元素自行动效 OK）
+- `data-subtitle` 元素 + `transition`（不是 animation） → **合法**（语法不冲突）
+- `data-subtitle` 元素 + `animation: ... infinite` → **不报错**（infinite 不会结束，forwards 失效）
+
+### 校验规则
+
+- **违规**：`data-subtitle` 顶级 class 元素 + 同名 CSS 选择器同时含 `animation: ... forwards`（或 `animation-fill-mode: forwards`） → **合并报错阻断**
+- 错误信息：
+
+```
+HtmlComponent [P5-001] R22 校验失败：data-subtitle 顶级元素配了 animation ... forwards：.card。
+原因：display: none → '' 切换时浏览器不会重启 animation，forwards 冻结终态，元素会"啪"地出现（必闪）。
+修复（二选一）：
+  选项 A：去掉 animation，只用 data-subtitle 控制显示（无渐入）
+  选项 B：把 data-subtitle 改为 data-global（merge 自动补），写单条 keyframe 控制全生命周期
+参考：rules/06-components.md §R22
+```
+
+---
+
 ## R14 居中与动画互斥规则（强约束）
 
 > 🔴 **血泪教训**：很多教程教 `transform: translate(-50%, -50%)` 居中 + `@keyframes` 动画，**实际不兼容**。CSS Animations 规范规定：动画运行时 transform 计算值会被重置为 keyframe 起始值，**静态 `translate(-50%, -50%)` 被吞掉**——元素看起来"先居中后跑偏"。
+
+### 违规 → 合并报错（2026-07 升级）
+
+以下情况 merge 脚本直接 `throw new Error` 阻断：
+
+1. `transform: translate(-50%, -50%)` 与 `animation:` 在同一选择器共存 → **报错**
+2. `@keyframes` 体内出现 `transform:` 属性 → **报错**（无论 keyframe 写的什么 transform 都不行，避免与居中元素冲突）
+3. `animation-delay` + `opacity: 0` 共用 → **报错**（delay 期间元素已渲染会闪一下）
+
+> 推荐替代属性：`margin` / `width` / `opacity` / `top` / `left` 等非 transform 属性。
 
 ### ❌ 禁止写法
 

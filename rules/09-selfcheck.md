@@ -115,11 +115,13 @@
 
 > 🔴 **R14**：禁止 `transform: translate(-50%, -50%)` 与 `animation` 同时使用——CSS Animations 规范会让动画期间 transform 计算值被重置为 identity matrix，居中失效。详见 [06-components.md §R14](06-components.md#r14-居中与动画互斥规则强约束)。
 
-**selfcheck 自动检查项**：
+**selfcheck 自动检查项**（2026-07 升级：以下全部为致命报错）：
 
 - [E] **致命**：检测 `transform: translate(-50%, -50%)` 与 `animation:` 同时存在于同一选择器 → **报错阻断**
-- [E] **致命**：检测 `@keyframes` 中包含 `transform:` 属性 → **报错阻断**（除非整个元素无居中需求）
+- [E] **致命**：检测 `@keyframes` 中包含 `transform:` 属性 → **报错阻断**（无例外，避免与居中元素冲突）
 - [W] **警告**：检测 `position: absolute; left: 50%` 但无对应 margin-left 修正 → 警告建议改 flex 或 left:0+right:0
+
+> 📌 升级说明：原"@keyframes 内含 transform 建议改用 margin/width/opacity"为警告，**2026-07 升级为报错**，与 R14 强约束保持一致。
 
 **推荐替代**：
 
@@ -136,6 +138,28 @@
   to { opacity: 1; margin-top: 0; }
 }
 ```
+
+#### 5.6 R22 绑字幕元素与 animation 互斥检查（**强约束**）
+
+> 🔴 **R22**：`data-subtitle` 顶级 class 元素 + 同名 CSS 选择器同时含 `animation: ... forwards`（或 `animation-fill-mode: forwards`） → **报错阻断**。详见 [06-components.md §R22](06-components.md#r22-绑字幕元素与-animation-互斥强约束)。
+
+**selfcheck 自动检查项**：
+
+- [E] **致命**：`data-subtitle` 顶级 class 元素（同 class 选择器）含 `animation: ... forwards` 或 `animation-fill-mode: forwards` → **报错阻断**
+
+**不查的场景**（合法，不报错）：
+
+- `data-global` 元素 + animation → 合法（选项 B 写法）
+- 嵌套子元素 + animation → 合法（继承父级时间）
+- `data-subtitle` 元素 + `transition` → 合法（语法不冲突）
+- `data-subtitle` 元素 + `animation: ... infinite` → 合法（infinite 不会结束，forwards 失效）
+
+**二选一强约束**：
+
+| 模式 | 写法 | 适用 |
+|---|---|---|
+| 选项 A | `data-subtitle` + 无 animation | 字幕切换的卡牌/按钮/列表项 |
+| 选项 B | `data-global`（merge 自动补）+ 单条 keyframe 控制全生命周期 | 想要"画面保持完整"+ 统一入场/出场 |
 
 #### 5.3 兼容性矩阵
 

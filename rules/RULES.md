@@ -15,6 +15,8 @@
 | R08 | API | 服务端交互 | [08-api.md](08-api.md) |
 | R09 | 自检 | 本地检查（ID格式+重复+elementIds 可选） | [09-selfcheck.md](09-selfcheck.md) |
 | R11 | 元素动画新约定 | CSS keyframes + data-subtitle / data-global 模式 | [06-components.md §R11](06-components.md#r11-元素动画新约定css-keyframes--data-subtitle-data-global) |
+| R14 | 居中与动画互斥（强约束） | `transform: translate(-50%, -50%)` vs animation 互斥；`@keyframes` 内**禁止** transform（2026-07 升级为报错） | [06-components.md §R14](06-components.md#r14-居中与动画互斥规则强约束) |
+| R22 | 绑字幕元素与 animation 互斥（强约束） | `data-subtitle` 顶级元素禁止配 `animation ... forwards`（display 切换不重启 animation，必闪） | [06-components.md §R22](06-components.md#r22-绑字幕元素与-animation-互斥强约束) |
 
 ---
 

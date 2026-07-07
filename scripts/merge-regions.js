@@ -665,11 +665,19 @@ function mergeRegions(workdir, workdirRoot) {
               `修复：用 "left:0; right:0; text-align:center" 三件套替代（详见 rules/06-components.md §R14）。`
             );
           }
-          // 额外：keyframes 内出现 transform 也警告（容易与居中冲突）
+          // R14 校验：@keyframes 内含 transform 报错（2026-07 升级：警告→错误）
+          // 原因：CSS Animations 规范会让动画期间 transform 计算值被重置为 identity matrix，
+          //       容易与居中元素（transform: translate(-50%, -50%)）冲突
+          // 修复：改用 margin / width / opacity 等非 transform 属性（详见 rules/06-components.md §R14）
           if (hasKeyframes) {
             const keyframeWithTransform = /@keyframes[^{]+\{[^}]*transform\s*:/.test(cssText);
             if (keyframeWithTransform) {
-              console.warn(`[W] HtmlComponent [${comp.id}] @keyframes 内含 transform 属性，建议改用 margin/width/opacity 避免与居中冲突（详见 R14）。`);
+              throw new Error(
+                `HtmlComponent [${comp.id}] R14 校验失败：@keyframes 内含 transform 属性。\n` +
+                `原因：CSS Animations 规范会让动画期间 transform 计算值被重置为 identity matrix，容易与居中元素冲突。\n` +
+                `修复：改用 margin / width / opacity 等非 transform 属性（如 @keyframes fadeIn { from { opacity: 0; margin-top: 20px; } to { opacity: 1; margin-top: 0; } }）。\n` +
+                `参考：rules/06-components.md §R14。`
+              );
             }
           }
         }
@@ -697,6 +705,61 @@ function mergeRegions(workdir, workdirRoot) {
           } catch (err) {
             // 累积错误：循环结束统一抛出（避免一次只报 1 个错）
             allComponentErrors.push({ compId: comp.id, message: err.message });
+          }
+        }
+
+        // 6.1.9 R22 校验：data-subtitle 顶级元素禁止配 animation ... forwards
+        // 规则：顶级 class 元素（含 data-subtitle）若有 animation 且含 forwards → 报错
+        // 原因：display: none → '' 切换时浏览器不会重启 animation，forwards 冻结终态，
+        //       元素会"啪"地出现/不出现（必闪）。
+        // 修复（二选一）：
+        //   选项 A：去掉 animation，只用 data-subtitle（无渐入）
+        //   选项 B：把 data-subtitle 改为 data-global（merge 自动补），
+        //          写单条 keyframe 控制全生命周期
+        // 不查：data-global 元素（合法，正是选项 B 写法）；嵌套子元素（继承父级时间）
+        if (comp.type === 'HtmlComponent' && comp.content && typeof comp.content.html === 'string' && typeof comp.content.css === 'string') {
+          const { analyzeClassElements } = require('./transform-html-component');
+          const elements = analyzeClassElements(comp.content.html);
+          // 顶级 class 元素：data-subtitle 且无 data-global 的顶级 class
+          const topSubtitleClasses = new Set();
+          for (const el of elements) {
+            if (!el.hasDataSubtitle || el.hasDataGlobal) continue;
+            // 顶级判定：父级 class 元素不存在，或父级不带 data-subtitle（继承不算绑字幕）
+            const inherited = el.parentClassElement && el.parentClassElement.hasDataSubtitle;
+            if (inherited) continue;
+            for (const cls of el.classNames) topSubtitleClasses.add(cls);
+          }
+          if (topSubtitleClasses.size > 0) {
+            // 扫描 CSS：每个 .className 选择器块内是否同时含 animation + forwards
+            const cssText = comp.content.css;
+            const selectorBlockRegex = /\.([\w-]+)(?:\s*,\s*\.([\w-]+))*\s*\{([^}]*)\}/g;
+            const r22Hits = [];
+            let bm;
+            while ((bm = selectorBlockRegex.exec(cssText)) !== null) {
+              const selectorNames = [bm[1], ...(bm[2] ? [bm[2]] : [])];
+              const body = bm[3];
+              // 至少有一个 class 命中顶级 data-subtitle 元素
+              const hit = selectorNames.find(n => topSubtitleClasses.has(n));
+              if (!hit) continue;
+              // 必须含 animation
+              const animDeclMatch = body.match(/(?:^|[;{]\s*)animation\s*:\s*([^;}]+)/m);
+              const fillModeMatch = body.match(/(?:^|[;{]\s*)animation-fill-mode\s*:\s*([^;}]+)/m);
+              let hasForwards = false;
+              if (animDeclMatch && /\bforwards\b/i.test(animDeclMatch[1])) hasForwards = true;
+              if (fillModeMatch && /\bforwards\b/i.test(fillModeMatch[1])) hasForwards = true;
+              if (!hasForwards) continue;
+              r22Hits.push(`.${selectorNames.join(', .')}`);
+            }
+            if (r22Hits.length > 0) {
+              throw new Error(
+                `HtmlComponent [${comp.id}] R22 校验失败：data-subtitle 顶级元素配了 animation ... forwards：${r22Hits.join('、')}。\n` +
+                `原因：display: none → '' 切换时浏览器不会重启 animation，forwards 冻结终态，元素会"啪"地出现（必闪）。\n` +
+                `修复（二选一）：\n` +
+                `  选项 A：去掉 animation，只用 data-subtitle 控制显示（无渐入）\n` +
+                `  选项 B：把 data-subtitle 改为 data-global（merge 自动补），写单条 keyframe 控制全生命周期\n` +
+                `参考：rules/06-components.md §R22。`
+              );
+            }
           }
         }
 
