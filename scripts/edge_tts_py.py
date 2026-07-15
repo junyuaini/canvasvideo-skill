@@ -215,25 +215,24 @@ def _split_inner_punctuation(entries):
 
 
 def _align_entries_to_source(entries, source_text):
-    """用原文章节按标点切出 N 段，把 entry 流按累计字符数对齐到章节边界。
+    """用原文章节按标点切出 N 段，把 entry 流累计字数切分 + 总时间跨度均分。
     返回 [start, end, text] 列表。
-    原理：
-      1. source_text 按标点切出子句
-      2. 累加 entry.part 字符数，到达子句字符数时切分
-      3. 时间均匀分布
+    算法：
+      1. source_text 按标点切出 N 个子句
+      2. 累计 entry.part 字符数（过滤 SENTENCE 整段 part 避免重复）→ 找每个子句的 char 索引
+      3. 子句 end 用"下一个子句的 entry 时间"或"块总结束时间"
     """
     if not source_text or not source_text.strip():
         return None
     # 按标点切原文（保留标点用于切分信号）
     sentence_puncts = re.compile(r"([，。！？；：、,!?;:\s]+)")
-    parts = [p for p in sentence_puncts.split(source_text) if p]  # 不过滤标点
+    parts = [p for p in sentence_puncts.split(source_text) if p]
     subs = []
     cur = []
     sentence_punct_chars = set("，。！？；：、,!?;:")
     for p in parts:
         is_punct = bool(sentence_puncts.fullmatch(p))
         if is_punct:
-            # 标点段：只要含句末标点就 flush
             if cur and any(ch in p for ch in sentence_punct_chars):
                 subs.append("".join(cur))
                 cur = []
@@ -244,20 +243,9 @@ def _align_entries_to_source(entries, source_text):
     if not subs:
         return None
 
-    # 累计 entry.part 字符数对齐
-    all_chars = "".join(e.get("part", "") if isinstance(e, dict) else getattr(e, "part", "") for e in entries)
-    all_chars_clean = _STRIP_PUNCT_RE.sub("", all_chars)
-    if len(all_chars_clean) < len(_STRIP_PUNCT_RE.sub("", "".join(subs))) * 0.5:
-        # entry 不够完整（部分被截断），放弃对齐
-        return None
-
-    result = []
-    char_idx = 0
-    sub_idx = 0
-    sub_char_count = len(_STRIP_PUNCT_RE.sub("", subs[0]))
-    sub_start_time = None
-    sub_end_time = None
-    WORD_PART_MAX_LEN = 10  # wordBoundary 单条最多 10 字；超过视为 SENTENCE 整段
+    # 过滤 SENTENCE 整段 part：只保留 wordBoundary 单字/词 entry
+    WORD_PART_MAX_LEN = 10
+    word_entries = []
     for e in entries:
         if isinstance(e, dict):
             raw = e.get("part") or ""
@@ -269,26 +257,80 @@ def _align_entries_to_source(entries, source_text):
         if not raw_clean:
             continue
         if len(raw_clean) > WORD_PART_MAX_LEN:
-            # 跳过 SENTENCE 整段 part（避免重复计算）
+            # SENTENCE 整段 part：当作块结束时间锚点（不入字数累加）
+            word_entries.append({"part": raw, "start": es, "end": ee, "is_sentence": True, "text_clean": raw_clean})
+        else:
+            word_entries.append({"part": raw, "start": es, "end": ee, "is_sentence": False, "text_clean": raw_clean})
+
+    if not word_entries:
+        return None
+
+    # 总时间跨度：第一个 word entry start ~ 最后一个非 SENTENCE entry end 或 SENTENCE entry end
+    first_es = word_entries[0]["start"]
+    # 找最后一个 entry end（优先 SENTENCE，否则最后一个 word）
+    last_ee = word_entries[-1]["end"]
+
+    # 累计字数 + 时间戳定位
+    result = []
+    char_idx = 0
+    sub_idx = 0
+    sub_char_count = len(_STRIP_PUNCT_RE.sub("", subs[0]))
+    sub_start_time = None
+    sub_end_time = None
+    for e in word_entries:
+        if sub_start_time is None and not e["is_sentence"]:
+            sub_start_time = e["start"]
+        if e["is_sentence"]:
+            # SENTENCE 整段 part：只作锚点（用其 end 作整个剩余的 end）
+            if sub_idx < len(subs):
+                # 剩余子句的 end 都用 SENTENCE part 的 end 平均分配
+                remain = len(subs) - sub_idx
+                # 此处不处理，由末尾统一补
+                pass
             continue
-        if sub_start_time is None:
-            sub_start_time = es
-        sub_end_time = ee
-        char_idx += len(raw_clean)
+        sub_end_time = e["end"]
+        char_idx += len(e["text_clean"])
         if char_idx >= sub_char_count and sub_idx < len(subs) - 1:
             t = _STRIP_PUNCT_RE.sub("", subs[sub_idx]).strip()
             if t:
-                result.append([sub_start_time, sub_end_time, t])
+                result.append([sub_start_time if sub_start_time is not None else 0, sub_end_time if sub_end_time is not None else 0, t])
             sub_idx += 1
             if sub_idx < len(subs):
                 sub_char_count += len(_STRIP_PUNCT_RE.sub("", subs[sub_idx]))
                 sub_start_time = None
                 sub_end_time = None
-    # 末尾
+    # 末尾剩余子句：在 SENTENCE 整段 part 范围内按字数均分
     if sub_idx < len(subs):
-        t = _STRIP_PUNCT_RE.sub("", subs[sub_idx]).strip()
-        if t:
-            result.append([sub_start_time or 0, sub_end_time or 0, t])
+        # 找 SENTENCE 整段 part 的 end 作为末尾时间锚点
+        sentence_part_end = last_ee
+        # 找 SENTENCE 整段 part 的 start 作为末尾时间起点
+        sentence_part_start = None
+        for e in word_entries:
+            if e["is_sentence"]:
+                sentence_part_start = e["start"]
+                break
+        if sentence_part_start is None:
+            sentence_part_start = first_es
+        # 当前子句起始时间用 sub_start_time（最后累积的最后 word entry start），如未设用 SENTENCE start
+        cur_start = sub_start_time if sub_start_time is not None else sentence_part_start
+        # 剩余子句在 [cur_start, sentence_part_end] 间按字数均分
+        remain_count = len(subs) - sub_idx
+        remain_chars = sum(len(_STRIP_PUNCT_RE.sub("", subs[i])) for i in range(sub_idx, len(subs)))
+        cur_end = cur_start
+        for i in range(sub_idx, len(subs)):
+            t = _STRIP_PUNCT_RE.sub("", subs[i]).strip()
+            if not t:
+                continue
+            sub_chars = len(_STRIP_PUNCT_RE.sub("", subs[i]))
+            # 按字数比例分配时间
+            if remain_chars > 0:
+                span = max(1, sentence_part_end - cur_start)
+                portion = sub_chars / remain_chars
+                cur_end = cur_start + int(span * portion)
+            else:
+                cur_end = sentence_part_end
+            result.append([cur_start, cur_end, t])
+            cur_start = cur_end
     return result
 
 
@@ -629,6 +671,18 @@ async def synthesize_long_text(
                     all_entries.append([s + offset_ms, e + offset_ms, txt])
                 audio_duration_ms = get_mp3_duration_ms(audio_bytes)
                 offset_ms += audio_duration_ms
+
+        # 同步修复：最后一条子句的 end 对齐到 audioDurationMs（避免比音频快 ~880ms-2s）
+        # 原因：字级 entry.end 是 word 在流中的理论结束位置，不含 MP3 收尾静音 + ID3 padding
+        # 末条对齐到真实音频时长，让字幕与音频同步
+        if all_entries:
+            last_block_offset = 0
+            for sub_entries, chunk, audio_bytes in chunks_data:
+                pass  # 单块路径 last_block_offset 仍为 0
+            total_audio_duration_ms = sum(
+                get_mp3_duration_ms(ad) for _, _, ad in chunks_data
+            )
+            all_entries[-1][1] = max(all_entries[-1][1], total_audio_duration_ms)
 
     if short_subtitle:
         info(f"字幕切短: {len(all_entries)} 条（已按标点切分）")
