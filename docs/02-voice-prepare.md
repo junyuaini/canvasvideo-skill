@@ -93,15 +93,35 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 ## 方式 B：AI 自动生成（基于 TTS 模块）
 
-> TTS 模块已整合到 Skill 端（`scripts/tts.js`），基于微软 Azure 语音服务（通过 [node-edge-tts](https://www.npmjs.com/package/node-edge-tts) 库调用），**完全免费，无需 API Key**，仅需联网。
+> TTS 模块提供 **JS 和 Python 双后端**（`scripts/tts.js` + `scripts/edge_tts_py.py`），基于微软 Azure 语音服务，**完全免费，无需 API Key**，仅需联网。`prepare-voice.js` 默认走"先 JS 失败再 Python 兜底"。
 
-### 前置：装依赖（仅首次拿到 Skill 时）
+### 前置：装依赖
 
+**JS 后端（必装，一次）**：
 ```bash
 cd canvasvideo-skill && npm install
 ```
+> 一次性安装 `adm-zip` + `node-edge-tts` 等所有依赖。
 
-> 一次性安装 `adm-zip` + `node-edge-tts` 等所有依赖。后续跑 Skill 不需要重复装。
+**Python 后端（可选，仅在 JS 失败时作为兜底，或主动启用 `--tts=py` 时需要）**：
+```bash
+pip install websockets
+```
+> Python 3.8+ 需要预先安装（参考 [SKILL.md § 环境要求](../SKILL.md)）。`websockets` 库是 Python 端唯一外部依赖。
+
+### TTS 双后端
+
+`prepare-voice.js` 通过 `--tts=<backend>` 显式选择 TTS 后端，三种取值：
+
+| 取值 | JS 后端 | Python 后端 | 适用场景 |
+|------|--------|------------|---------|
+| `auto`（**默认**） | ✅ 失败时 fallback | ✅ JS 失败后自动启用 | 推荐大多数场景 |
+| `js` | ✅ | ❌ 不启用 | 调试 JS 路径 / 强制报错排查 |
+| `py` | ❌ 跳过 | ✅ 强制启用 | 纯 Python 环境 / JS 重试 8 次仍失败 |
+
+**对应内部脚本**：
+- JS 后端：`scripts/tts.js`（基于 `node-edge-tts`）
+- Python 后端：`scripts/edge_tts_py.py`（独立 Python 实现，与 `tts.js` 等价 API；输出 `OK\t<mp3>\t<srt>\t<duration>\t<count>\t<voice>` 协议）
 
 ### 文本来源（二选一）
 
@@ -124,6 +144,14 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 # 调整语速 / 音量 / 音调
 node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
   --generate --text="你的文章..." --rate="+15%" --volume="+20%" --pitch="+5Hz"
+
+# 强制使用 Python 兜底（纯 Python 环境 / JS 重试失败场景）
+node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
+  --generate --text-file="C:\path\to\article.txt" --voice="zh-CN-YunxiNeural" --tts=py
+
+# 强制只走 JS（调试用，失败直接报错不 fallback）
+node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
+  --generate --text="你的文章..." --tts=js
 ```
 
 **参数说明**：
@@ -136,6 +164,7 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 - `--rate`：语速，如 `+10%` / `-20%`，默认 `+0%`
 - `--volume`：音量，默认 `+0%`
 - `--pitch`：音调，如 `+5Hz` / `-2Hz`，默认 `+0Hz`
+- `--tts=<backend>`：TTS 后端选择（可选，默认 `auto`）。见上文 [TTS 双后端](#tts-双后端)
 
 ### TTS 限制
 
@@ -175,6 +204,12 @@ A: 可以，新素材会**覆盖**旧的（与 setup-assets 一致）。如果�
 
 **Q: 不跑这个步骤直接进 step 2 会怎样？**
 A: 步骤 3 骨架设计时读不到 SRT 文件，AI 会要求先准备素材。state.voice 为空时，后续步骤也会提示。
+
+**Q: TTS 失败时如何强制走 Python 兜底？**
+A: 加 `--tts=py`。默认 `auto` 模式下 JS 失败 8 次（约 108s 退避）才会触发 Python 兜底；显式 `--tts=py` 可立即跳过 JS 阶段。
+
+**Q: 纯 Python 环境（没装 Node）能用吗？**
+A: TTS 模式仍需 Node.js（`prepare-voice.js` 是 Node 脚本）。如无 Node，可直接调 `python scripts/edge_tts_py.py --text-file=... --output-dir=...` 生成 MP3 + SRT，再走方式 A 的素材复用流程（手动复制到 `assets/voice/` 和 `assets/subtitles/`）。
 
 ---
 

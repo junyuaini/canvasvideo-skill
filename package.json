@@ -7,6 +7,9 @@
   "engines": {
     "node": ">=16"
   },
+  "scripts": {
+    "pipeline": "node scripts/pipeline.js"
+  },
   "dependencies": {
     "adm-zip": "^0.5.16",
     "node-edge-tts": "^1.2.10",

@@ -8,6 +8,15 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+
 # 用户工作目录（首次使用时由 Skill 自动创建，不应进入仓库）
 canvasvideo-workdir/
 workdir/
