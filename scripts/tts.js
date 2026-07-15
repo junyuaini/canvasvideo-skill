@@ -306,6 +306,19 @@ async function synthesizeLongText({
     logInfo('短字幕关闭，保留当前切分');
   }
 
+  // 同步修复：最后一条子句的 end 对齐到 audioDurationMs（避免比音频快 ~880ms）
+  // 原因：字级 entry.end 是 word 在流中的理论结束位置，不含 MP3 收尾静音 + ID3 padding
+  // 末条对齐到真实音频时长，让字幕与音频同步
+  if (allEntries.length > 0) {
+    const totalAudioMs = allAudio.reduce(
+      (acc, buf) => acc + getMp3DurationMsFromBuffer(buf),
+      0
+    );
+    if (allEntries[allEntries.length - 1][1] < totalAudioMs) {
+      allEntries[allEntries.length - 1][1] = totalAudioMs;
+    }
+  }
+
   const mergedSrt = serializeSrt(allEntries);
   const totalAudio = Buffer.concat(allAudio);
   logInfo(`合成完成 | 总音频 ${totalAudio.length} 字节 | 总字幕 ${allEntries.length} 条`);
