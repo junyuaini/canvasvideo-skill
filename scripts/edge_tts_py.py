@@ -672,13 +672,12 @@ async def synthesize_long_text(
                 audio_duration_ms = get_mp3_duration_ms(audio_bytes)
                 offset_ms += audio_duration_ms
 
-        # 同步修复：最后一条子句的 end 对齐到 audioDurationMs（避免比音频快 ~880ms-2s）
+        # 同步修复: 最后一条子句的 end 对齐到 audioDurationMs（避免比音频快 ~880ms-2s）
         # 原因：字级 entry.end 是 word 在流中的理论结束位置，不含 MP3 收尾静音 + ID3 padding
         # 末条对齐到真实音频时长，让字幕与音频同步
+        # 注：方案 A（整体延展 ratio）会导致中段子句被挤压、出现短持续时间（如 98ms）的"瞬闪"问题，
+        #     实际用户感知偏差主要在末条；前 N-1 条 end 偏小 ~880ms 落在音频句间静音区，对用户无感
         if all_entries:
-            last_block_offset = 0
-            for sub_entries, chunk, audio_bytes in chunks_data:
-                pass  # 单块路径 last_block_offset 仍为 0
             total_audio_duration_ms = sum(
                 get_mp3_duration_ms(ad) for _, _, ad in chunks_data
             )
