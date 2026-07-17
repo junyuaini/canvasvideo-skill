@@ -23,7 +23,15 @@ CanvasVideo Skill 帮助 AI 生成高质量 CanvasVideo 视频。
 | AI 工具 | 支持 Skill 协议 |
 | 网络 | 首次上传需访问 `https://dajiulanren.top`；口播模式用 TTS 需访问 Azure 端点 |
 
-**安装步骤**：`git clone` 后 `cd canvasvideo-skill && npm install`（装 `adm-zip` + `node-edge-tts`）；如需 Python TTS 兜底，再 `pip install websockets`。
+**安装步骤**：`git clone` 后 `cd canvasvideo-skill && npm install`；如需 Python TTS 兜底，再 `pip install websockets`。
+
+`npm install` 会自动装 4 个 npm 依赖（含 ffmpeg 二进制 22MB）：
+- `adm-zip` — 打包 zip 用
+- `node-edge-tts` — TTS 合成用（步骤 2）
+- `sharp` — 图处理 / 占位图生成用
+- `ffmpeg-static` — ffmpeg 二进制（22MB，**npm 自动装，无需系统装**）—— 用于 SRT 校准（voice-align）
+
+> **关于 ffmpeg-static**：Skill 自带 ffmpeg 二进制（22MB）走 npm 自动下，**用户机器无需系统装 ffmpeg**。仅当用户机器 ffmpeg 二进制因签名 / 沙箱等原因无法运行时，voice-detect.js 会自动 try/catch + spawnSync timeout 30s 兜底，保留字级 SRT（视频仍能正常生成）。
 
 **注意**：
 - 步骤 1、3、4、5 不依赖 npm 包（只内置模块），步骤 2（仅 TTS 模式）需 `npm install`

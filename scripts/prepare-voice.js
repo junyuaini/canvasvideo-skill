@@ -314,6 +314,7 @@ async function prepareFromGenerate(workdir, args) {
         pitch: args.pitch || '+0Hz',
         chunkSize: 120,
         shortSubtitle: true,
+        enableVoiceAlign: true,
       });
     } catch (jsErr) {
       if (ttsBackend === 'js') {
