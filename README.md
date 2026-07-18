@@ -140,7 +140,7 @@ canvasvideo-skill/
     ├── init-project.js      # 步骤1：初始化（生成 state.json + skillProjectId）
     ├── prepare-voice.js     # 步骤2：音频与字幕准备
     ├── tts.js               # 步骤2 内部依赖：TTS 引擎（基于 node-edge-tts）
-    ├── generate-skeleton.js # 步骤4：MD → skeleton.json
+    ├── generate-skeleton.js # 步骤4：MD → skeleton.json + regions/P{n}.json
     ├── merge-regions.js     # 步骤6：合并 skeleton + regions → project.json
     ├── setup-assets.js      # 步骤7：素材检查
     ├── validate.js          # 步骤7：本地校验入口

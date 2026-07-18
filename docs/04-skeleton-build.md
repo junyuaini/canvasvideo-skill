@@ -1,13 +1,13 @@
-# 步骤4：生成骨架JSON
+# 步骤4：生成骨架和区域JSON
 
 > 前置步骤：[步骤3：骨架设计（口播模式）](03-skeleton-design-dubbing.md)
-> 下一步：[步骤5：区域设计与生成JSON（口播模式）](05-region-design-dubbing.md)
+> 下一步：[步骤5：区域设计（口播模式）](05-region-design-dubbing.md)
 
 ---
 
 ## 目标
 
-从 design-skeleton-dubbing.md 自动生成 skeleton.json。
+从 design-skeleton-dubbing.md 自动生成 skeleton.json 和 regions/P{n}.json 模板。
 
 ---
 

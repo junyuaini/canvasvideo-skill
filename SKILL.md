@@ -52,13 +52,13 @@ sequenceDiagram
     AI->>AI: 步骤3：骨架设计
     AI->>用户: 等待确认骨架 + 音频（TTS 模式须同步确认音频+字幕）
     用户-->>AI: 确认
-    AI->>AI: 步骤4：生成骨架JSON
+    AI->>AI: 步骤4：生成骨架和区域JSON
     AI->>AI: 检查 skeleton.json 是否存在
     alt 不存在
         AI->>AI: 回到步骤4重新生成
     else 存在
         loop 逐区域（必须执行）
-            AI->>AI: 步骤5：区域设计与生成JSON（基于 skeleton.json）
+            AI->>AI: 步骤5：区域设计（基于 regions/P{n}.json 模板）
         end
     end
     AI->>AI: 检查 regions/ 是否完整
@@ -92,8 +92,8 @@ sequenceDiagram
 | 1 | 初始化工作目录 | `state.json` | [01-init.md](docs/01-init.md) | `init-project.js` | — | [01-principles.md](rules/01-principles.md) |
 | **2** | **音频与字幕准备** | `voice.mp3` + `subtitle.srt` + `state.voice` | [02-voice-prepare.md](docs/02-voice-prepare.md) | `tts.js` / `prepare-voice.js` | — | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（mode） |
 | 3 | 骨架设计 | `design-skeleton-dubbing.md` | [03-skeleton-design-dubbing.md](docs/03-skeleton-design-dubbing.md) | — | `templates/artifacts/design-skeleton-dubbing.md` | [06-components.md](rules/06-components.md) |
-| 4 | 生成骨架JSON | `skeleton.json` | [04-skeleton-build.md](docs/04-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） |
-| 5 | 区域设计与生成JSON | `regions/P1.json`, `P2.json`... | [05-region-design-dubbing.md](docs/05-region-design-dubbing.md) | — | — | [06-components.md §R12](rules/06-components.md#r12-元素动效ai-写-cssmerge-严格校验)（原生 CSS @keyframes） + [§R15](rules/06-components.md#r15-data--参数规范ai-只写-data-subtitle)（AI 只写 data-subtitle，merge 自动补 data-global） |
+| 4 | 生成骨架和区域JSON | `skeleton.json` + `regions/P{n}.json` | [04-skeleton-build.md](docs/04-skeleton-build.md) | `generate-skeleton.js` | `templates/projects/分合示例-口播/` | [06-components.md §R0](rules/06-components.md#r0-项目级必填字段总览)（subtitle/mode） |
+| 5 | 区域设计 | `regions/P{n}.json`（AI 填 HTML/CSS） | [05-region-design-dubbing.md](docs/05-region-design-dubbing.md) | — | — | [06-components.md §R12](rules/06-components.md#r12-元素动效ai-写-cssmerge-严格校验)（原生 CSS @keyframes） + [§R15](rules/06-components.md#r15-data--参数规范ai-只写-data-subtitle)（AI 只写 data-subtitle，merge 自动补 data-global） |
 | **6** | **发布**（合并+自检 → 素材 → 打包 → 上传） | `project.json` + `.zip` + 预览链接 | [06-publish.md](docs/06-publish.md) | `pipeline.js`（内含 `merge-regions.js` + `validate.js` + `setup-assets.js` + `package.js` + `upload-video.js`） | — | [09-selfcheck.md](rules/09-selfcheck.md) |
 
 ---
@@ -170,7 +170,7 @@ const skillProjectId = state.skillProjectId;
 // 步骤1：初始化（见 docs/01-init.md）
 // 步骤2：音频与字幕准备（见 docs/02-voice-prepare.md）
 // 步骤3：骨架设计（见 docs/03-skeleton-design-dubbing.md）
-// 步骤4：生成骨架JSON（见 docs/04-skeleton-build.md）
+// 步骤4：生成骨架和区域JSON（见 docs/04-skeleton-build.md）
 // 步骤5：区域设计（见 docs/05-region-design-dubbing.md）
 // 步骤6：发布（一键完成，见 docs/06-publish.md）
 //   node scripts/pipeline.js --cwd=<Agent工作目录> <skillProjectId>
@@ -200,7 +200,7 @@ canvasvideo-skill/
 │   ├── 01-init.md              # 步骤1：初始化
 │   ├── 02-voice-prepare.md     # 步骤2：音频与字幕准备（口播）
 │   ├── 03-skeleton-design-dubbing.md  # 步骤3：骨架设计（口播）
-│   ├── 04-skeleton-build.md    # 步骤4：生成骨架JSON
+│   ├── 04-skeleton-build.md    # 步骤4：生成骨架和区域JSON
 │   ├── 05-region-design-dubbing.md    # 步骤5：区域设计与JSON
 │   └── 06-publish.md           # 步骤6：发布（合并+自检→素材→打包→上传）
 ├── rules/                      # 约束规则（AI 设计时查阅）
