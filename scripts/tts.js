@@ -400,7 +400,7 @@ async function textToAudioSrt({
   logInfo(`textToAudioSrt | 音色=${voice} | 字数=${text.length} | 输出 mp3=${finalAudioDir}/${finalAudioName} srt=${finalSrtDir}/${finalSrtName} | 短字幕=${shortSubtitle}`);
 
   const { audio, srt } = await synthesizeLongText({
-    text, voice, rate, volume, pitch, chunkSize, shortSubtitle, enableVoiceAlign,
+    text, voice, rate, volume, pitch, chunkSize, shortSubtitle,
   });
 
   if (!audio.length) {

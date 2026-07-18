@@ -54,10 +54,10 @@
 
 口播模式支持两种方式获得素材，**任选其一**：
 
-| 来源 | 适用场景 | 是否需要联网 | 是否需要 TTS 工具箱 |
-|------|---------|------------|-------------------|
-| **用户提供** | 用户自己录了音 / 有现成配音 | 否 | 否 |
-| **AI 自动生成** | 用户提供文章文本，让 AI 用 TTS 合成 | 是（Azure TTS） | 是 |
+| 来源 | 适用场景 | 是否需要联网 |
+|------|---------|------------|
+| **用户提供** | 用户自己录了音 / 有现成配音 | 否 |
+| **AI 自动生成** | 用户提供文章文本，让 AI 用 TTS 合成 | 是（Azure TTS） |
 
 ---
 
@@ -70,11 +70,6 @@
 | 音频 | `.mp3` / `.wav` / `.m4a` | 至少 1KB，建议 mp3 格式 |
 | 字幕 | `.srt` | 标准 SRT 格式（条目序号 + 时间戳 + 文本） |
 
-**校验**：
-- MP3 文件存在 + 非空
-- SRT 文件存在 + 非空 + 可被 `srt-parser.js` 解析
-- 字幕条目数 ≥ 1
-
 ### 执行命令
 
 ```bash
@@ -84,78 +79,29 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 ```
 
 **参数说明**：
-- `--cwd`：Agent 工作目录（必传，脚本从这里推断 workdir 路径）
+- `--cwd`：Agent 工作目录（必传）
 - `{skillProjectId}`：项目 ID
 - `--mp3`：用户音频文件绝对路径
 - `--srt`：用户字幕文件绝对路径
 
 ---
 
-## 方式 B：AI 自动生成（基于 TTS 模块）
+## 方式 B：AI 自动生成
 
-> TTS 模块（`scripts/tts.js`）基于微软 Azure 语音服务，**完全免费，无需 API Key**，仅需联网。`tts.js` 内部 8 次重试 + 指数退避兜底网络异常。
+TTS 走 `scripts/tts.js`（基于 `node-edge-tts` 调微软 Azure 语音服务，**免费无需 API Key**）。
 
 ### 前置：装依赖
 
-**JS 后端（必装，一次）**：
 ```bash
 cd canvasvideo-skill && npm install
 ```
-> 一次性安装 3 个依赖：`adm-zip` + `node-edge-tts` + `sharp`。
 
-**TTS 唯一后端**：node-edge-tts（JS）。`tts.js` 内部有 8 次重试 + 指数退避兜底网络异常。
-
-### SRT 校准（voice-align）⭐ v0.7 新增
-
-> **作用**：把字级 SRT（每字一条）的中段漂移从 ±1s 压到 ±200ms。
-
-**原理**：
-1. 合成完成后，把整段 MP3 转 PCM 16kHz mono（ffmpeg-static 跑）
-2. 计算每 100ms 帧的 RMS（人声能量）
-3. 检测每个"人声起点"（连续 300ms 静音后第一个有声帧）
-4. 把每条 SRT 字幕的 start 跟最近的人声起点对齐（最大偏移 2000ms）
-
-**启用方式**：默认开启（`prepare-voice.js` 显式传 `enableVoiceAlign: true`），无需传参。
-
-**调用链**：
-```
-prepare-voice.js (默认 enableVoiceAlign: true)
-  ↓
-tts.js → synthesizeLongText({ enableVoiceAlign: true })
-  ↓
-voice-detect.js → detectVoiceStarts(MP3) → alignSrtStartsByVoice(SRT, voiceStarts)
-```
-
-**异常处理**（用户机器 ffmpeg 跑不了时）：
-- `try/catch` 包裹整个 voice-align 流程
-- 任何异常 → 保留字级 SRT（**视频仍能正常生成**）
-- `spawnSync` 加 `timeout: 30s` + `killSignal: SIGKILL` 防止 EFTYPE 卡 hang
-
-**用户机器 ffmpeg-static 跑不动的影响**：
-- SRT 保持字级精度（±1s 漂移）
-- 视频仍能生成（不影响主流程）
-- 仅 SRT 校准功能失效（**不阻断**）
-
-### TTS 唯一后端（node-edge-tts）
-
-TTS 走 `scripts/tts.js`（基于 `node-edge-tts`）—— **唯一后端**。`tts.js` 内部有 8 次重试 + 指数退避兜底网络异常。
-
-**为什么不留 Python 兜底**：
-- 3 个 npm 依赖（adm-zip + node-edge-tts + sharp）已覆盖所有平台
-- 不依赖外部 Python 环境（用户机器少装一个东西）
-- 字级字幕天然带边界信息（不需 Python 端再算一次 RMS）
-
-### 文本来源（二选一）
-
-| 方式 | 参数 | 适用 |
-|------|------|------|
-| 命令行直接传 | `--text="你的文章..."` | 短文（< 2000 字） |
-| 从文件读 | `--text-file=<path>` | 长文 / 已有草稿 |
+依赖：3 个 npm 包（`adm-zip` + `node-edge-tts` + `sharp`）。
 
 ### 执行命令
 
 ```bash
-# 从命令行文本生成（默认女声 Xiaoxiao）
+# 命令行文本生成（默认女声 Xiaoxiao）
 node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
   --generate --text="今天我们聊聊 AI 时代的核心竞争力。"
 
@@ -169,12 +115,9 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 ```
 
 **参数说明**：
-- `--cwd`：Agent 工作目录（必传）
-- `{skillProjectId}`：项目 ID
 - `--generate`：切换到 TTS 生成模式
 - `--text="..."` 或 `--text-file=<path>`：文本（必传其一）
-- `--voice`：TTS 音色，默认 `zh-CN-XiaoxiaoNeural`（温柔女声）
-  - 更多音色：`node scripts/tts.js`（会打印中文声音速查表 + 其它语种统计）
+- `--voice`：TTS 音色，默认 `zh-CN-XiaoxiaoNeural`
 - `--rate`：语速，如 `+10%` / `-20%`，默认 `+0%`
 - `--volume`：音量，默认 `+0%`
 - `--pitch`：音调，如 `+5Hz` / `-2Hz`，默认 `+0Hz`
@@ -188,8 +131,6 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 ---
 
 ## 自检
-
-> [E] Error — 不符合将阻断 | [W] Warning | [I] Info
 
 **脚本自动校验**：
 - [E] state.mode === 'dubbing'（非口播模式直接报错）
@@ -207,21 +148,20 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 ## 常见问题
 
 **Q: 字幕 SRT 是用 Whisper 转的吗？**
-A: 当前不支持。Whisper 集成在另一个工具集成的范畴。本次只做"用户给 SRT" + "TTS 生成 SRT"两种。如果用户只录了音没字幕，需要自己先用 Whisper / 剪映 / 飞书妙记等工具转出 SRT，再走方式 A。
+A: 当前不支持。本次只做"用户给 SRT" + "TTS 生成 SRT"两种。如果用户只录了音没字幕，需要自己先用 Whisper / 剪映 / 飞书妙记等工具转出 SRT，再走方式 A。
 
 **Q: TTS 生成的配音质量不满意？**
 A: 试试换音色（`--voice=zh-CN-YunxiNeural` 等），或调整 `--rate` / `--pitch`。Azure TTS 中文质量已经很好，但具体效果因内容而异。
 
 **Q: 可以跑多次 prepare-voice 吗？**
-A: 可以，新素材会**覆盖**旧的（与 setup-assets 一致）。如果换音色重生成，记得把 state.json 的 `voice.voiceName` 也更新。
+A: 可以，新素材会**覆盖**旧的。如果换音色重生成，记得把 state.json 的 `voice.voiceName` 也更新。
 
 **Q: 不跑这个步骤直接进 step 2 会怎样？**
-A: 步骤 3 骨架设计时读不到 SRT 文件，AI 会要求先准备素材。state.voice 为空时，后续步骤也会提示。
+A: 步骤 3 骨架设计时读不到 SRT 文件，AI 会要求先准备素材。
+
 ---
 
 ## 重新生成（可重复执行）
-
-**如果用户对生成的配音不满意，可以重新跑本步骤** —— 行为与"骨架可重复设计"完全一致。
 
 ```bash
 # 改完参数后再跑一次即可
@@ -234,16 +174,6 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录> {skillProjectId} \
 - ✅ 刷新 `state.voice`（duration / subtitleCount / voiceName 全部更新）
 - ✅ 步骤 4（generate-skeleton.js）下次跑时会自动用新的 `state.voice` 覆盖
 - ❌ 不会**回滚**步骤 3 之后的所有产物（如 skeleton.json / regions/ / project.json），需要 AI 流程决定是否重做
-
-**典型场景**：
-- 音色不满意（`--voice=...`）
-- 语速太慢/太快（`--rate=...`）
-- 文章改了一两段（重传文本）
-- 整体重写（换文章）
-
-**约束**：
-- 状态模式不能变（口播模式锁定）
-- `skillProjectId` 保持不变（保持同一个预览链接）
 
 ---
 
