@@ -252,7 +252,6 @@ async function prepareFromGenerate(workdir, args) {
     pitch: args.pitch || '+0Hz',
     chunkSize: 120,
     shortSubtitle: true,
-    enableVoiceAlign: true,
   });
 
   const [generatedMp3, generatedSrt] = result;

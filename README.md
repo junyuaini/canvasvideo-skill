@@ -55,13 +55,12 @@ npm install
 | **操作系统** | 跨平台 | macOS / Linux / Windows（脚本用 `path.join` 等跨平台 API） |
 | **浏览器（预览）** | HTML5 Canvas + ES2020+ | Chrome 90+ / Safari 14+ / Firefox 88+ |
 
-**不需要**：Python、Docker、GPU、**系统装 ffmpeg**（npm 自动装 22MB ffmpeg-static）。
+**不需要**：Python、Docker、GPU、ffmpeg。
 
-> 💡 **依赖最小化**：整个 Skill 包只有 4 个 npm 依赖（含 ffmpeg 二进制 22MB）：
+> 💡 **依赖最小化**：整个 Skill 包只有 3 个 npm 依赖：
 > - `adm-zip` — 打包 zip 用
 > - `node-edge-tts` — TTS 合成用
 > - `sharp` — 图处理 / 占位图生成用
-> - `ffmpeg-static` — ffmpeg 二进制（22MB，**npm 自动装，无需系统装**）—— 用于 SRT 校准（voice-align）
 >
 > 其他脚本全部使用 Node.js 内置模块（`fs` / `path` / `crypto` / `https`）。
 

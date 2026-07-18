@@ -23,7 +23,6 @@ const fsp = require('fs').promises;
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { detectVoiceStarts, alignSrtStartsByVoice } = require('./voice-detect.js');
 
 // ===== 常量配置 =====
 const DEFAULT_VOICE = 'zh-CN-XiaoxiaoNeural';
@@ -272,7 +271,7 @@ function assertNotSrt(text) {
 }
 
 async function synthesizeLongText({
-  text, voice, rate, volume, pitch, chunkSize, shortSubtitle, enableVoiceAlign = false,
+  text, voice, rate, volume, pitch, chunkSize, shortSubtitle,
 }) {
   assertNotSrt(text);
   const chunks = splitTextIntoChunks(text, chunkSize);
@@ -319,27 +318,6 @@ async function synthesizeLongText({
     );
     if (allEntries[allEntries.length - 1][1] < totalAudioMs) {
       allEntries[allEntries.length - 1][1] = totalAudioMs;
-    }
-
-    if (enableVoiceAlign) {
-      try {
-        const totalAudio = Buffer.concat(allAudio);
-        const starts = await detectVoiceStarts(totalAudio);
-        if (starts.length > 0) {
-          let changed = 0;
-          const aligned = alignSrtStartsByVoice(allEntries, starts);
-          for (let i = 0; i < aligned.length; i++) {
-            if (aligned[i][0] !== allEntries[i][0]) changed++;
-          }
-          allEntries.length = 0;
-          allEntries.push(...aligned);
-          logInfo(`voice-align: 修正 ${changed} 条 / 共 ${aligned.length} 条`);
-        } else {
-          logInfo('voice-align: 未检测到人声起点，跳过修正');
-        }
-      } catch (e) {
-        logWarn('voice-align 跳过（异常）: ' + (e.message || e));
-      }
     }
   }
 
@@ -393,7 +371,6 @@ async function textToAudioSrt({
   pitch = DEFAULT_PITCH,
   chunkSize = DEFAULT_CHUNK_SIZE,
   shortSubtitle = true,
-  enableVoiceAlign = false,
   // 兼容旧 API
   outputDir = 'output',
   baseName = null,

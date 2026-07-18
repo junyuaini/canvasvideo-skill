@@ -101,7 +101,7 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 ```bash
 cd canvasvideo-skill && npm install
 ```
-> 一次性安装 4 个依赖：`adm-zip` + `node-edge-tts` + `sharp` + **`ffmpeg-static`**（22MB，npm 自动装，无需系统装 ffmpeg）。
+> 一次性安装 3 个依赖：`adm-zip` + `node-edge-tts` + `sharp`。
 
 **TTS 唯一后端**：node-edge-tts（JS）。`tts.js` 内部有 8 次重试 + 指数退避兜底网络异常。
 
@@ -141,7 +141,7 @@ voice-detect.js → detectVoiceStarts(MP3) → alignSrtStartsByVoice(SRT, voiceS
 TTS 走 `scripts/tts.js`（基于 `node-edge-tts`）—— **唯一后端**。`tts.js` 内部有 8 次重试 + 指数退避兜底网络异常。
 
 **为什么不留 Python 兜底**：
-- 4 个 npm 依赖（含 ffmpeg-static）已覆盖所有平台
+- 3 个 npm 依赖（adm-zip + node-edge-tts + sharp）已覆盖所有平台
 - 不依赖外部 Python 环境（用户机器少装一个东西）
 - 字级字幕天然带边界信息（不需 Python 端再算一次 RMS）
 
