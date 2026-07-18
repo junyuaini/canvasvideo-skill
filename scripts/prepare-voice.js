@@ -115,9 +115,6 @@ function printHelp() {
   --rate="+10%"                 语速
   --volume="+0%"                音量
   --pitch="+0Hz"                音调
-  --tts=<backend>               TTS 后端：auto（默认，先 JS 失败再 Python 兜底）
-                                          | js（强制 node-edge-tts，失败直接报错不 fallback）
-                                          | py（强制 Python 兜底 edge_tts_py.py）
 
 输出:
   {workdir}/{skillProjectId}/assets/voice/voice.mp3
@@ -360,7 +357,6 @@ if (require.main === module) {
     rate: args.rate,
     volume: args.volume,
     pitch: args.pitch,
-    ttsBackend: args.ttsBackend,
   }).then(() => {
     process.exit(0);
   }).catch((err) => {

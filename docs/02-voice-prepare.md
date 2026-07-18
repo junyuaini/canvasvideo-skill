@@ -93,7 +93,7 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 
 ## 方式 B：AI 自动生成（基于 TTS 模块）
 
-> TTS 模块提供 **JS 和 Python 双后端**（`scripts/tts.js` + `scripts/edge_tts_py.py`），基于微软 Azure 语音服务，**完全免费，无需 API Key**，仅需联网。`prepare-voice.js` 默认走"先 JS 失败再 Python 兜底"。
+> TTS 模块（`scripts/tts.js`）基于微软 Azure 语音服务，**完全免费，无需 API Key**，仅需联网。`tts.js` 内部 8 次重试 + 指数退避兜底网络异常。
 
 ### 前置：装依赖
 
@@ -166,14 +166,6 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 # 调整语速 / 音量 / 音调
 node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
   --generate --text="你的文章..." --rate="+15%" --volume="+20%" --pitch="+5Hz"
-
-# 强制使用 Python 兜底（纯 Python 环境 / JS 重试失败场景）
-node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
-  --generate --text-file="C:\path\to\article.txt" --voice="zh-CN-YunxiNeural" --tts=py
-
-# 强制只走 JS（调试用，失败直接报错不 fallback）
-node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillProjectId} \
-  --generate --text="你的文章..." --tts=js
 ```
 
 **参数说明**：
@@ -225,13 +217,6 @@ A: 可以，新素材会**覆盖**旧的（与 setup-assets 一致）。如果�
 
 **Q: 不跑这个步骤直接进 step 2 会怎样？**
 A: 步骤 3 骨架设计时读不到 SRT 文件，AI 会要求先准备素材。state.voice 为空时，后续步骤也会提示。
-
-**Q: TTS 失败时如何强制走 Python 兜底？**
-A: 加 `--tts=py`。默认 `auto` 模式下 JS 失败 8 次（约 108s 退避）才会触发 Python 兜底；显式 `--tts=py` 可立即跳过 JS 阶段。
-
-**Q: 纯 Python 环境（没装 Node）能用吗？**
-A: TTS 模式仍需 Node.js（`prepare-voice.js` 是 Node 脚本）。如无 Node，可直接调 `python scripts/edge_tts_py.py --text-file=... --output-dir=...` 生成 MP3 + SRT，再走方式 A 的素材复用流程（手动复制到 `assets/voice/` 和 `assets/subtitles/`）。
-
 ---
 
 ## 重新生成（可重复执行）
