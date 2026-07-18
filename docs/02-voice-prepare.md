@@ -101,13 +101,44 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 ```bash
 cd canvasvideo-skill && npm install
 ```
-> 一次性安装 `adm-zip` + `node-edge-tts` 等所有依赖。
+> 一次性安装 4 个依赖：`adm-zip` + `node-edge-tts` + `sharp` + **`ffmpeg-static`**（22MB，npm 自动装，无需系统装 ffmpeg）。
 
 **Python 后端（可选，仅在 JS 失败时作为兜底，或主动启用 `--tts=py` 时需要）**：
 ```bash
 pip install websockets
 ```
 > Python 3.8+ 需要预先安装（参考 [SKILL.md § 环境要求](../SKILL.md)）。`websockets` 库是 Python 端唯一外部依赖。
+
+### SRT 校准（voice-align）⭐ v0.7 新增
+
+> **作用**：把字级 SRT（每字一条）的中段漂移从 ±1s 压到 ±200ms。
+
+**原理**：
+1. 合成完成后，把整段 MP3 转 PCM 16kHz mono（ffmpeg-static 跑）
+2. 计算每 100ms 帧的 RMS（人声能量）
+3. 检测每个"人声起点"（连续 300ms 静音后第一个有声帧）
+4. 把每条 SRT 字幕的 start 跟最近的人声起点对齐（最大偏移 2000ms）
+
+**启用方式**：默认开启（`prepare-voice.js` 显式传 `enableVoiceAlign: true`），无需传参。
+
+**调用链**：
+```
+prepare-voice.js (默认 enableVoiceAlign: true)
+  ↓
+tts.js → synthesizeLongText({ enableVoiceAlign: true })
+  ↓
+voice-detect.js → detectVoiceStarts(MP3) → alignSrtStartsByVoice(SRT, voiceStarts)
+```
+
+**异常处理**（用户机器 ffmpeg 跑不了时）：
+- `try/catch` 包裹整个 voice-align 流程
+- 任何异常 → 保留字级 SRT（**视频仍能正常生成**）
+- `spawnSync` 加 `timeout: 30s` + `killSignal: SIGKILL` 防止 EFTYPE 卡 hang
+
+**用户机器 ffmpeg-static 跑不动的影响**：
+- SRT 保持字级精度（±1s 漂移）
+- 视频仍能生成（不影响主流程）
+- 仅 SRT 校准功能失效（**不阻断**）
 
 ### TTS 双后端
 
