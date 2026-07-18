@@ -19,7 +19,7 @@ CanvasVideo Skill 帮助 AI 生成高质量 CanvasVideo 视频。
 | Node.js | 16+（步骤 2 用了 node-edge-tts 要求 16+） |
 | npm| **npm** | 7+（用于 `npm install` 装依赖） |
 | **AI 工具** | 支持 Skill 协议 |
-| **网络** | 首次上传需访问 `https://dajiulanren.top`；口播模式用 TTS 需访问 Azure 端点 |
+| **网络** | 首次上传需访问 `dajiulanren.top`；口播模式用 TTS 需访问 Azure 端点 |
 
 **安装步骤**：`git clone` 后 `cd canvasvideo-skill && npm install`。
 
