@@ -55,7 +55,7 @@ npm install
 | **操作系统** | 跨平台 | macOS / Linux / Windows（脚本用 `path.join` 等跨平台 API） |
 | **浏览器（预览）** | HTML5 Canvas + ES2020+ | Chrome 90+ / Safari 14+ / Firefox 88+ |
 
-**不需要**：Python、Docker、GPU、ffmpeg。
+**不需要**：Python、Docker、GPU。
 
 > 💡 **依赖最小化**：整个 Skill 包只有 3 个 npm 依赖：
 > - `adm-zip` — 打包 zip 用
