@@ -35,7 +35,6 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const { resolveAgentWorkdir } = require('./scaffold');
 const { loadOrCreateProject, saveProjectState } = require('./state');
 const { parseSrt } = require('./srt-parser');
@@ -88,13 +87,6 @@ function parseArgs(argv) {
       args.volume = arg.slice('--volume='.length);
     } else if (arg.startsWith('--pitch=')) {
       args.pitch = arg.slice('--pitch='.length);
-    } else if (arg.startsWith('--tts=')) {
-      // TTS 后端选择：auto（默认，先 JS 失败再 Python）/ js（仅 JS）/ py（仅 Python）
-      const v = arg.slice('--tts='.length);
-      if (!['auto', 'js', 'py'].includes(v)) {
-        throw new Error(`--tts 仅支持 auto/js/py，当前：${v}`);
-      }
-      args.ttsBackend = v;
     } else if (!args.skillProjectId && !arg.startsWith('--')) {
       args.skillProjectId = arg;
     }
@@ -226,48 +218,6 @@ async function prepareFromUser(workdir, args) {
 
 // ===== 模式 B：TTS 生成 =====
 
-/**
- * 调 Python 兜底脚本 edge_tts_py.py 生成 MP3 + SRT
- * @param {string} text
- * @param {Object} args
- * @param {string} voiceDir
- * @returns {[string, string]} [mp3Path, srtPath]
- */
-function runPythonTts(text, args, voiceDir) {
-  const pyScript = path.join(__dirname, 'edge_tts_py.py');
-  if (!fs.existsSync(pyScript)) {
-    throw new Error(`Python 兜底脚本不存在: ${pyScript}`);
-  }
-  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cv-py-tts-'));
-  const tmpTextPath = path.join(tmpDir, 'script.txt');
-  fs.writeFileSync(tmpTextPath, text, 'utf-8');
-  const pyArgs = [
-    pyScript,
-    '--text-path', tmpTextPath,
-    '--voice', args.voice || 'zh-CN-XiaoxiaoNeural',
-    '--rate', args.rate || '+0%',
-    '--volume', args.volume || '+0%',
-    '--pitch', args.pitch || '+0Hz',
-    '--chunk-size', '120',
-    '--output-dir', voiceDir,
-    '--audio-name', 'voice.mp3',
-    '--srt-name', 'subtitle.srt',
-    '--timeout', '120',
-  ];
-  const r = spawnSync('python', pyArgs, { stdio: ['ignore', 'pipe', 'inherit'] });
-  if (r.status !== 0) {
-    throw new Error(`Python TTS 合成失败: 退出码 ${r.status}`);
-  }
-  // 解析 stdout："OK\tmp3\tsrt\tduration_ms\tsubtitle_count\tvoice"
-  const stdout = (r.stdout || '').toString();
-  const line = stdout.split(/\r?\n/).find(l => l.startsWith('OK\t'));
-  if (!line) {
-    throw new Error(`Python TTS 输出格式异常，未找到 OK 行：\n${stdout.slice(0, 500)}`);
-  }
-  const parts = line.split('\t');
-  return [parts[1], parts[2]];
-}
-
 async function prepareFromGenerate(workdir, args) {
   let text = args.text;
   if (!text && args.textFile) {
@@ -290,41 +240,23 @@ async function prepareFromGenerate(workdir, args) {
   fs.mkdirSync(voiceDir, { recursive: true });
   fs.mkdirSync(srtDir, { recursive: true });
 
-  console.log(`[i] 正在调 Azure TTS 合成（${text.length} 字, 后端=${args.ttsBackend || 'auto'}）...`);
+  console.log(`[i] 正在调 Azure TTS 合成（${text.length} 字, 后端=node-edge-tts）...`);
 
-  let result;
-  const ttsBackend = args.ttsBackend || 'auto';
-
-  // 仅 Python 路径：跳过 JS
-  if (ttsBackend === 'py') {
-    console.log(`[i] 强制走 Python 兜底 (--tts=py)`);
-    result = runPythonTts(text, args, voiceDir);
-  } else {
-    // 路径 1：node-edge-tts（原生 JS）；auto 时失败再 fallback 到 Python
-    try {
-      result = await textToAudioSrt({
-        text,
-        audioDir: voiceDir,
-        audioFileName: 'voice.mp3',
-        srtDir: srtDir,
-        srtFileName: 'subtitle.srt',
-        voice: args.voice || 'zh-CN-XiaoxiaoNeural',
-        rate: args.rate || '+0%',
-        volume: args.volume || '+0%',
-        pitch: args.pitch || '+0Hz',
-        chunkSize: 120,
-        shortSubtitle: true,
-        enableVoiceAlign: true,
-      });
-    } catch (jsErr) {
-      if (ttsBackend === 'js') {
-        throw new Error(`node-edge-tts 失败（--tts=js 强制不 fallback）：${jsErr.message}`);
-      }
-      // auto 模式：失败切到 Python 兜底
-      console.warn(`[i] node-edge-tts 失败（${jsErr.message}），切到 Python 兜底...`);
-      result = runPythonTts(text, args, voiceDir);
-    }
-  }
+  // 走 node-edge-tts（JS 后端），失败直接抛出（tts.js 内部有 8 次重试 + 指数退避）
+  const result = await textToAudioSrt({
+    text,
+    audioDir: voiceDir,
+    audioFileName: 'voice.mp3',
+    srtDir: srtDir,
+    srtFileName: 'subtitle.srt',
+    voice: args.voice || 'zh-CN-XiaoxiaoNeural',
+    rate: args.rate || '+0%',
+    volume: args.volume || '+0%',
+    pitch: args.pitch || '+0Hz',
+    chunkSize: 120,
+    shortSubtitle: true,
+    enableVoiceAlign: true,
+  });
 
   const [generatedMp3, generatedSrt] = result;
   if (!fs.existsSync(generatedMp3) || !fs.existsSync(generatedSrt)) {

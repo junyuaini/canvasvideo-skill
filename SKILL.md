@@ -17,13 +17,11 @@ CanvasVideo Skill 帮助 AI 生成高质量 CanvasVideo 视频。
 | 项 | 要求 |
 |---|---|
 | Node.js | 16+（步骤 2 用了 node-edge-tts 要求 16+） |
-| npm | 7+（用于 `npm install` 装依赖） |
-| Python | 3.8+（可选，仅在 JS TTS 失败 fallback 或强制使用 Python 兜底时需要） |
-| pip | 最新版（用于 `pip install websockets`） |
-| AI 工具 | 支持 Skill 协议 |
-| 网络 | 首次上传需访问 `https://dajiulanren.top`；口播模式用 TTS 需访问 Azure 端点 |
+| npm| **npm** | 7+（用于 `npm install` 装依赖） |
+| **AI 工具** | 支持 Skill 协议 |
+| **网络** | 首次上传需访问 `https://dajiulanren.top`；口播模式用 TTS 需访问 Azure 端点 |
 
-**安装步骤**：`git clone` 后 `cd canvasvideo-skill && npm install`；如需 Python TTS 兜底，再 `pip install websockets`。
+**安装步骤**：`git clone` 后 `cd canvasvideo-skill && npm install`。
 
 `npm install` 会自动装 4 个 npm 依赖（含 ffmpeg 二进制 22MB）：
 - `adm-zip` — 打包 zip 用
@@ -37,7 +35,7 @@ CanvasVideo Skill 帮助 AI 生成高质量 CanvasVideo 视频。
 - 步骤 1、3、4、5 不依赖 npm 包（只内置模块），步骤 2（仅 TTS 模式）需 `npm install`
 - 步骤 6（pipeline）需要 `adm-zip`（package.js 内部依赖）
 - 步骤 2 的"用户素材"模式不需要联网，**TTS 模式**才需要访问 Azure
-- **TTS 双后端**：`prepare-voice.js` 支持 `--tts=auto|js|py`。`auto`（默认）= 先 JS 失败再 Python 兜底；`js` = 仅 `node-edge-tts`；`py` = 仅 `edge_tts_py.py` 兜底脚本。详见 [docs/02-voice-prepare.md § TTS 双后端](docs/02-voice-prepare.md#tts-双后端)
+- **TTS 唯一后端**：`scripts/tts.js`（node-edge-tts），内部 8 次重试 + 指数退避。详见 [docs/02-voice-prepare.md § TTS 唯一后端](docs/02-voice-prepare.md#tts-唯一后端node-edge-tts)
 
 ---
 

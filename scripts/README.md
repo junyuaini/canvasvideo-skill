@@ -8,8 +8,7 @@
 | `scaffold.js` | 步骤 1 | 解析 Agent 工作目录，提供 `resolveAgentWorkdir` 等工具函数 |
 | `setup-workdir.js` | 步骤 1 | 项目工作目录结构设置（底层） |
 | `tts.js` | 步骤 1.5（口播） | 文本转语音（微软 Azure edge-tts），生成 MP3 + SRT（JS 原生） |
-| `edge_tts_py.py` | 步骤 1.5（口播） | Python 兜底 TTS 脚本（与 `tts.js` 等价接口）。仅当 `node-edge-tts` 失败时被 `prepare-voice.js` 启用，或通过 `--tts=py` 强制启用 |
-| `prepare-voice.js` | 步骤 1.5（口播） | 音频与字幕准备：用户提供 MP3+SRT 或用 TTS 生成（含 JS/Python 双后端自动 fallback + `--tts=auto|js|py` 显式选择） |
+| `prepare-voice.js` | 步骤 1.5（口播） | 音频与字幕准备：用户提供 MP3+SRT 或用 TTS 生成（node-edge-tts + voice-align） |
 | `setup-assets.js` | 步骤 2 | 复制占位素材（placeholders）到工作目录 |
 | `generate-skeleton.js` | 步骤 3 | 读取 design-skeleton.md 生成 skeleton.json（口播/创作两套模式） |
 | `merge-regions.js` | 步骤 5 | 合并 skeleton.json + regions/*.json → project.json |

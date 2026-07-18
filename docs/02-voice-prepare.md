@@ -103,11 +103,7 @@ cd canvasvideo-skill && npm install
 ```
 > 一次性安装 4 个依赖：`adm-zip` + `node-edge-tts` + `sharp` + **`ffmpeg-static`**（22MB，npm 自动装，无需系统装 ffmpeg）。
 
-**Python 后端（可选，仅在 JS 失败时作为兜底，或主动启用 `--tts=py` 时需要）**：
-```bash
-pip install websockets
-```
-> Python 3.8+ 需要预先安装（参考 [SKILL.md § 环境要求](../SKILL.md)）。`websockets` 库是 Python 端唯一外部依赖。
+**TTS 唯一后端**：node-edge-tts（JS）。`tts.js` 内部有 8 次重试 + 指数退避兜底网络异常。
 
 ### SRT 校准（voice-align）⭐ v0.7 新增
 
@@ -140,19 +136,14 @@ voice-detect.js → detectVoiceStarts(MP3) → alignSrtStartsByVoice(SRT, voiceS
 - 视频仍能生成（不影响主流程）
 - 仅 SRT 校准功能失效（**不阻断**）
 
-### TTS 双后端
+### TTS 唯一后端（node-edge-tts）
 
-`prepare-voice.js` 通过 `--tts=<backend>` 显式选择 TTS 后端，三种取值：
+TTS 走 `scripts/tts.js`（基于 `node-edge-tts`）—— **唯一后端**。`tts.js` 内部有 8 次重试 + 指数退避兜底网络异常。
 
-| 取值 | JS 后端 | Python 后端 | 适用场景 |
-|------|--------|------------|---------|
-| `auto`（**默认**） | ✅ 失败时 fallback | ✅ JS 失败后自动启用 | 推荐大多数场景 |
-| `js` | ✅ | ❌ 不启用 | 调试 JS 路径 / 强制报错排查 |
-| `py` | ❌ 跳过 | ✅ 强制启用 | 纯 Python 环境 / JS 重试 8 次仍失败 |
-
-**对应内部脚本**：
-- JS 后端：`scripts/tts.js`（基于 `node-edge-tts`）
-- Python 后端：`scripts/edge_tts_py.py`（独立 Python 实现，与 `tts.js` 等价 API；输出 `OK\t<mp3>\t<srt>\t<duration>\t<count>\t<voice>` 协议）
+**为什么不留 Python 兜底**：
+- 4 个 npm 依赖（含 ffmpeg-static）已覆盖所有平台
+- 不依赖外部 Python 环境（用户机器少装一个东西）
+- 字级字幕天然带边界信息（不需 Python 端再算一次 RMS）
 
 ### 文本来源（二选一）
 
@@ -195,7 +186,6 @@ node scripts/prepare-voice.js --cwd=<Agent工作目录的绝对路径> {skillPro
 - `--rate`：语速，如 `+10%` / `-20%`，默认 `+0%`
 - `--volume`：音量，默认 `+0%`
 - `--pitch`：音调，如 `+5Hz` / `-2Hz`，默认 `+0Hz`
-- `--tts=<backend>`：TTS 后端选择（可选，默认 `auto`）。见上文 [TTS 双后端](#tts-双后端)
 
 ### TTS 限制
 
