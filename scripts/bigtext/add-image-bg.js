@@ -82,7 +82,7 @@ function extractSeedKey(region, idx) {
 }
 
 // ========== 生成 Picsum URL ==========
-function makeBackground(bgStyle, region, idx) {
+function makeBackground(bgStyle, region, idx, duration) {
   const seedPrefixList = BG_STYLE_SEEDS[bgStyle];
   // 哈希 idx 选前缀关键词（保证稳定）
   const prefix = seedPrefixList[idx % seedPrefixList.length];
@@ -98,11 +98,14 @@ function makeBackground(bgStyle, region, idx) {
   const html = `<div class="bg-picsum"><img class="bg-picsum__img" src="${url}" alt="" /><div class="bg-picsum__overlay"></div></div>`;
 
   // CSS：图填满 + 暗化 + 留出字的对比度
-  // - 背景图加 Ken Burns 动画（缩放+微平移，24s 双向循环）
-  // - 适配 Picsum 随机图：中心不偏离，幅度小不抢戏，alternate 平滑往返
+  // - 背景图加 Ken Burns 动画：duration 取自 region.duration（每个 region 独立）
+  // - 一次正放（forwards 保持终态），region 切换时从头开始
+  // - 适配 Picsum 随机图：中心不偏离，幅度小不抢戏
+  // - duration 兜底 8s（防止 region 没 duration 字段时变 0s）
+  const animDur = (typeof duration === 'number' && duration > 0) ? duration : 8;
   const css = `.bg-picsum { position: absolute; inset: 0; overflow: hidden; }
-.bg-picsum__img { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: center center; will-change: transform; animation: bgDrift 24s ease-in-out infinite alternate; }
-@keyframes bgDrift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.05) translate(-1.5%, -1%); } }
+.bg-picsum__img { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: center center; will-change: transform; animation: bgDrift ${animDur}s ease-in-out forwards; }
+@keyframes bgDrift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.15) translate(-3%, -2%); } }
 .bg-picsum__overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 100%); }`;
 
   return { html, css, seed, bgStyle, url };
@@ -144,7 +147,8 @@ files.forEach((f, idx) => {
       name: data.name || '',
       description: data.description || '',
     };
-    const bg = makeBackground(effectiveStyle, regionMeta, idx);
+    // 动画 duration 取自 region.duration（秒），fallback 8s
+    const bg = makeBackground(effectiveStyle, regionMeta, idx, data.duration);
     data.components[0].background = {
       html: bg.html,
       css: bg.css,
@@ -153,7 +157,7 @@ files.forEach((f, idx) => {
     seedInfo = bg.seed;
   }
   fs.writeFileSync(p, JSON.stringify(data, null, 2));
-  console.log(`✓ ${f} 已加 Picsum 背景 (seed=${seedInfo || 'default'})`);
+  console.log(`✓ ${f} 已加 Picsum 背景 (seed=${seedInfo || 'default'}, dur=${data.duration || 8}s)`);
 });
 
 console.log(`\n风格统计: tech=${counter.tech}, daily=${counter.daily}, general=${counter.general}`);
