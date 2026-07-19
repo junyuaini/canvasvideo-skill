@@ -102,6 +102,65 @@ const { specs } = await queryComponentSpecBatch(typeVariants);
 
 > 💡 **AI 不写 `content.elementIds` 也不写 `data-global`**：merge 会从 HTML 的 `class` 元素自动分配 id（从 `P{区}-100` 起），并自动补全缺失的 `data-global="true"`。AI 只写 class + `data-subtitle` 即可（详见 §R15）。
 
+---
+
+## R2.3 预设字体（前端已默认支持，无需打包）
+
+> **2026-07 新增**：前端通过 `src/styles/fonts.css` 集中声明了一批 `CV-*` 前缀的字体名，Skill 端在 `content.css` 的 `font-family` 中直接使用即可。**前端不打包任何字体文件**，用户机器有就用，没有浏览器自动 fallback 到 `sans-serif` / `serif`。
+
+### 用法
+
+```css
+/* 楷书（Win/macOS 系统自带，最常用） */
+.kai {
+  font-family: "CV-KaiTi", "STKaiti", "KaiTi", serif;
+}
+
+/* 卡通（用户机器装了站酷快乐体才生效，否则 fallback） */
+.cartoon {
+  font-family: "CV-ZCOOLKuaiLe", "Microsoft YaHei", sans-serif;
+}
+
+/* 不写 font-family → 走前端默认字体栈（-apple-system, Microsoft YaHei, ...） */
+.default {
+  /* 无需 font-family，前端默认即可 */
+}
+```
+
+### 完整预设清单
+
+| CSS 字体名 | 实际指向 | 适用场景 | 系统自带？|
+|---|---|---|---|
+| `CV-KaiTi` | STKaiti / KaiTi / 楷体 | 楷书 | ✅ Win/macOS |
+| `CV-STXingkai` | STXingkai / 华文行楷 | 行楷 | ⚠️ 仅 macOS/iOS |
+| `CV-LiSu` | LiSu / 隶书 | 隶书 | ⚠️ 仅 Windows |
+| `CV-YouYuan` | YouYuan / 幼圆 | 圆润 | ⚠️ 仅 Windows |
+| `CV-SimSun` | SimSun / 宋体 | 宋体 | ✅ Win/macOS |
+| `CV-FangSong` | FangSong / 仿宋 | 仿宋 | ✅ Win/macOS |
+| `CV-SimHei` | SimHei / 黑体 | 黑体 | ✅ Win/macOS |
+| `CV-Yuanti` | Yuanti SC / 圆体 | 圆润 | ⚠️ 仅 macOS |
+| `CV-MaShanZheng` | Ma Shan Zheng | 楷书手写 | ❌ 需用户安装（OFL）|
+| `CV-LongCang` | Long Cang | 草书手写 | ❌ 需用户安装（OFL）|
+| `CV-ZCOOLKuaiLe` | 站酷快乐体 | 卡通 | ❌ 需用户安装（免费商用）|
+| `CV-ZCOOLGaoDuanHei` | 站酷高端黑 | 现代标题 | ❌ 需用户安装（免费商用）|
+| `CV-ZCOOLQingKeHuangYou` | 站酷庆科黄油体 | 圆润标题 | ❌ 需用户安装（免费商用）|
+| `CV-SmileySans` | 得意黑 | 圆润黑 | ❌ 需用户安装（OFL）|
+| `CV-AlibabaPuHuiTi` | 阿里巴巴普惠体 | 商务 | ❌ 需用户安装（免费商用）|
+| `CV-NotoSansSC` | Noto Sans SC / 思源黑体 | 通用 | ❌ 需用户安装（OFL）|
+| `CV-NotoSerifSC` | Noto Serif SC / 思源宋体 | 文艺 | ❌ 需用户安装（OFL）|
+
+### 决策权
+
+- ✅ **AI 自己决定**（用户没指定时）：按场景挑合适的预设字体
+- ❌ **AI 不主动问用户**：除非用户明确指定字体
+
+### 写法约束
+
+- **必须用双引号包裹字体名**（字体名含空格/连字符时 CSS 规范要求）
+- **建议加 fallback 链**：写完 `CV-*` 后接系统字体名，最后接 `serif` / `sans-serif` 兜底
+- **不写 `font-family` 不会报错**：走前端默认字体栈
+
+
 ### R2.2 完整示例
 
 ```json

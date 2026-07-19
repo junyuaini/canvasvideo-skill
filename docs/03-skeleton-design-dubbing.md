@@ -238,3 +238,68 @@
 等待用户确认后 → [步骤4：生成骨架和区域JSON](04-skeleton-build.md)
 
 > **TTS 生成模式需同时确认音频和字幕**：若步骤 2 使用 TTS 生成配音，骨架设计文档生成后需将音频文件路径和字幕内容一并发给用户确认，用户确认后再进入步骤 4。用户未确认前不得自动推进。
+
+---
+
+## 下一步：是否使用大字幕模式
+
+骨架设计文档确认后，**主动询问用户**：
+
+> "是否使用大字幕模式？（一键生成口播大字幕风格，跳过步骤 5）"
+
+### 什么是大字幕模式
+
+标准口播视频常用的"蒙版大字幕"风格：每个 region 自动生成**深色蒙版**（mask）+ **大号字**（口播文字）+ **字描边**（与蒙版同色，蒙版消失时字仍清晰）+ **Picsum 真实照片背景**（每 region 不同图）。
+
+适合：新闻盘点、知识科普、话题速览、5-15 个 region 的中等长度视频。
+
+不适合：复杂动效、卡片切换、品牌定制动效（这些用原流程，AI 手动写 region JSON）。
+
+### 用户回答"是"：调大字幕脚本
+
+```bash
+node scripts/bigtext/run-all.js <skillProjectId> \
+  --mask-color="rgba(8,12,28,0.92)" \
+  --color-red="#00e5ff" \
+  --color-gold="#7c4dff" \
+  --color-cream="#e1f5fe"
+```
+
+跑完会**自动**继续执行步骤 6（合并+上传），**结束**。中间无需 AI 干预。
+
+#### 参数说明
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--mask-color` | `rgba(26,18,8,1)` | 蒙版色（同时作为字描边色）|
+| `--color-red` | `#e85540` | 短词字色（1-2 字）|
+| `--color-gold` | `#e8c060` | 中等字色（3-6 字）|
+| `--color-cream` | `#f8f1e0` | 长句字色（>6 字）|
+| `--font` | `'Noto Serif SC', 'Songti SC', 'SimSun', serif` | 字体栈 |
+| `--bg-style` | `auto` | 背景风格：`auto`/`tech`/`daily`/`general` |
+
+#### 背景风格自动选择
+
+`--bg-style=auto` 时，根据 `skeleton.json.style` 字段自动选：
+
+| skeleton.style | 背景风格 | Picsum seed 前缀 | 适合内容 |
+|----------------|----------|------------------|----------|
+| `tech` | tech | `tech-circuit` / `cyber-data` / `neon-code` | AI、数据、技术 |
+| `warm` | daily | `daily-life` / `warm-morning` / `soft-sunlight` | 生活、情感、故事 |
+| `business` / `art` / 其他 | general | `clean-white` / `pure-abstract` / `paper-light` | 商务、教学、通用 |
+
+> 设计参考：参见 [rules/06-components.md §R7.1 Picsum 在线图](rules/06-components.md#r71-picsum-在线图)
+
+每 region seed = `{前缀}-{region 内容关键词}`，保证同概念同图、跨 region 不同图。
+
+#### 脚本位置
+
+`scripts/bigtext/`，包含：
+- `run-all.js`（一键入口，串起全流程）
+- `generate_all.cjs`（生成蒙版+文字+背景）
+- `layout.cjs` / `fill_txt.cjs` / `fit_size.cjs` / `hide_subtitle.cjs`（子步骤）
+- `add-image-bg.js`（Picsum 真实照片背景）
+
+### 用户回答"否"：走原流程
+
+继续 [步骤4：生成骨架和区域JSON](04-skeleton-build.md) → [步骤5：区域设计](05-region-design-dubbing.md)（AI 手动写 region JSON）→ [步骤6：发布](06-publish.md)。

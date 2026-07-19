@@ -98,6 +98,49 @@ sequenceDiagram
 
 ---
 
+## 可选：大字幕自动模式
+
+如果项目是**标准口播视频**（新闻盘点、知识科普、话题速览等），可使用大字幕自动模式一键出片，跳过步骤 5（AI 手动写 region JSON）。
+
+### 特点
+
+每个 region 自动生成：
+- **深色蒙版** + **大号字** + **字描边**（蒙版同色）
+- **Picsum 真实照片背景**（每 region 不同图，按 skeleton.style 自动选 tech/daily/general）
+
+### 用法
+
+在步骤 3 完成后、用户确认骨架时，AI 主动询问"是否使用大字幕模式"。用户同意后：
+
+```bash
+node scripts/bigtext/run-all.js --cwd=<Agent工作目录> <skillProjectId> \
+  --mask-color="rgba(8,12,28,0.92)" \
+  --color-red="#00e5ff" \
+  --color-gold="#7c4dff" \
+  --color-cream="#e1f5fe"
+```
+
+可选参数：
+- `--bg-style=auto|tech|daily|general` 背景风格（默认 auto，按 skeleton.style 推断）
+- `--font='字体栈'` 字体
+
+跑完会**自动**继续执行步骤 6（合并+上传），**结束**。
+
+### 适用场景
+
+- ✅ 标准口播视频（无复杂动效/插图）
+- ✅ 快速出片（5-10 分钟内完成）
+- ✅ 5-15 个 region 的中等长度视频
+- ❌ 复杂动画/卡片切换 → 用原流程
+
+### 脚本位置
+
+`scripts/bigtext/`（run-all.js + 6 个 cjs/js）
+
+详细说明见 [docs/03-skeleton-design-dubbing.md § 下一步：是否使用大字幕模式](docs/03-skeleton-design-dubbing.md#下一步是否使用大字幕模式)。
+
+---
+
 ## 全局规则
 
 ### 硬约束（不得违反）
