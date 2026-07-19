@@ -18,7 +18,7 @@
  *     "audioPath":  "./audio.mp3",    // 音频文件路径（相对于 workdir）
  *     "subtitlePath": "./subtitle.srt", // 字幕文件路径（相对于 workdir）
  *     "theme":      "white",          // 主题：white | black
- *     "aspect":     "4:3"             // 画幅：4:3 | 16:9
+ *     "aspect":     "4:3"             // 画幅：4:3 | 16:9 | 9:16 | 3:4 | 1:1 | 21:9 | 2:3
  *   }
  *
  * 项目隔离：
