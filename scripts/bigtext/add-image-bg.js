@@ -98,8 +98,11 @@ function makeBackground(bgStyle, region, idx) {
   const html = `<div class="bg-picsum"><img class="bg-picsum__img" src="${url}" alt="" /><div class="bg-picsum__overlay"></div></div>`;
 
   // CSS：图填满 + 暗化 + 留出字的对比度
+  // - 背景图加 Ken Burns 动画（缩放+微平移，24s 双向循环）
+  // - 适配 Picsum 随机图：中心不偏离，幅度小不抢戏，alternate 平滑往返
   const css = `.bg-picsum { position: absolute; inset: 0; overflow: hidden; }
-.bg-picsum__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bg-picsum__img { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: center center; will-change: transform; animation: bgDrift 24s ease-in-out infinite alternate; }
+@keyframes bgDrift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.05) translate(-1.5%, -1%); } }
 .bg-picsum__overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 100%); }`;
 
   return { html, css, seed, bgStyle, url };
