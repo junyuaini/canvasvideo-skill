@@ -105,7 +105,7 @@ function makeBackground(bgStyle, region, idx, duration) {
   const animDur = (typeof duration === 'number' && duration > 0) ? duration : 8;
   const css = `.bg-picsum { position: absolute; inset: 0; overflow: hidden; }
 .bg-picsum__img { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: center center; will-change: transform; animation: bgDrift ${animDur}s ease-in-out forwards; }
-@keyframes bgDrift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.15) translate(-3%, -2%); } }
+@keyframes bgDrift { from { transform: scale(1.15) translate(-3%, -2%); } to { transform: scale(1) translate(0, 0); } }
 .bg-picsum__overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 100%); }`;
 
   return { html, css, seed, bgStyle, url };
