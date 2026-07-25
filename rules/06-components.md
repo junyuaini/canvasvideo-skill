@@ -530,6 +530,7 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 |---|---|---|
 | HTML 结构合法 | 报错 | 标签闭合 |
 | `data-subtitle` 引用字幕存在 | 报错 | 字幕 ID 必须在 subtitles 数组里 |
+| `data-subtitle` 编号落在本区域字幕范围 | 报错 | 必须是 SRT 全局号，且必须落在 `[region.subtitle_range]` 内 |
 | `data-subtitle` 表达式格式合法 | 报错 | 仅接受单个字幕 ID（如 `"3"`），连续区间 / 离散段已废弃 |
 | AI 写了 `id` 属性 | 报错 | merge 自动分配 |
 | 顶级 class 元素无 `data-subtitle` 也无 `data-global` | 报错 | 必须显式声明时间控制 |
@@ -573,6 +574,13 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 | 跟随某条字幕出现 | `<div class='title' data-subtitle='3'>标题</div>` | region.endTime |
 | 整段 region 都在 | （**不写 data-*，merge 自动补 data-global**） | region.endTime |
 
+> ⚠️ **【必读】`data-subtitle` 编号是 SRT 全局号，不是区域号**
+>
+> - 看本区域的 `skeleton.subtitle_range`（或区域 JSON 里的 `_howToWrite.subtitleRange`），那才是允许填的全局号范围
+> - 例：本区域 `subtitle_range = "12-23"`，要绑"区域内第 1 句" → `data-subtitle="12"`，不是 `"1"`
+> - 写错时 merge 会直接报错（`<div> data-subtitle="X" 不在本区域字幕范围内。本区域包含的 SRT 全局号: 12-23`）
+> - 不要从"这是本区域第几句"推断，而是**从 SRT 全集定位本区域首末字幕**
+
 ### data-subtitle 取值格式
 
 > 🟢 **新规（2026-07）**：仅支持单个字幕 ID。元素 end 固定为区域 endTime，不再用字幕 end。
@@ -592,6 +600,10 @@ merge 后 id 注入到 HTML 标签上（merge 唯一允许的 HTML 改动）：
 
 <!-- ❌ 禁止：data-subtitle 引用不存在的字幕序号 -->
 <div class='wrong' data-subtitle='999'>超出字幕范围</div>
+
+<!-- ❌ 禁止：data-subtitle 引用其他区域的字幕（SRT 全局号必须落在本区域内） -->
+<!-- 例：本区域 subtitle_range=12-23，AI 误把区域号 "3" 当全局号写进去，merge 报错 -->
+<div class='wrong' data-subtitle='3'>跨区域绑定：P2 的区域号 3 ≠ SRT 全局号</div>
 
 <!-- ❌ 禁止：data-subtitle 格式错误（必须引号包裹完整） -->
 <div class='wrong' data-subtitle=3>缺引号</div>

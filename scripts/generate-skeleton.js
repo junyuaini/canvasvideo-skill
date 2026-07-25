@@ -227,7 +227,13 @@ const REGION_TEMPLATE_RULES = {
 function buildValidationHints(skeleton, region) {
   const subs = Array.isArray(region.subtitles) ? region.subtitles : [];
   const subtitleCount = subs.length;
-  const dataSubtitleRange = subtitleCount > 0 ? `1-${subtitleCount}` : 'N/A';
+  // 数据说明：本区域包含的 SRT 全局号范围 = skeleton.subtitle_range（如 "12-23"），
+  //          也可由 region.subtitles 推算（= SRT 与区域时间窗相交的子集）
+  // 优先取 skeleton.subtitle_range（merge 阶段用它）；缺失时回退到 1-N
+  const globalSubRange = (typeof skeleton.subtitle_range === 'string')
+    ? skeleton.subtitle_range
+    : (subtitleCount > 0 ? `1-${subtitleCount}` : 'N/A');
+  // 本区域的时间窗
   const regionStart = region.startTime;
   const regionEnd = region.endTime;
 
@@ -240,7 +246,9 @@ function buildValidationHints(skeleton, region) {
       globalDisplay: '整段显示：<div class="my-title">…</div>',
       bindSubtitle: `绑字幕 1：<div class="my-card" data-subtitle="1">…</div>（起=${subs[0]?.start ?? '?'}s，止=${regionEnd}s）`,
       timeWindow: `区域时间窗：[${regionStart}, ${regionEnd}]`,
-      subtitleRange: `共 ${subtitleCount} 条字幕（编号 ${dataSubtitleRange}）`
+      subtitleRange: `本区域共 ${subtitleCount} 条字幕；SRT 全局号范围 = ${globalSubRange}`,
+      // R17 新增：明确告知 AI data-subtitle 必须用 SRT 全局号，且只能在本区域内
+      subtitleGlobalHint: `data-subtitle 必须填 SRT 全局号（不是区域号）。本区域可用的 SRT 全局号: ${globalSubRange}。例如区域内第 1 句 = data-subtitle="${globalSubRange === 'N/A' ? '?' : globalSubRange.split('-')[0]}"。`
     },
     _hardRules: REGION_TEMPLATE_RULES.HARD_RULES
   };

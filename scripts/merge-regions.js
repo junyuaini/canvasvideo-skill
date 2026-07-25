@@ -689,7 +689,7 @@ function mergeRegions(workdir, workdirRoot) {
         // AI 不再写 elementIds、id、subtitles、animations 等任何前端协议字段
         if (comp.type === 'HtmlComponent' && comp.content && typeof comp.content.html === 'string') {
           try {
-            const transformed = transformHtmlComponent(comp, srtList, regionEntry.endTime);
+            const transformed = transformHtmlComponent(comp, srtList, regionEntry.endTime, regionEntry.startTime);
             // 1) cleanedHtml 覆盖：含注入的 id 属性
             if (transformed.cleanedHtml) {
               comp.content.html = transformed.cleanedHtml;

@@ -133,8 +133,12 @@ function analyzeClassElements(html) {
     const classNames = classMatch[2].split(/\s+/).filter(Boolean);
     const idMatch = attrs.match(/\sid\s*=\s*(["'])([^"']+)\1/);
     const hasManualId = !!idMatch;
-    const dataSubtitleMatch = attrs.match(/\s+data-subtitle\s*=\s*(["'])([^"']+)\1/);
+    const dataSubtitleMatch = attrs.match(/\s+data-subtitle\s*=\s*(["'])([^"']*)\1/);
     const hasDataSubtitle = !!dataSubtitleMatch;
+    // 检测缺引号写法（HTML 属性值必须用单/双引号包裹）
+    // 例：<div class='x' data-subtitle=3>...</div> 正则不匹配，需后续校验报错
+    const dataSubtitleUnquotedMatch = !dataSubtitleMatch ? attrs.match(/\s+data-subtitle\s*=\s*([^\s"'>]+)/) : null;
+    const dataSubtitleUnquoted = dataSubtitleUnquotedMatch ? dataSubtitleUnquotedMatch[1] : null;
     const dataGlobalMatch = attrs.match(/\s+data-global\s*=\s*(["'])([^"']+)\1/);
     const hasDataGlobal = !!dataGlobalMatch && (dataGlobalMatch[2] === 'true' || dataGlobalMatch[2] === '1');
 
@@ -152,6 +156,7 @@ function analyzeClassElements(html) {
       hasDataSubtitle,
       hasDataGlobal,
       dataSubtitleValue: hasDataSubtitle ? dataSubtitleMatch[2] : null,
+      dataSubtitleUnquoted,
       parentClassElement,
       rawTagStart: m.index,
       rawTagEnd: m.index + m[0].length,
@@ -338,10 +343,33 @@ function prefixHtmlClass(html, prefix) {
 // ============================================================
 
 /**
+ * 计算本区域包含的 SRT 字幕范围（1-based 全局号）
+ * - 规则：sub.start < regionEndTime 且 sub.end > regionStartTime（即与区域时间窗有交集）
+ * - 返回 { firstId, lastId } | null（区域无字幕时为 null，跳过区域校验避免误报）
+ * @param {Array} srtList
+ * @param {number} regionStartTime
+ * @param {number} regionEndTime
+ * @returns {{firstId:number, lastId:number}|null}
+ */
+function getRegionSrtRange(srtList, regionStartTime, regionEndTime) {
+  if (!Array.isArray(srtList) || srtList.length === 0) return null;
+  if (typeof regionStartTime !== 'number' || typeof regionEndTime !== 'number') return null;
+  const ids = [];
+  for (let i = 0; i < srtList.length; i++) {
+    const sub = srtList[i];
+    if (!sub || typeof sub.start !== 'number' || typeof sub.end !== 'number') continue;
+    if (sub.start < regionEndTime && sub.end > regionStartTime) ids.push(i + 1);
+  }
+  if (ids.length === 0) return null;
+  return { firstId: ids[0], lastId: ids[ids.length - 1] };
+}
+
+/**
  * 转换 HtmlComponent
  * @param {Object} comp - { id, regionId, content: { html, css, ... } }
  * @param {Array} srtList - parseSrt 返回的字幕数组
  * @param {number} [regionEndTime] - 区域结束时间；data-subtitle 元素的 end 固定为此值（必填）
+ * @param {number} [regionStartTime] - 区域开始时间（可选；提供后用于校验 data-subtitle 编号是否在本区域字幕范围内）
  * @returns {{
  *   elementIds: Object,    // { "#P1-100": { id, start?, end? } }
  *   animations: Object,    // 始终空对象（保留字段）
@@ -349,7 +377,7 @@ function prefixHtmlClass(html, prefix) {
  *   cleanedCss: string     // 原样透传
  * }}
  */
-function transformHtmlComponent(comp, srtList, regionEndTime) {
+function transformHtmlComponent(comp, srtList, regionEndTime, regionStartTime) {
   if (!comp.content || !comp.content.html) {
     return { elementIds: {}, animations: {}, cleanedHtml: '', cleanedCss: '' };
   }
@@ -417,9 +445,31 @@ function transformHtmlComponent(comp, srtList, regionEndTime) {
     }
   }
 
+  // 5.5 校验 data-subtitle 属性写法（必须带引号 + 不能为空）
+  // - 缺引号（data-subtitle=3）：正则匹配不到，HTML 解析后属性值不可靠，浏览器可能 fallback 到 data-global
+  // - 空字符串（data-subtitle=""）：被当"未填"，merge 自动补 data-global，与 AI 意图不符
+  // 这两类错误应在第 6 步格式校验之前先报，避免被格式校验的"格式错误"掩盖
+  for (const el of elements) {
+    const classDesc = el.classNames.join(' ');
+    if (el.dataSubtitleUnquoted) {
+      errors.push(
+        `<${el.tagName} class="${classDesc}"> data-subtitle=${el.dataSubtitleUnquoted} 缺少引号。` +
+        `HTML 属性值必须用单引号或双引号包裹，如 data-subtitle="${el.dataSubtitleUnquoted}"。`
+      );
+    } else if (el.hasDataSubtitle && el.dataSubtitleValue === '') {
+      errors.push(
+        `<${el.tagName} class="${classDesc}"> data-subtitle="" 值为空。` +
+        `data-subtitle 不能为空；若不需要绑字幕，请删除该属性（merge 会自动补 data-global="true"）。`
+      );
+    }
+  }
+
   // 6. 校验 data-subtitle 表达式格式
   for (const el of elements) {
     if (!el.hasDataSubtitle) continue;
+    // 缺引号 / 空值已在 5.5 报错，跳过避免重复
+    if (el.dataSubtitleUnquoted) continue;
+    if (el.dataSubtitleValue === '') continue;
     try {
       parseSubtitleIndexExpr(el.dataSubtitleValue);
     } catch (e) {
@@ -427,6 +477,37 @@ function transformHtmlComponent(comp, srtList, regionEndTime) {
       errors.push(
         `<${el.tagName} class="${classDesc}"> data-subtitle="${el.dataSubtitleValue}" 格式错误：${e.message}`
       );
+    }
+  }
+
+  // 6.1 校验 data-subtitle 编号是否落在本区域字幕范围内
+  // - 本规则的目的是防止 AI 把"区域内第 N 句"写成 data-subtitle="N"（区域号），
+  //   而 merge 阶段查的是 SRT 全局号；超出范围会导致元素永远不显示
+  // - 区域无字幕（srtList 缺失或区域内无 SRT）→ 跳过此校验，避免误报
+  const regionSrtRange = getRegionSrtRange(srtList, regionStartTime, regionEndTime);
+  if (regionSrtRange) {
+    for (const el of elements) {
+      if (!el.hasDataSubtitle) continue;
+      // 缺引号 / 空值 / 格式错误已在上游报过，跳过避免重复
+      if (el.dataSubtitleUnquoted) continue;
+      if (el.dataSubtitleValue === '') continue;
+      let indices;
+      try {
+        indices = parseSubtitleIndexExpr(el.dataSubtitleValue);
+      } catch (_) {
+        continue;  // 6 步已记录格式错误，跳过避免重复报错
+      }
+      for (const subId of indices) {
+        if (subId < regionSrtRange.firstId || subId > regionSrtRange.lastId) {
+          const classDesc = el.classNames.join(' ');
+          errors.push(
+            `<${el.tagName} class="${classDesc}"> data-subtitle="${subId}" 不在本区域字幕范围内。` +
+            `data-subtitle="N" 中的 N 必须是 SRT 全局号（1-${(srtList && srtList.length) || '?'}），` +
+            `且必须落在当前 region 的 subtitle_range 内。` +
+            `本区域可用的 SRT 全局号范围: ${regionSrtRange.firstId}-${regionSrtRange.lastId}。`
+          );
+        }
+      }
     }
   }
 
