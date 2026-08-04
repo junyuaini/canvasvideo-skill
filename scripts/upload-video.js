@@ -32,7 +32,7 @@ const { savePreviewInfo } = require('./state');
 const DEFAULT_SERVER_URL = 'https://dajiulanren.top';
 
 // 网络层默认参数（单次请求超时 + 5xx 退避重试）
-const REQUEST_TIMEOUT_MS = 30000;   // 30s
+const REQUEST_TIMEOUT_MS = 60000;   // 60s
 const RETRY_MAX = 1;                // 5xx 最多重试 1 次
 const RETRY_BACKOFF_MS = 1000;      // 重试前等待 1s
 
